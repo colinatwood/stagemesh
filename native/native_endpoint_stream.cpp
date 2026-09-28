@@ -154,7 +154,7 @@ struct NativeEndpointStream::Impl {
         } lease(self.in_flight);
         if (self.direction == AudioDirection::Capture) {
             if (!self.allowed.load() || endpoint_epoch.load() != self.prepared_epoch) return noErr;
-            if (!timestamp || count > self.request.period_frames) {
+            if (!timestamp || count > self.capture_buffer.size() / self.request.channels) {
                 self.fault.store(true); self.allowed.store(false); return kAudio_ParamError;
             }
             AudioBufferList captured{}; captured.mNumberBuffers = 1;
@@ -269,26 +269,31 @@ struct NativeEndpointStream::Impl {
         verified.configured_sample_rate_hz = rate; verified.configured_period_frames = period;
         verified.configured_channels = channels;
 #else
+        const auto native_rate = property<Float64>(device, kAudioDevicePropertyNominalSampleRate);
+        const auto native_period = property<UInt32>(device, kAudioDevicePropertyBufferFrameSize);
         if (!property<UInt32>(device, kAudioDevicePropertyDeviceIsAlive) ||
             uid_hash(device) != selection.persistent_hash ||
-            property<Float64>(device, kAudioDevicePropertyNominalSampleRate) != request.sample_rate_hz ||
-            property<UInt32>(device, kAudioDevicePropertyBufferFrameSize) != request.period_frames)
+            (native_rate != request.sample_rate_hz && !request.allow_rate_conversion) ||
+            (native_period != request.period_frames && !request.allow_period_adaptation))
             throw std::runtime_error("CoreAudio identity/rate/period changed");
         AudioStreamBasicDescription format{}; UInt32 size = sizeof(format);
         checked(AudioUnitGetProperty(unit, kAudioUnitProperty_StreamFormat,
             direction == AudioDirection::Playback ? kAudioUnitScope_Input : kAudioUnitScope_Output,
             direction == AudioDirection::Playback ? 0 : 1, &format, &size), "read AUHAL client format");
-        if (format.mSampleRate != request.sample_rate_hz || format.mChannelsPerFrame != request.channels ||
+        if ((format.mSampleRate != request.sample_rate_hz && !request.allow_rate_conversion) ||
+            (format.mChannelsPerFrame != request.channels && !request.allow_channel_conversion) ||
             format.mFormatID != kAudioFormatLinearPCM || format.mBitsPerChannel != 32 ||
             format.mFormatFlags != kAudioFormatFlagsNativeFloatPacked || format.mBytesPerFrame != request.channels * sizeof(float))
             throw std::runtime_error("AUHAL client configuration differs from exact request");
-        verified.configured_sample_rate_hz = static_cast<std::uint32_t>(format.mSampleRate);
-        verified.configured_period_frames = property<UInt32>(device, kAudioDevicePropertyBufferFrameSize);
-        if (verified.configured_period_frames != request.period_frames) throw std::runtime_error("CoreAudio period changed during readback");
+        verified.configured_sample_rate_hz = static_cast<std::uint32_t>(native_rate);
+        verified.configured_period_frames = native_period;
         verified.configured_channels = format.mChannelsPerFrame;
 #endif
         verified.configured_format = AudioSampleFormat::Float32;
-        verified.status = AudioPreflightStatus::Exact; verified.reason = "native-readback-exact";
+        const bool adapted = verified.configured_sample_rate_hz != request.sample_rate_hz ||
+            verified.configured_period_frames != request.period_frames || verified.configured_channels != request.channels;
+        verified.status = adapted ? AudioPreflightStatus::ExplicitAdaptation : AudioPreflightStatus::Exact;
+        verified.reason = adapted ? "native-readback-explicit-adaptation" : "native-readback-exact";
     }
     void open_native() {
 #ifdef _WIN32
@@ -359,8 +364,9 @@ struct NativeEndpointStream::Impl {
         checked(AudioUnitGetProperty(unit, kAudioUnitProperty_StreamFormat,
             direction == AudioDirection::Playback ? kAudioUnitScope_Output : kAudioUnitScope_Input,
             direction == AudioDirection::Playback ? 0 : 1, &native, &size), "AUHAL native format");
-        if (native.mSampleRate != request.sample_rate_hz || native.mChannelsPerFrame != request.channels)
-            throw std::runtime_error("AUHAL rate/channel conversion is not implemented");
+        if ((native.mSampleRate != request.sample_rate_hz && !request.allow_rate_conversion) ||
+            (native.mChannelsPerFrame != request.channels && !request.allow_channel_conversion))
+            throw std::runtime_error("AUHAL rate/channel conversion requires explicit permission");
         AudioStreamBasicDescription format{};
         format.mSampleRate = request.sample_rate_hz; format.mFormatID = kAudioFormatLinearPCM;
         format.mFormatFlags = kAudioFormatFlagsNativeFloatPacked; format.mChannelsPerFrame = request.channels;
@@ -374,7 +380,9 @@ struct NativeEndpointStream::Impl {
         if (direction == AudioDirection::Playback)
             checked(AudioUnitSetProperty(unit, kAudioUnitProperty_SetRenderCallback, kAudioUnitScope_Input, 0, &cb, sizeof(cb)), "AUHAL output callback");
         else {
-            capture_buffer.assign(static_cast<std::size_t>(request.period_frames) * request.channels, 0.0f);
+            const auto callback_frames = std::max<std::uint32_t>(request.period_frames,
+                property<UInt32>(device, kAudioDevicePropertyBufferFrameSize));
+            capture_buffer.assign(static_cast<std::size_t>(callback_frames) * request.channels, 0.0f);
             checked(AudioUnitSetProperty(unit, kAudioOutputUnitProperty_SetInputCallback, kAudioUnitScope_Global, 0, &cb, sizeof(cb)), "AUHAL input callback");
         }
         checked(AudioUnitInitialize(unit), "initialize AUHAL"); initialized = true;
@@ -398,7 +406,9 @@ bool NativeEndpointStream::prepare(const AudioRequest& request, const DeviceExec
     auto& self = *impl_; self.check_thread();
     if (self.running || request.direction != self.direction || request.format != AudioSampleFormat::Float32 ||
         !request.sample_rate_hz || !request.period_frames || request.period_frames > 65536 || !request.channels || request.channels > 64 ||
+#ifdef _WIN32
         request.allow_rate_conversion || request.allow_period_adaptation || request.allow_channel_conversion || request.allow_format_conversion ||
+#endif
         fence.selection().kind != DeviceKind::Audio ||
         (self.direction == AudioDirection::Playback ? !fence.selection().require_output : !fence.selection().require_input) ||
         (self.fence_owner && self.fence_owner != &fence)) return false;
