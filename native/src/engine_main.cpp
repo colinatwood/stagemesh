@@ -59,9 +59,6 @@
 #if defined(_WIN32) || defined(__APPLE__)
 #include "native_capture.h"
 #endif
-#if defined(_WIN32) || defined(__APPLE__)
-#include "native_capture.h"
-#endif
 
 #include <algorithm>
 #include <atomic>
