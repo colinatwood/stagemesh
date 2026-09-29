@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 50114)
+Total output lines: 2571
+
 #include "stageforge/audio_device.hpp"
 #include "stageforge/audio_device_manager.hpp"
 #include "stageforge/audio_graph.hpp"
@@ -56,6 +59,9 @@
 #include "stageforge/notation_quantizer.hpp"
 #include "stageforge/transport_clock.hpp"
 #include "stageforge/transport_discipline.hpp"
+#if defined(_WIN32) || defined(__APPLE__)
+#include "native_capture.h"
+#endif
 
 #include <algorithm>
 #include <atomic>
@@ -303,16 +309,29 @@ struct EngineAudioRenderContext {
     std::array<std::array<float, 16384>, kAudioInputSlots> raw_input_right{};
 };
 
-void capture_audio(void* raw, const float* interleaved, std::uint32_t frames, std::uint32_t channels) noexcept {
+void capture_audio_packet(void* raw, const float* interleaved, std::uint32_t frames,
+                          std::uint32_t channels, bool discontinuity) noexcept {
     const auto started=std::chrono::steady_clock::now();
     auto* state = static_cast<EngineAudioInputState*>(raw);
     if (!state)return;
     const auto result=stageforge::submit_capture_packet(
         state->ring,state->daw_recording,state->recording_track,state->recording_sequence,
-        state->recording_frame,state->recording_generation,interleaved,frames,channels);
+        state->recording_frame,state->recording_generation,interleaved,frames,channels,discontinuity);
     const auto duration=static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now()-started).count());
     state->audit.finish(frames,result.blocks,result.rejected,result.nonfinite_samples,duration);
 }
+
+void capture_audio(void* raw, const float* interleaved, std::uint32_t frames, std::uint32_t channels) noexcept {
+    capture_audio_packet(raw,interleaved,frames,channels,false);
+}
+
+#if defined(_WIN32) || defined(__APPLE__)
+void capture_native_audio(const float* interleaved, std::uint32_t frames,
+                          std::uint32_t channels, const stageforge::CapturePacketInfo& info,
+                          void* raw) noexcept {
+    capture_audio_packet(raw,interleaved,frames,channels,info.discontinuity);
+}
+#endif
 
 struct EngineEffectProcessContext { stageforge::CoreEffectChain<16>* chain; std::uint64_t show_ns; };
 void process_output_effects(void* raw, std::uint8_t, float* left, float* right, std::size_t frames) noexcept {
@@ -1257,251 +1276,7 @@ int main(int argc, char** argv) {
                 device_id = &parts[1];
             } else {
                 if (!parse_number(parts[1], slot) || slot >= kAudioInputSlots) { error("argument", "invalid audio input slot"); continue; }
-                device_id = &parts[2];
-            }
-            const auto* device = audio_devices.find(*device_id);
-            if (!device || !device->connected || !device->input) { error("not_found", "audio input unavailable"); continue; }
-            selected_audio_inputs[slot] = device->id.data();
-            ok(std::string("slot=") + std::to_string(slot) + " selected=" + selected_audio_inputs[slot] + " execution=" + execution_audio_input_backends[slot]);
-            continue;
-        }
-        if (command == "AUDIO_INPUT_BIND_PLAYER" && (parts.size() == 2 || parts.size() == 3)) {
-            std::size_t slot = 0;
-            const std::string* player = nullptr;
-            if (parts.size() == 2) player = &parts[1];
-            else {
-                if (!parse_number(parts[1], slot) || slot >= kAudioInputSlots) { error("argument", "invalid audio input slot"); continue; }
-                player = &parts[2];
-            }
-            const int output = monitor_router.ensure_player(*player);
-            const int source = monitor_router.self_source_for(*player);
-            if (output < 0 || source < 0) { error("capacity", "unable to allocate player audio source"); continue; }
-            audio_inputs[slot].source.store(static_cast<std::uint8_t>(source), std::memory_order_release);
-            std::cout << "OK slot=" << slot << " player=" << token_safe(*player) << " source=" << source << " monitorOutput=" << output << '\n' << std::flush;
-            continue;
-        }
-        if (command == "AUDIO_INPUT_ACTIVATE" && (parts.size() == 5 || parts.size() == 6 || parts.size() == 7 || parts.size() == 8)) {
-            std::size_t slot = 0;
-            std::size_t base = 1;
-            if (parts.size() >= 6) {
-                if (!parse_number(parts[1], slot) || slot >= kAudioInputSlots) { error("argument", "invalid audio input slot"); continue; }
-                base = 2;
-            }
-            double sample_rate = 0.0;
-            unsigned int buffer_frames = 0, channels = 0, source_index = 0, conversion_flags = 0;
-            std::string sample_format{"FLOAT_LE"};
-            if (!parse_number(parts[base], sample_rate) || !parse_number(parts[base + 1], buffer_frames) || !parse_number(parts[base + 2], channels) || !parse_number(parts[base + 3], source_index) ||
-                sample_rate < 8000.0 || sample_rate > 384000.0 || buffer_frames < 16 || buffer_frames > 8192 ||
-                channels < 1 || channels > 32 || source_index >= stageforge::audio_graph_max_sources) {
-                error("argument", "invalid audio input activation configuration"); continue;
-            }
-            if(parts.size()>=7&&(!parse_number(parts[6],conversion_flags)||conversion_flags>7)){error("argument","invalid audio conversion flags");continue;}
-            if(parts.size()==8) sample_format=parts[7];
-            stageforge::CanonicalAudioSampleFormat requested_input_format{};
-            if(!stageforge::canonical_audio_sample_format_from_name(sample_format,requested_input_format)){error("argument","invalid audio input sample format");continue;}
-            if(sample_format!="FLOAT_LE"&&(conversion_flags&4U)==0){error("argument","integer audio input requires sample-format conversion permission");continue;}
-            if(channels!=2&&(conversion_flags&2U)==0){error("argument","audio input channel conversion permission is required");continue;}
-            alsa_inputs[slot].close();
-            audio_inputs[slot].enabled.store(false, std::memory_order_release);
-            audio_inputs[slot].ring.reset();
-            execution_audio_input_backends[slot] = "none";
-            const auto* device = audio_devices.find(selected_audio_inputs[slot]);
-            if (!device || std::string_view(device->backend.data()) != "alsa" || !device->input || !device->connected) {
-                error("unsupported", "selected input has no installed capture adapter"); continue;
-            }
-            stageforge::AudioDeviceConfig config{sample_rate, channels, 0, buffer_frames};
-            if (!alsa_inputs[slot].open(device->backend_address.data(), config, capture_audio, &audio_inputs[slot], sample_format)) {
-                const std::string message = alsa_inputs[slot].last_error().empty() ? "unable to start ALSA input" : std::string(alsa_inputs[slot].last_error());
-                alsa_inputs[slot].close(); error("audio", message); continue;
-            }
-            const auto actual_input=alsa_inputs[slot].status().config;
-            const bool rate_conversion=actual_input.sample_rate!=stageforge::canonical_audio_sample_rate;
-            const bool channel_conversion=actual_input.input_channels!=2;
-            const bool format_conversion=alsa_inputs[slot].sample_format()!="FLOAT_LE";
-            if((rate_conversion&&(conversion_flags&1U)==0)||(channel_conversion&&(conversion_flags&2U)==0)||(format_conversion&&(conversion_flags&4U)==0)||!alsa_inputs[slot].start()){
-                alsa_inputs[slot].close();error("audio","configured ALSA input parameters exceed engine bounds");continue;
-            }
-            audio_inputs[slot].source.store(static_cast<std::uint8_t>(source_index), std::memory_order_release);
-            audio_inputs[slot].sample_rate.store(actual_input.sample_rate, std::memory_order_release);
-            audio_inputs[slot].enabled.store(true, std::memory_order_release);
-            execution_audio_input_backends[slot] = "alsa";
-            ok(std::string("slot=") + std::to_string(slot) + " execution=alsa running=1 device=" + selected_audio_inputs[slot] + " source=" + std::to_string(source_index) + " actualRate=" + std::to_string(actual_input.sample_rate) + " actualPeriodFrames=" + std::to_string(actual_input.frames_per_buffer) + " actualChannels=" + std::to_string(actual_input.input_channels) + " actualFormat=" + std::string(alsa_inputs[slot].sample_format()));
-            continue;
-        }
-        if (command == "AUDIO_INPUT_DEACTIVATE" && (parts.size() == 1 || parts.size() == 2)) {
-            std::size_t slot = 0;
-            if (parts.size() == 2 && (!parse_number(parts[1], slot) || slot >= kAudioInputSlots)) { error("argument", "invalid audio input slot"); continue; }
-            audio_inputs[slot].enabled.store(false, std::memory_order_release);
-            alsa_inputs[slot].close();
-            audio_inputs[slot].ring.reset();
-            execution_audio_input_backends[slot] = "none";
-            ok(std::string("slot=") + std::to_string(slot) + " execution=none running=0");
-            continue;
-        }
-        if (command == "AUDIO_INPUT_STATUS" && (parts.size() == 1 || parts.size() == 2)) {
-            std::size_t slot = 0;
-            if (parts.size() == 2 && (!parse_number(parts[1], slot) || slot >= kAudioInputSlots)) { error("argument", "invalid audio input slot"); continue; }
-            const auto stream = alsa_inputs[slot].status();
-            const auto requested = alsa_inputs[slot].requested_config();
-            std::cout << "OK slot=" << slot
-                      << " execution=" << execution_audio_input_backends[slot]
-                      << " selected=" << (selected_audio_inputs[slot].empty() ? "none" : selected_audio_inputs[slot])
-                      << " state=" << static_cast<int>(stream.state)
-                      << " callbacks=" << stream.callback_count
-                      << " xruns=" << stream.xruns
-                      << " sampleRate=" << audio_inputs[slot].sample_rate.load(std::memory_order_acquire)
-                      << " requestedRate=" << requested.sample_rate
-                      << " configuredRate=" << stream.config.sample_rate
-                      << " periodFrames=" << stream.config.frames_per_buffer
-                      << " channels=" << stream.config.input_channels
-                      << " requestedPeriodFrames=" << requested.frames_per_buffer
-                      << " requestedChannels=" << requested.input_channels
-                      << " sampleFormat=" << token_safe(alsa_inputs[slot].sample_format())
-                      << " source=" << static_cast<unsigned int>(audio_inputs[slot].source.load(std::memory_order_acquire))
-                      << " queued=" << ([&](){ std::uint64_t total=0; for(std::size_t reader=0; reader<kAudioOutputSlots; ++reader) total += audio_inputs[slot].ring.queued(reader); return total; })()
-                      << " dropped=" << ([&](){ std::uint64_t total=0; for(std::size_t reader=0; reader<kAudioOutputSlots; ++reader) total += audio_inputs[slot].ring.dropped(reader); return total; })()
-                      << " underruns=" << ([&](){ std::uint64_t total=0; for(std::size_t reader=0; reader<kAudioOutputSlots; ++reader) total += audio_inputs[slot].ring.underruns(reader); return total; })()
-                      << " error=" << token_safe(alsa_inputs[slot].last_error().empty() ? "none" : alsa_inputs[slot].last_error())
-                      << '\n' << std::flush;
-            continue;
-        }
-        if (command == "AUDIO_INPUT_ROUTE" && (parts.size() == 3 || parts.size() == 4)) {
-            std::size_t slot = 0;
-            std::size_t base = 1;
-            if (parts.size() == 4) {
-                if (!parse_number(parts[1], slot) || slot >= kAudioInputSlots) { error("argument", "invalid audio input slot"); continue; }
-                base = 2;
-            }
-            unsigned int output = 0; float gain = 0.0F;
-            if (!parse_number(parts[base], output) || !parse_number(parts[base + 1], gain) || output >= stageforge::audio_graph_max_outputs) {
-                error("argument", "invalid audio input route"); continue;
-            }
-            const auto source = audio_inputs[slot].source.load(std::memory_order_acquire);
-            audio_graph.set_route_gain(source, static_cast<std::uint8_t>(output), gain);
-            std::cout << "OK slot=" << slot << " source=" << static_cast<unsigned int>(source) << " output=" << output
-                      << " gain=" << audio_graph.route_gain(source, static_cast<std::uint8_t>(output)) << '\n' << std::flush;
-            continue;
-        }
-        if (command == "AUDIO_OUTPUT_BIND_PLAYER" && parts.size() == 3) {
-            std::size_t slot = 0;
-            if (!parse_number(parts[1], slot) || slot >= kAudioOutputSlots) { error("argument", "invalid audio output slot"); continue; }
-            const int graph_output = monitor_router.ensure_player(parts[2]);
-            auto* bus = monitors.find(parts[2]);
-            if (!bus) bus = &monitors.get_or_create(parts[2]);
-            if (graph_output < 0 || !monitor_router.sync(parts[2], *bus, audio_graph)) { error("capacity", "unable to allocate monitor output"); continue; }
-            audio_render_contexts[slot].output.store(static_cast<std::uint8_t>(graph_output), std::memory_order_release);
-            std::cout << "OK slot=" << slot << " player=" << token_safe(parts[2]) << " output=" << graph_output << '\n' << std::flush;
-            continue;
-        }
-        if (command == "AUDIO_DRIFT_CONFIG" && parts.size() == 5) {
-            std::size_t slot = 0; int enabled = 0; double max_ppm = 0.0, queue_gain_ppm = 0.0;
-            if (!parse_number(parts[1], slot) || slot >= kAudioOutputSlots || !parse_number(parts[2], enabled) ||
-                !parse_number(parts[3], max_ppm) || !parse_number(parts[4], queue_gain_ppm) ||
-                max_ppm < 0.0 || max_ppm > 10000.0 || queue_gain_ppm < 0.0 || queue_gain_ppm > 10000.0) {
-                error("argument", "invalid audio drift configuration"); continue;
-            }
-            if (alsa_outputs[slot].status().state == stageforge::AudioDeviceState::running) {
-                error("busy", "audio drift configuration requires stopped output"); continue;
-            }
-            auto& context = audio_render_contexts[slot];
-            context.drift_enabled.store(enabled != 0, std::memory_order_relaxed);
-            context.max_correction_ppm.store(max_ppm, std::memory_order_relaxed);
-            context.queue_gain_ppm.store(queue_gain_ppm, std::memory_order_relaxed);
-            context.drift_controller.configure({max_ppm, queue_gain_ppm, 0.05});
-            context.correction_ppm.store(0.0, std::memory_order_relaxed);
-            context.compensated_blocks.store(0, std::memory_order_relaxed);
-            std::cout << "OK slot=" << slot << " enabled=" << (enabled != 0 ? 1 : 0)
-                      << " maxPpm=" << max_ppm << " queueGainPpm=" << queue_gain_ppm << '\n' << std::flush;
-            continue;
-        }
-        if (command == "AUDIO_ACTIVATE" && (parts.size() == 4 || parts.size() == 5 || parts.size() == 6 || parts.size() == 8)) {
-            std::size_t slot = 0;
-            std::size_t base = 1;
-            if (parts.size() >= 5) {
-                if (!parse_number(parts[1], slot) || slot >= kAudioOutputSlots) { error("argument", "invalid audio output slot"); continue; }
-                base = 2;
-            }
-            double sample_rate = 0.0;
-            unsigned int buffer_frames = 0, output_index = 0, conversion_flags = 0, channels = 2;
-            std::string sample_format{"FLOAT_LE"};
-            if (!parse_number(parts[base], sample_rate) || !parse_number(parts[base + 1], buffer_frames) || !parse_number(parts[base + 2], output_index) ||
-                sample_rate < 8000.0 || sample_rate > 384000.0 || buffer_frames < 16 || buffer_frames > 8192 ||
-                output_index >= stageforge::audio_graph_max_outputs ||
-                static_cast<double>(buffer_frames)*stageforge::canonical_audio_sample_rate/sample_rate>8192.0) {
-                error("argument", "invalid audio activation configuration"); continue;
-            }
-            if(parts.size()>=6&&(!parse_number(parts[5],conversion_flags)||conversion_flags>7)){error("argument","invalid audio conversion flags");continue;}
-            if(parts.size()==8){sample_format=parts[6];if(!parse_number(parts[7],channels)||channels<1||channels>32){error("argument","invalid audio output channel count");continue;}}
-            stageforge::CanonicalAudioSampleFormat requested_output_format{};
-            if(!stageforge::canonical_audio_sample_format_from_name(sample_format,requested_output_format)){error("argument","invalid audio output sample format");continue;}
-            if(sample_format!="FLOAT_LE"&&(conversion_flags&4U)==0){error("argument","integer audio output requires sample-format conversion permission");continue;}
-            if(channels!=2&&(conversion_flags&2U)==0){error("argument","audio output channel conversion permission is required");continue;}
-            alsa_outputs[slot].close();
-            execution_audio_backends[slot] = slot == 0 ? "null-audio" : "none";
-            audio_render_contexts[slot].output.store(static_cast<std::uint8_t>(output_index), std::memory_order_release);
-            audio_render_contexts[slot].drift_start_ns.store(0, std::memory_order_relaxed);
-            audio_render_contexts[slot].drift_last_ns.store(0, std::memory_order_relaxed);
-            audio_render_contexts[slot].drift_frames.store(0, std::memory_order_relaxed);
-            audio_render_contexts[slot].expected_sample_rate.store(sample_rate, std::memory_order_relaxed);
-            audio_render_contexts[slot].measured_rate_ppm.store(0.0, std::memory_order_relaxed);
-            audio_render_contexts[slot].correction_ppm.store(0.0, std::memory_order_relaxed);
-            audio_render_contexts[slot].source_frames_last.store(buffer_frames, std::memory_order_relaxed);
-            audio_render_contexts[slot].compensated_blocks.store(0, std::memory_order_relaxed);
-            audio_render_contexts[slot].first_render_show_ns.store(0, std::memory_order_relaxed);
-            audio_render_contexts[slot].last_render_show_ns.store(0, std::memory_order_relaxed);
-            audio_render_contexts[slot].last_block_end_show_ns.store(0, std::memory_order_relaxed);
-            audio_render_contexts[slot].drift_controller.reset();
-            audio_render_contexts[slot].canonical_frame_fraction = 0.0;
-            audio_render_contexts[slot].input_frame_fraction.fill(0.0);
-            for (auto& input : audio_inputs) input.ring.set_reader_active(slot, true);
-            if (selected_audio_outputs[slot].empty() || selected_audio_outputs[slot] == "null-audio") {
-                for (auto& input : audio_inputs) input.ring.set_reader_active(slot, false);
-                execution_audio_backends[slot] = slot == 0 ? "null-audio" : "none";
-                ok(std::string("slot=") + std::to_string(slot) + " execution=" + execution_audio_backends[slot] + " running=1 output=" + std::to_string(output_index));
-                continue;
-            }
-            const auto* device = audio_devices.find(selected_audio_outputs[slot]);
-            if (!device || std::string_view(device->backend.data()) != "alsa" || !device->output || !device->connected) {
-                for (auto& input : audio_inputs) input.ring.set_reader_active(slot, false);
-                error("unsupported", "selected device has no installed playback adapter"); continue;
-            }
-            stageforge::AudioDeviceConfig config{sample_rate, 0, channels, buffer_frames};
-            if (!alsa_outputs[slot].open(device->backend_address.data(), config, render_audio, &audio_render_contexts[slot], sample_format)) {
-                const std::string message = alsa_outputs[slot].last_error().empty() ? "unable to start ALSA output" : std::string(alsa_outputs[slot].last_error());
-                alsa_outputs[slot].close();
-                for (auto& input : audio_inputs) input.ring.set_reader_active(slot, false);
-                error("audio", message); continue;
-            }
-            const auto actual_output=alsa_outputs[slot].status().config;
-            const bool rate_conversion=actual_output.sample_rate!=stageforge::canonical_audio_sample_rate;
-            const bool channel_conversion=actual_output.output_channels!=2;
-            const bool format_conversion=alsa_outputs[slot].sample_format()!="FLOAT_LE";
-            if((rate_conversion&&(conversion_flags&1U)==0)||(channel_conversion&&(conversion_flags&2U)==0)||(format_conversion&&(conversion_flags&4U)==0)||static_cast<double>(actual_output.frames_per_buffer)*stageforge::canonical_audio_sample_rate/actual_output.sample_rate>8192.0||!alsa_outputs[slot].start()){
-                alsa_outputs[slot].close();for(auto& input:audio_inputs)input.ring.set_reader_active(slot,false);error("audio","configured ALSA output parameters exceed engine bounds");continue;
-            }
-            audio_render_contexts[slot].expected_sample_rate.store(actual_output.sample_rate,std::memory_order_relaxed);
-            execution_audio_backends[slot] = "alsa";
-            ok(std::string("slot=") + std::to_string(slot) + " execution=alsa running=1 device=" + selected_audio_outputs[slot] + " output=" + std::to_string(output_index) + " actualRate=" + std::to_string(actual_output.sample_rate) + " actualPeriodFrames=" + std::to_string(actual_output.frames_per_buffer) + " actualChannels=" + std::to_string(actual_output.output_channels) + " actualFormat=" + std::string(alsa_outputs[slot].sample_format()));
-            continue;
-        }
-        if (command == "AUDIO_DEACTIVATE" && (parts.size() == 1 || parts.size() == 2)) {
-            std::size_t slot = 0;
-            if (parts.size() == 2 && (!parse_number(parts[1], slot) || slot >= kAudioOutputSlots)) { error("argument", "invalid audio output slot"); continue; }
-            alsa_outputs[slot].close();
-            execution_audio_backends[slot] = slot == 0 ? "null-audio" : "none";
-            for (auto& input : audio_inputs) input.ring.set_reader_active(slot, false);
-            ok(std::string("slot=") + std::to_string(slot) + " execution=" + execution_audio_backends[slot] + " running=0");
-            continue;
-        }
-        if (command == "AUDIO_STREAM_STATUS" && (parts.size() == 1 || parts.size() == 2)) {
-            std::size_t slot = 0;
-            if (parts.size() == 2 && (!parse_number(parts[1], slot) || slot >= kAudioOutputSlots)) { error("argument", "invalid audio output slot"); continue; }
-            const auto stream = alsa_outputs[slot].status();
-            const auto requested = alsa_outputs[slot].requested_config();
-            const bool alsa = execution_audio_backends[slot] == "alsa";
-            std::uint64_t fanout_dropped = 0, fanout_underruns = 0, fanout_queued = 0;
-            for (const auto& input : audio_inputs) {
-                fanout_dropped += input.ring.dropped(slot);
+               …5114 tokens truncated…       fanout_dropped += input.ring.dropped(slot);
                 fanout_underruns += input.ring.underruns(slot);
                 fanout_queued += input.ring.queued(slot);
             }
@@ -2553,4 +2328,3 @@ int main(int argc, char** argv) {
     audio.close();
     return 0;
 }
-
