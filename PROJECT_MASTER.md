@@ -4,15 +4,15 @@
 
 ## Current baseline
 
-- Repository: `colinatwood/stageforge`
+- Repository: `colinatwood/stagemesh`
 - Canonical branch: `main`
 - Baseline commit when this master file was introduced: `e79d8a1fbb9a3eb976cd325dbadb58cc51c457e6`
-- Baseline milestone: **Checkpoint 85 — bridge native target-OS devices into full engine**
+- Baseline milestone: **Checkpoint 85 — bridge native target-OS devices into full engine (incomplete in current tree)**
 - Repository README states that recovered Checkpoint 69 engine/backend/frontend/schemas/packaging/tests are consolidated with Checkpoint 70–83 platform work, with Checkpoint 84 documenting recovery provenance/integration limits.
 
 ## Latest completed work
 
-Checkpoint 85 was merged to `main`. The full engine now bridges target-OS audio/MIDI device enumeration through the native device monitor and carries privacy-preserving hashed identity metadata across the engine boundary. The checkpoint includes full-engine target-OS enumeration qualification and tests that reject leaked/malformed identity metadata.
+Checkpoint 85 was documented as merged to `main`, but the current tree does not contain the native bridge implementation required by its CMake configuration. The full-engine target-OS bridge therefore cannot currently configure or build in CI. The privacy-preserving identity contracts and related tests are present, but the native bridge qualification is not reproducible from this checkout.
 
 Recent checkpoint-85 commits include:
 
@@ -60,17 +60,17 @@ Use this file to prevent progress loss when a ChatGPT/project session reaches it
 
 ## Next-session handoff
 
-At this baseline, start from Checkpoint 85 on `main`. Before implementing the next checkpoint, inspect current backlog/remaining-data documents and recent GitHub history so the next task is derived from repository state rather than remembered chat context.
+At this baseline, restore the missing native bridge sources referenced by `native/devices.cmake` (`platform_audio_bridge.cpp` and `platform_audio_bridge_smoke.cpp`), then rerun the Windows/macOS native and full-tree CI gates. Only after those builds are green should the next checkpoint be started.
 
 When advancing the project, replace this handoff section with:
 
-- **Current checkpoint:**
-- **Branch / PR:**
-- **Last known-good commit:**
-- **Tests run / result:**
-- **What changed:**
-- **Open blockers / external evidence needed:**
-- **Exact next action:**
+- **Current checkpoint:** Checkpoint 85, native bridge incomplete in repository
+- **Branch / PR:** `main`, PR #29 merged
+- **Last known-good commit:** `8c01236`
+- **Tests run / result:** 29 focused Python ownership/media/playback tests pass; native CI configuration fails because two bridge sources are missing
+- **What changed:** Restored temporary ownership manifest imports and merged the fix
+- **Open blockers / external evidence needed:** Restore `native/platform_audio_bridge.cpp` and `native/platform_audio_bridge_smoke.cpp`; then rerun native CI
+- **Exact next action:** Recover the missing bridge implementation from the Checkpoint 85 source change or reconstruct it from its public interface and tests
 
 ## Backup policy
 
