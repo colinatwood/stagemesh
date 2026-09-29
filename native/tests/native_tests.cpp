@@ -1771,4 +1771,3 @@ int main() {
     test_notation_quantizer();
     return 0;
 }
-
