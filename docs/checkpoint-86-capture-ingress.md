@@ -1,4 +1,4 @@
-# Checkpoint 86: shared capture ingress (in progress)
+# Checkpoint 86: shared capture ingress (integration boundary recorded)
 
 The engine's ALSA capture callback and DAW record queue previously shared an
 inlined handoff in `engine_main.cpp`. That handoff is now factored into
@@ -14,6 +14,30 @@ The native endpoint capture adapter remains separate from this engine path.
 native capture stream callbacks are not connected to the full engine. The native
 capture evidence continues to report `fullEngineIntegrated: false`. No platform,
 endpoint or recording-quality claim changes here.
+
+## Integration boundary found after Checkpoint 86
+
+The next step cannot safely be implemented as a callback-only hookup:
+
+- `NativeEndpointStream` is owner-thread controlled. Windows capture requires
+  its owner thread to pump the WASAPI event handle; `service()` also reconciles
+  the selected-device execution fence and stops native I/O after revocation.
+- The engine command loop currently blocks on `std::getline`. It has no
+  continuously serviced owner loop for a native stream.
+- Windows/macOS selection must be pinned from the live `DeviceMonitor` records
+  and armed through `DeviceExecutionFence`. `AudioDeviceManager` currently
+  exports hashed endpoint tokens but discards the records needed to build and
+  maintain that authority.
+
+The integration therefore needs an engine-owned control/service loop that
+preserves owner-thread stream operations, feeds the shared bounded ingress,
+reconciles topology changes, and reports activation/deactivation safely. A
+callback that directly calls the helper without this lifecycle would leave
+Windows event packets unserviced and could keep stale device authority armed.
+The current Linux environment has no CMake or Windows/macOS SDK, so target-OS
+compilation and event-pump verification are unavailable here. Treat the
+full-engine hookup as blocked until that loop is designed and target-OS build
+validation can run; do not change `fullEngineIntegrated` evidence meanwhile.
 
 ## Validation on this branch
 
@@ -31,7 +55,8 @@ endpoint or recording-quality claim changes here.
 
 ## Next action
 
-Connect `NativeCaptureStream` to the shared engine ingress path, preserve its
-owner-thread service and selected-device execution fence, and verify Windows and
-macOS builds before updating the native integration evidence. Keep accessible
+Design and test an engine-owned native capture control/service loop, then connect
+`NativeCaptureStream` to `submit_capture_packet` through its bounded callback.
+Preserve the selected-device fence and owner-thread lifecycle, and verify Windows
+and macOS builds before updating native integration evidence. Keep accessible
 endpoint and named-device recording-quality qualification separate.
