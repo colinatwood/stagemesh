@@ -59,6 +59,9 @@
 #if defined(_WIN32) || defined(__APPLE__)
 #include "native_capture.h"
 #endif
+#if defined(_WIN32) || defined(__APPLE__)
+#include "native_capture.h"
+#endif
 
 #include <algorithm>
 #include <atomic>
@@ -307,26 +310,26 @@ struct EngineAudioRenderContext {
 };
 
 void capture_audio_packet(void* raw, const float* interleaved, std::uint32_t frames,
-                          std::uint32_t channels, bool discontinuity) noexcept {
+                          std::uint32_t channels, const stageforge::CapturePacketInfo& info) noexcept {
     const auto started=std::chrono::steady_clock::now();
     auto* state = static_cast<EngineAudioInputState*>(raw);
     if (!state)return;
     const auto result=stageforge::submit_capture_packet(
         state->ring,state->daw_recording,state->recording_track,state->recording_sequence,
-        state->recording_frame,state->recording_generation,interleaved,frames,channels,discontinuity);
+        state->recording_frame,state->recording_generation,interleaved,frames,channels,info);
     const auto duration=static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now()-started).count());
     state->audit.finish(frames,result.blocks,result.rejected,result.nonfinite_samples,duration);
 }
 
 void capture_audio(void* raw, const float* interleaved, std::uint32_t frames, std::uint32_t channels) noexcept {
-    capture_audio_packet(raw,interleaved,frames,channels,false);
+    capture_audio_packet(raw,interleaved,frames,channels,stageforge::CapturePacketInfo{});
 }
 
 #if defined(_WIN32) || defined(__APPLE__)
 void capture_native_audio(const float* interleaved, std::uint32_t frames,
                           std::uint32_t channels, const stageforge::CapturePacketInfo& info,
                           void* raw) noexcept {
-    capture_audio_packet(raw,interleaved,frames,channels,info.discontinuity);
+    capture_audio_packet(raw,interleaved,frames,channels,info);
 }
 #endif
 
