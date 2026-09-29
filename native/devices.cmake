@@ -12,7 +12,9 @@ add_library(stageforge_devices
   audio_conversion.cpp
   software_audio_render.cpp
   native_endpoint_stream.cpp)
-target_include_directories(stageforge_devices PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(stageforge_devices PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 if(WIN32)
   include(CheckCXXSourceCompiles)
