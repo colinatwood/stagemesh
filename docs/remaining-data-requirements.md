@@ -6,7 +6,7 @@ Checkpoint 84 restores the full Checkpoint 69 source alongside the newer GitHub 
 | --- | --- |
 | AUD-035/036, DEV-033/034 integration | Implementation and tests connecting the recovered shared runtime fencing and conversion code to the newer native streams; source is now available. |
 | Windows endpoint validation | A Windows host with an accessible audio endpoint. GitHub-hosted runs currently report zero playback/capture endpoints. Native MIDI enumeration sees one endpoint, but no PnP event was observed. |
-| Capture integration and qualification | The Python `CaptureDrainer`/native record-queue bridge has software lifetime, bounded-drain, dropout, and failure-path coverage in `tests/test_daw_capture.py`. The native capture evidence still reports `fullEngineIntegrated: false`; wiring the native capture callback/buffer lifetime into the full engine and testing that boundary remains open. Windows live capture needs an accessible endpoint, and physical recording quality needs a separate named-device environment. |
+| Capture integration and qualification | The Python `CaptureDrainer`/native record-queue bridge has software lifetime, bounded-drain, dropout, and failure-path coverage in `tests/test_daw_capture.py`. Checkpoint 86 factors the engine's non-blocking ring/recording-queue handoff into `native/include/stageforge/capture_ingress.hpp`, used by the ALSA callback and covered for samples, generations, discontinuities, non-finite values, and disarmed rejection. The platform `NativeCaptureStream` callback is not yet connected to that full-engine path; native evidence still reports `fullEngineIntegrated: false`. Windows live capture needs an accessible endpoint, and physical recording quality needs a separate named-device environment. |
 | AUD-034 | Recovered conversion implementation is available; an accepted reference-signal/measurement envelope is still required. No invented quality figures. |
 | UX-035 | Recovered frontend/operator workflows are available; a selected assistive-technology environment is still required. |
 | PKG-033/034 | Recovered package source and qualifier are available; build package artifacts and run on a clean target host with the required device namespaces. |
@@ -20,3 +20,6 @@ These are limits on completing the corresponding acceptance criteria. They do
 not turn hosted software tests into physical hardware or product qualification.
 The four software rows remain In Progress; existing qualification/decision
 statuses are preserved until their evidence or owner decisions are supplied.
+
+Checkpoint 86's partial capture-ingress implementation and current verification
+boundary are recorded in [checkpoint-86-capture-ingress.md](checkpoint-86-capture-ingress.md).
