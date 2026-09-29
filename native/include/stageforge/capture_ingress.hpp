@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cmath>
 #include <cstdint>
+#include "stageforge/capture_packet_info.hpp"
 
 namespace stageforge {
 
@@ -58,6 +59,22 @@ CaptureIngressResult submit_capture_packet(
         if (!recording->submit(recording_track, block)) ++result.rejected;
     }
     return result;
+}
+
+template <class Ring, class RecordingQueue>
+CaptureIngressResult submit_capture_packet(
+    Ring& ring,
+    RecordingQueue* recording,
+    std::size_t recording_track,
+    std::atomic<std::uint64_t>& sequence,
+    std::atomic<std::uint64_t>& show_frame,
+    const std::atomic<std::uint64_t>& generation,
+    const float* interleaved,
+    std::uint32_t frames,
+    std::uint32_t channels,
+    const CapturePacketInfo& info) noexcept {
+    return submit_capture_packet(ring, recording, recording_track, sequence, show_frame,
+        generation, interleaved, frames, channels, info.discontinuity);
 }
 
 } // namespace stageforge
