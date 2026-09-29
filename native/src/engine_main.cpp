@@ -49,6 +49,7 @@
 #include "stageforge/realtime_audit.hpp"
 #include "stageforge/realtime_qualification.hpp"
 #include "stageforge/capture_ingress_audit.hpp"
+#include "stageforge/capture_ingress.hpp"
 #include "stageforge/lighting_ingress_audit.hpp"
 #include "stageforge/monitor_bus.hpp"
 #include "stageforge/monitor_graph_router.hpp"
@@ -306,10 +307,11 @@ void capture_audio(void* raw, const float* interleaved, std::uint32_t frames, st
     const auto started=std::chrono::steady_clock::now();
     auto* state = static_cast<EngineAudioInputState*>(raw);
     if (!state)return;
-    state->ring.push_interleaved(interleaved, frames, channels);
-    std::uint64_t blocks=0,rejected=0,nonfinite=0;
-    if(state->daw_recording&&interleaved&&channels>0)for(std::uint32_t offset=0;offset<frames;offset+=256){const auto amount=std::min<std::uint32_t>(256,frames-offset);stageforge::DawRecordingQueue<8,256,64>::Block block{};block.generation=state->recording_generation.load(std::memory_order_acquire);block.sequence=state->recording_sequence.fetch_add(1)+1;block.show_frame=state->recording_frame.fetch_add(amount);block.frames=amount;for(std::uint32_t i=0;i<amount;++i){const float raw_left=interleaved[(offset+i)*channels],raw_right=channels>1?interleaved[(offset+i)*channels+1]:raw_left;block.left[i]=std::isfinite(raw_left)?raw_left:0.0F;block.right[i]=std::isfinite(raw_right)?raw_right:0.0F;nonfinite+=(!std::isfinite(raw_left)?1U:0U)+(!std::isfinite(raw_right)?1U:0U);}blocks++;if(!state->daw_recording->submit(state->recording_track,block))rejected++;}
-    const auto duration=static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now()-started).count());state->audit.finish(frames,blocks,rejected,nonfinite,duration);
+    const auto result=stageforge::submit_capture_packet(
+        state->ring,state->daw_recording,state->recording_track,state->recording_sequence,
+        state->recording_frame,state->recording_generation,interleaved,frames,channels);
+    const auto duration=static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now()-started).count());
+    state->audit.finish(frames,result.blocks,result.rejected,result.nonfinite_samples,duration);
 }
 
 struct EngineEffectProcessContext { stageforge::CoreEffectChain<16>* chain; std::uint64_t show_ns; };
