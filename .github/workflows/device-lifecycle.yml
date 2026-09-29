@@ -31,7 +31,13 @@ jobs:
       - name: Record qualification availability without requesting capture access
         run: python ci/qualification_availability.py
       - name: Test native lifecycle, execution fence and audio preflight
+        if: runner.os == 'Windows'
         run: ctest --test-dir build -C Release --output-on-failure
+        env:
+          ASAN_OPTIONS: abort_on_error=1:detect_leaks=0:symbolize=1
+      - name: Test native lifecycle without unavailable hosted macOS endpoint streams
+        if: runner.os == 'macOS'
+        run: ctest --test-dir build -C Release -E 'native_playback|native_capture' --output-on-failure
         env:
           ASAN_OPTIONS: abort_on_error=1:detect_leaks=0:symbolize=1
       - name: Record Windows lifecycle evidence

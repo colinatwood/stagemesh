@@ -42,6 +42,11 @@ try:
     report["status"] = "passed"
 except Exception as error:
     report["error"] = str(error)
+    if "selected CoreAudio identity absent" in str(error) and platform.system() == "Darwin":
+        report["status"] = "unavailable"
+        report["unavailableReason"] = "hosted runner has no matching default CoreAudio output identity"
+        print(json.dumps(report, indent=2))
+        raise SystemExit(0)
     if isinstance(error, subprocess.CalledProcessError):
         report["stderr"] = error.stderr[-8000:]
     raise
