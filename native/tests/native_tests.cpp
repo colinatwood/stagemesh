@@ -633,7 +633,8 @@ void test_shared_capture_ingress_preserves_samples_generation_and_discontinuitie
     SF_CHECK(std::abs(block.left[2]-.3F)<.0001F&&std::abs(block.right[2]+.3F)<.0001F);
 
     const float second[]{.5F,-.5F,.6F,-.6F};
-    result=stageforge::submit_capture_packet(ring,&queue,0,sequence,frame,generation,second,2,2,true);
+    const stageforge::CapturePacketInfo discontinuity{true,false,0.0};
+    result=stageforge::submit_capture_packet(ring,&queue,0,sequence,frame,generation,second,2,2,discontinuity);
     SF_CHECK(result.blocks==1&&result.rejected==0);
     SF_CHECK(queue.pop(0,block)&&block.sequence==3&&block.show_frame==4&&block.frames==2);
     SF_CHECK(queue.status(0).sequence_gaps==1);
