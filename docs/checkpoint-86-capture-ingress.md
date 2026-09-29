@@ -15,11 +15,13 @@ native capture stream callbacks are not connected to the full engine. The native
 capture evidence continues to report `fullEngineIntegrated: false`. No platform,
 endpoint or recording-quality claim changes here.
 
-The engine now has a target-OS `CaptureReceive` adapter that forwards the native
-packet's discontinuity flag into `submit_capture_packet`, preserving recording
-sequence gaps. This is an integration seam only: no `NativeCaptureStream` is
-currently constructed by the engine, and activation/fencing/service ownership
-remain open. Linux compilation excludes this callback under platform guards.
+The packet metadata type is shared by the endpoint stream and engine ingress.
+The target-OS `CaptureReceive` adapter forwards the complete metadata object to
+`submit_capture_packet`; its discontinuity flag reserves a recording sequence
+gap. The native regression exercises that metadata overload. This is an
+integration seam only: no `NativeCaptureStream` is currently constructed by the
+engine, and activation/fencing/service ownership remain open. Linux compilation
+excludes the endpoint callback under platform guards.
 
 ## Integration boundary found after Checkpoint 86
 
@@ -52,7 +54,8 @@ validation can run; do not change `fullEngineIntegrated` evidence meanwhile.
 - `native/src/engine_main.cpp` compiled with GCC 12 in C++20 mode and
   `-Wall -Wextra -Wpedantic`.
 - The native C++ test executable passed with the shared capture ingress tests.
-- The target-OS callback adapter is not compiled by this Linux run; a Windows or
+- The packet-metadata ingress overload is covered by native C++ tests. The
+  target-OS callback binding is not compiled by this Linux run; a Windows or
   macOS engine build remains required to verify its API binding.
 - `tests/test_daw_capture.py`: 8 tests passed with the manually built engine.
 - The full Python suite ran all 676 tests: 667 passed, 9 failed in existing
