@@ -2997,7 +2997,7 @@ class StageForgeRuntime:
         }
 
     def _refresh_failover_audio_telemetry(self) -> None:
-        if self._promotion_at_ns is None or not self.native.available:
+        if self._promotion_at_ns is None:
             return
         try:
             outputs = self.audio_outputs_status().get("outputs", [])
