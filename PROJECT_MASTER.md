@@ -63,13 +63,13 @@ Use this file to prevent progress loss when a ChatGPT/project session reaches it
 
 ## Next-session handoff
 
-- **Current checkpoint:** Checkpoint 86 in progress: shared capture ingress helper is implemented and tested; target-OS capture callback integration remains open
+- **Current checkpoint:** Checkpoint 86 integration boundary recorded: shared capture ingress helper is implemented and tested; target-OS capture callback integration needs an engine-owned owner-thread service/control loop
 - **Branch / PR:** `checkpoint-86-capture-integration-backlog` based on `main`; PRs #29–#34 merged, no PR opened for Checkpoint 86 per owner direction
 - **Last known-good commit:** `e5684a3` (PR #34; 676 Python tests and three named CI workflows passed)
 - **What changed:** PR #34 records the green software-validation baseline. Checkpoint 86 extracts the engine's capture-ring/recording-queue handoff into a reusable, non-blocking helper and tests generation, sequence-gap, sample, non-finite, ring, and disarmed-queue behavior.
 - **Checkpoint 86 verification:** Manually compiled native test executable and engine translation unit pass; all 8 DAW capture Python tests pass. The full 676-test Python run had 9 failures in temporary-resource process-lifetime tests and one skip in this environment. CMake is unavailable here, and Windows/macOS platform builds have not run. Details: `docs/checkpoint-86-capture-ingress.md`.
 - **Open blockers / external evidence needed:** Physical audio/MIDI qualification, deployed LAN/TLS/IdP qualification, licensed plugin fixtures, clean-host/Linux release qualification, assistive-technology exercise, owner license decisions, and independent-host evidence. See `docs/remaining-data-requirements.md` for the complete list.
-- **Exact next action:** Connect the Windows/macOS `NativeCaptureStream` callback to the shared engine ingress path, with selected-device fencing and regular owner-thread service, then run Windows/macOS platform builds and tests. Preserve the separate accessible-endpoint and named-device recording-quality gates; native capture evidence currently reports `fullEngineIntegrated: false`.
+- **Exact next action:** Design and test an engine-owned native capture control/service loop, then connect the Windows/macOS `NativeCaptureStream` callback to the shared ingress with selected-device fencing and regular owner-thread service. Validate on Windows/macOS before changing native capture evidence, which still reports `fullEngineIntegrated: false`. Preserve the separate accessible-endpoint and named-device recording-quality gates. Current Linux environment lacks CMake and target-OS SDKs/runners, so full-engine target-OS integration is the present validation hard block.
 
 ## Backup policy
 
