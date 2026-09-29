@@ -8,11 +8,14 @@
 - Canonical branch: `main`
 - Baseline commit when this master file was introduced: `e79d8a1fbb9a3eb976cd325dbadb58cc51c457e6`
 - Baseline milestone: **Checkpoint 85 — target-OS device discovery integration (native bridge smoke lane deferred)**
+- Latest main baseline: `e5684a3` — PR #34 records 676 passing Python tests with the native engine configured; its three named CI runs passed.
 - Repository README states that recovered Checkpoint 69 engine/backend/frontend/schemas/packaging/tests are consolidated with Checkpoint 70–83 platform work, with Checkpoint 84 documenting recovery provenance/integration limits.
 
 ## Latest completed work
 
 Checkpoint 85 was documented as merged to `main`. The full engine consumes the native `DeviceMonitor` through `AudioDeviceManager` and exports only hashed target-OS identity metadata. The separately named platform bridge smoke lane was absent, so its orphaned CMake references were removed; native device-monitor qualification remains the authoritative coverage.
+
+PR #34 records a green validation baseline: 676 Python tests with the native engine configured and passing StageForge Platform Modules, StageForge Native Device Lifecycle, and StageForge CI workflow runs.
 
 Recent checkpoint-85 commits include:
 
@@ -60,17 +63,12 @@ Use this file to prevent progress loss when a ChatGPT/project session reaches it
 
 ## Next-session handoff
 
-At this baseline, preserve the green CI state and begin the next explicitly scoped product checkpoint or hardware-backed qualification effort.
-
-When advancing the project, replace this handoff section with:
-
 - **Current checkpoint:** Checkpoint 85, target-OS discovery integrated; dedicated bridge smoke lane deferred
-- **Branch / PR:** `main`, PRs #29–#33 merged
-- **Last known-good commit:** `bc8ce52`
-- **Tests run / result:** 676 Python tests pass with the built native engine; Linux, Windows, and macOS CI checks pass
-- **What changed:** Restored temporary ownership imports, cleaned orphaned native CMake references, fixed bridge failover gap measurement, and aligned plugin-host fixtures with platform launch contracts
-- **Open blockers / external evidence needed:** Physical audio/MIDI qualification, deployed LAN/TLS/IdP qualification, licensed plugin fixtures, and Linux-only release qualification outside this Mac
-- **Exact next action:** Start hardware-backed audio/MIDI qualification or the next explicitly scoped product checkpoint
+- **Branch / PR:** `main`, PRs #29–#34 merged
+- **Last known-good commit:** `e5684a3` (PR #34; 676 Python tests and three named CI workflows passed)
+- **What changed:** PR #34 records the green software-validation baseline; the four external qualification boundaries remain open.
+- **Open blockers / external evidence needed:** Physical audio/MIDI qualification, deployed LAN/TLS/IdP qualification, licensed plugin fixtures, clean-host/Linux release qualification, assistive-technology exercise, owner license decisions, and independent-host evidence. See `docs/remaining-data-requirements.md` for the complete list.
+- **Exact next action:** Start Checkpoint 86 by integrating native capture callback/buffer lifetime into the full engine with software boundary tests. Preserve the separate Windows endpoint and named-device recording-quality gates; native capture evidence currently reports `fullEngineIntegrated: false`.
 
 ## Backup policy
 
