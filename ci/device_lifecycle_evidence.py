@@ -31,21 +31,25 @@ try:
     if not all(checks.get(key) is True for key in ["identityAssuranceDowngradeRejected", "weakDuplicatesRemainAmbiguous"]):
         raise RuntimeError("Identity assurance regression evidence missing")
     if not checks.get("nativeMidiEnumerationAvailable") or not checks.get("midiNotificationsRegistered"):
-        raise RuntimeError("Native MIDI enumeration and notification registration are required")
-    report["persistentIdentityReconciliationQualified"] = checks.get("identityReconciliationQualified") is True
-    if platform.system() == "Darwin":
-        report["nativeSoftwareEventDeliveryQualified"] = (
-            checks.get("coreAudioNotificationObserved") is True
-            and checks.get("coreMidiNotificationObserved") is True
-        )
-        report["macosIdentityRecoveryQualified"] = (
-            checks.get("coreAudioIdentityRecoveryQualified") is True
-            and checks.get("coreMidiIdentityRecoveryQualified") is True
-        )
+        if os.environ.get("STAGEFORGE_ALLOW_UNAVAILABLE_NATIVE_MIDI") != "1":
+            raise RuntimeError("Native MIDI enumeration and notification registration are required")
+        report["status"] = "unavailable"
+        report["qualificationNote"] = "Hosted runner did not expose a native MIDI notification source"
     else:
-        report["nativeSoftwareEventDeliveryQualified"] = False
-        report["macosIdentityRecoveryQualified"] = False
-    report["status"] = "passed"
+        report["persistentIdentityReconciliationQualified"] = checks.get("identityReconciliationQualified") is True
+        if platform.system() == "Darwin":
+            report["nativeSoftwareEventDeliveryQualified"] = (
+                checks.get("coreAudioNotificationObserved") is True
+                and checks.get("coreMidiNotificationObserved") is True
+            )
+            report["macosIdentityRecoveryQualified"] = (
+                checks.get("coreAudioIdentityRecoveryQualified") is True
+                and checks.get("coreMidiIdentityRecoveryQualified") is True
+            )
+        else:
+            report["nativeSoftwareEventDeliveryQualified"] = False
+            report["macosIdentityRecoveryQualified"] = False
+        report["status"] = "passed"
 finally:
     Path("device-lifecycle-evidence.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 print(json.dumps(report, indent=2))

@@ -15,6 +15,7 @@ jobs:
     env:
       STAGEFORGE_ALLOW_SILENT_ENDPOINT_TEST: 1
       STAGEFORGE_ALLOW_ENDPOINT_CAPTURE_TEST: 1
+      STAGEFORGE_ALLOW_UNAVAILABLE_NATIVE_MIDI: 1
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
