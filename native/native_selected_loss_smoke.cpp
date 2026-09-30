@@ -29,7 +29,7 @@ struct Aggregate {
             kAudioHardwarePropertyDefaultOutputDevice : kAudioHardwarePropertyDefaultInputDevice);
         require(parent != kAudioObjectUnknown, "selected-loss fixture needs an endpoint");
         parent_uid = property<CFStringRef>(parent, kAudioDevicePropertyDeviceUID);
-        uid = CFStringCreateWithFormat(nullptr, nullptr, CFSTR("org.stageforge.selected-loss.%d.%d"), getpid(), int(direction));
+        uid = CFStringCreateWithFormat(nullptr, nullptr, CFSTR("org.stagemesh.selected-loss.%d.%d"), getpid(), int(direction));
     }
     void create() {
         auto description = CFDictionaryCreateMutable(nullptr, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
@@ -37,7 +37,7 @@ struct Aggregate {
         CFDictionarySetValue(subdevice, CFSTR(kAudioSubDeviceUIDKey), parent_uid);
         const void* values[] = {subdevice};
         auto list = CFArrayCreate(nullptr, values, 1, &kCFTypeArrayCallBacks);
-        CFDictionarySetValue(description, CFSTR(kAudioAggregateDeviceNameKey), CFSTR("StageForge Selected Loss Fixture"));
+        CFDictionarySetValue(description, CFSTR(kAudioAggregateDeviceNameKey), CFSTR("StageMesh Selected Loss Fixture"));
         CFDictionarySetValue(description, CFSTR(kAudioAggregateDeviceUIDKey), uid);
         CFDictionarySetValue(description, CFSTR(kAudioAggregateDeviceSubDeviceListKey), list);
         CFDictionarySetValue(description, CFSTR(kAudioAggregateDeviceMainSubDeviceKey), parent_uid);
