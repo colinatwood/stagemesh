@@ -1,4 +1,4 @@
-# StageForge Master Project File
+# StageMesh Master Project File
 
 > Canonical continuity record for development sessions. Git remains the source of truth; this file is the compact handoff point when chat/session context runs out.
 
@@ -8,14 +8,14 @@
 - Canonical branch: `main`
 - Baseline commit when this master file was introduced: `e79d8a1fbb9a3eb976cd325dbadb58cc51c457e6`
 - Baseline milestone: **Checkpoint 85 — target-OS device discovery integration (native bridge smoke lane deferred)**
-- Latest main baseline: `e5684a3` — PR #34 records 676 passing Python tests with the native engine configured; its three named CI runs passed.
+- Latest main baseline: `1ee20c4` — PRs #36 and #37 merged. All 10 owner-run macOS native CTests and all three GitHub workflows passed for PR #37.
 - Repository README states that recovered Checkpoint 69 engine/backend/frontend/schemas/packaging/tests are consolidated with Checkpoint 70–83 platform work, with Checkpoint 84 documenting recovery provenance/integration limits.
 
 ## Latest completed work
 
 Checkpoint 85 was documented as merged to `main`. The full engine consumes the native `DeviceMonitor` through `AudioDeviceManager` and exports only hashed target-OS identity metadata. The separately named platform bridge smoke lane was absent, so its orphaned CMake references were removed; native device-monitor qualification remains the authoritative coverage.
 
-PR #34 records a green validation baseline: 676 Python tests with the native engine configured and passing StageForge Platform Modules, StageForge Native Device Lifecycle, and StageForge CI workflow runs.
+PR #34 records a green validation baseline: 676 Python tests with the native engine configured and passing StageMesh Platform Modules, StageMesh Native Device Lifecycle, and StageMesh CI workflow runs.
 
 Recent checkpoint-85 commits include:
 
@@ -63,13 +63,15 @@ Use this file to prevent progress loss when a ChatGPT/project session reaches it
 
 ## Next-session handoff
 
-- **Current checkpoint:** Checkpoint 86 integration boundary recorded: shared capture ingress helper is implemented and tested; target-OS capture callback integration needs an engine-owned owner-thread service/control loop
-- **Branch / PR:** `checkpoint-86-capture-integration-backlog` based on `main`; PRs #29–#34 merged, no PR opened for Checkpoint 86 per owner direction
-- **Last known-good commit:** `e5684a3` (PR #34; 676 Python tests and three named CI workflows passed)
-- **What changed:** PR #34 records the green software-validation baseline. Checkpoint 86 extracts the engine's capture-ring/recording-queue handoff into a reusable, non-blocking helper and tests generation, sequence-gap, sample, non-finite, ring, and disarmed-queue behavior. A target-OS callback adapter now forwards native packet discontinuities into that helper, but the engine still does not construct or service `NativeCaptureStream`.
-- **Checkpoint 86 verification:** Manually compiled native test executable and Linux engine translation unit pass; all 8 DAW capture Python tests pass. The target-OS adapter is excluded from Linux compilation, so Windows/macOS compile/runtime validation remains open. The full 676-test Python run had 9 failures in temporary-resource process-lifetime tests and one skip in this environment. CMake is unavailable here. Details: `docs/checkpoint-86-capture-ingress.md`.
-- **Open blockers / external evidence needed:** Physical audio/MIDI qualification, deployed LAN/TLS/IdP qualification, licensed plugin fixtures, clean-host/Linux release qualification, assistive-technology exercise, owner license decisions, and independent-host evidence. See `docs/remaining-data-requirements.md` for the complete list.
-- **Exact next action:** Design and test an engine-owned native capture control/service loop, then have it construct `NativeCaptureStream` with the adapter and selected-device fencing. Reuse the same monitor/fence ownership to implement target-OS MIDI attach/poll and hotplug behavior. Validate on Windows/macOS before changing native capture evidence, which still reports `fullEngineIntegrated: false`. Preserve the separate accessible-endpoint and named-device recording-quality gates. Current Linux environment lacks CMake and target-OS SDKs/runners.
+- **Current checkpoint:** Checkpoint 86 shared capture ingress is on main. Native capture service ownership, concurrent MIDI callback ingress, SDK helpers and visible StageMesh naming are consolidated on `backlog/sdk-service-baseline`, based on `1ee20c4`. No PR is opened for this new slice.
+- **Last known-good main:** `1ee20c4` (PR #37). The owner reported 10/10 macOS native tests passing; all three GitHub workflows passed. The original Mac evidence source commit references are preserved.
+- **Native capture service:** `NativeCaptureService` owns one stream's monitor, execution fence, callback context, activation, service and close ordering. The engine now constructs and drives it on a dedicated owner thread per active input. Idle service, unique selected-token resolution and callback-drain shutdown are integrated; physical target execution remains unqualified. Details: `docs/native-engine-service-loop.md`.
+- **Native MIDI ingress:** A fixed-capacity MPMC queue handles concurrent callbacks, and `MidiInputOwner` now owns discovery, polling, attach/detach commands, periodic identity reconciliation, and shutdown on a dedicated worker. Linux tests submit 400 concurrent injections; CoreMIDI and WinMM source matching, callback delivery, close paths, and fail-closed missing-identity handling are implemented. Target callback delivery and topology-loss execution still require target hardware. Details: `docs/native-midi-callback-ingress.md`.
+- **SDK build helpers:** `scripts/build-native.sh` accepts CMake generator/toolchain/configuration arguments, keeps CTest on by default, and requires explicit opt-out for cross-builds. Older Windows SDK headers can compile without optional Configuration Manager notifications, with that availability reported separately. Details: `docs/sdk-builds.md`.
+- **Consolidation verification:** Linux engine and all Windows-target engine/device smoke executables compile and link. The Linux ABI smoke passes; the full native suite stops in an LE/UWB socket fixture under this workspace's socket restrictions. Focused capture-ingress and concurrent MIDI regressions are checked separately. Cross-builds are compile/link evidence only; Windows/macOS runtime qualification of this newer service/MIDI slice remains outstanding.
+- **Naming:** Visible project, frontend, workflow, artifact and archive labels use StageMesh. Existing `STAGEFORGE_*` configuration, binary targets, API symbols and include paths remain compatibility identifiers.
+- **Exact next action:** Run the new engine capture and MIDI owners on Windows/macOS: activate a selected input, leave stdin idle, verify packets arrive, detach the endpoint and verify disarm, then exercise MIDI attach/callback/topology loss and deactivate/restart/quit while callbacks run. Target execution is required before claiming full integration. Preserve `fullEngineIntegrated: false` until integration is validated; native component tests do not establish physical recording quality.
+- **External evidence still needed:** Physical audio/MIDI, deployed LAN/TLS/IdP, licensed plugin fixtures, clean-host release qualification, assistive-technology exercise, owner license decisions and independent-host evidence. See `docs/remaining-data-requirements.md`.
 
 ## Backup policy
 

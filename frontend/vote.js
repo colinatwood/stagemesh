@@ -14,7 +14,7 @@
     $('expires').textContent = data.invitation.expiresAt ? new Date(data.invitation.expiresAt).toLocaleString() : 'not issued';
     $('hype').textContent = Number(data.hype).toFixed(3);
     $('durable').textContent = Number(data.durableFraction).toFixed(3);
-    setStatus(data.requiresAuthenticatedAccount ? 'This invitation must be used while signed into the matching StageForge account.' : 'Development token-only voting is enabled.');
+    setStatus(data.requiresAuthenticatedAccount ? 'This invitation must be used while signed into the matching StageMesh account.' : 'Development token-only voting is enabled.');
   }
 
   document.querySelectorAll('[data-choice]').forEach(button => button.addEventListener('click', async () => {
