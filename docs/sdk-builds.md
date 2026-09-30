@@ -25,3 +25,16 @@ STAGEFORGE_BUILD_DIR=build-mingw STAGEFORGE_SKIP_TESTS=1 \
 as Visual Studio (`Release`, for example). Native runtime tests remain required
 on a matching Windows or macOS runner; a successful cross-build is compile and
 link evidence only.
+
+## Packaging
+
+The root build installs `stageforge_engine`, the core/device libraries, and both
+public include trees. CPack produces a deterministic package name containing the
+StageMesh version, target OS, and architecture:
+
+```sh
+cmake --build build --target package
+```
+
+Packaging proves artifact assembly only. It does not claim native device access,
+callback delivery, or physical qualification on the packaging host.
