@@ -32,9 +32,9 @@ void collect(NativePlaybackStream& stream, const DeviceExecutionFence& fence) {
 struct TopologyFixture {
     AudioDeviceID device = kAudioObjectUnknown;
     TopologyFixture() {
-        auto uid = CFStringCreateWithFormat(nullptr, nullptr, CFSTR("org.stageforge.playback-event.%d"), getpid());
+        auto uid = CFStringCreateWithFormat(nullptr, nullptr, CFSTR("org.stagemesh.playback-event.%d"), getpid());
         auto description = CFDictionaryCreateMutable(nullptr, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-        CFDictionarySetValue(description, CFSTR(kAudioAggregateDeviceNameKey), CFSTR("StageForge Playback Event"));
+        CFDictionarySetValue(description, CFSTR(kAudioAggregateDeviceNameKey), CFSTR("StageMesh Playback Event"));
         CFDictionarySetValue(description, CFSTR(kAudioAggregateDeviceUIDKey), uid);
         auto status = AudioHardwareCreateAggregateDevice(description, &device);
         CFRelease(description); CFRelease(uid);
