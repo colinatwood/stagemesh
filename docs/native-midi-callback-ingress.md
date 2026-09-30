@@ -31,7 +31,9 @@ handles on the owner before the manager is destroyed.
 
 The engine uses this owner for MIDI scan/device/attach/detach/poll/inject paths;
 event routing drains the queue on the engine thread. Linux owner tests cover four
-concurrent producers and 400 callback-safe injections. Target Windows/macOS
-physical handle attach remains the next qualification step: enumeration is
-identity-safe, but native callback hookup still requires target SDK/hardware
-execution and must not be inferred from a cross-build.
+concurrent producers and 400 callback-safe injections. CoreMIDI now resolves the
+hashed source identity, connects an input port, parses packet-list bytes and
+disconnects before the owner releases the port. Windows WinMM physical callback
+attach remains the next qualification step: enumeration is identity-safe, but
+legacy interface hookup requires target SDK/hardware execution and must not be
+inferred from a cross-build.

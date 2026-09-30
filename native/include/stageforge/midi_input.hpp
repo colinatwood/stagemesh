@@ -168,14 +168,19 @@ public:
     [[nodiscard]] std::size_t queued() const noexcept { return queue_.size_approx(); }
     [[nodiscard]] MidiIngressAuditStatus audit_status() const noexcept;
 
-private:
+public:
     struct DeviceSlot {
         MidiDeviceDescriptor descriptor{};
         std::array<char, 64> player_id{};
         MidiByteParser parser{};
         int handle{-1};
+        std::array<char, 128> native_hash{};
+        std::uintptr_t native_source{0};
+        MidiInputManager* owner{nullptr};
         bool attached{false};
     };
+
+private:
 
     [[nodiscard]] DeviceSlot* find_slot(std::string_view device_id) noexcept;
     [[nodiscard]] const DeviceSlot* find_slot(std::string_view device_id) const noexcept;
@@ -188,6 +193,7 @@ private:
     std::size_t device_count_{0};
     BoundedMpmcQueue<CapturedMidiInput, queue_capacity> queue_{};
     std::atomic<std::uint64_t> audit_polls_{0},audit_bytes_{0},audit_messages_{0},audit_queue_drops_{0},audit_injected_{0},audit_max_poll_ns_{0};
+    std::uintptr_t native_client_{0}, native_port_{0};
 };
 
 } // namespace stageforge
