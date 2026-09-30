@@ -1,4 +1,4 @@
-name: StageForge Release Artifacts
+name: StageMesh Release Artifacts
 
 on:
   workflow_dispatch:
@@ -34,11 +34,11 @@ jobs:
           DESTDIR="$PWD/dist/rootfs" STAGEFORGE_BUILD_DIR="$PWD/build" ./scripts/install-linux.sh
       - name: Create archive and checksums
         run: |
-          tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner -C dist/rootfs -czf dist/stageforge-linux.tar.gz .
-          sha256sum dist/stageforge-linux.tar.gz > dist/SHA256SUMS
+          tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner -C dist/rootfs -czf dist/stagemesh-linux.tar.gz .
+          sha256sum dist/stagemesh-linux.tar.gz > dist/SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
-          name: stageforge-linux-${{ github.sha }}
+          name: stagemesh-linux-${{ github.sha }}
           path: dist/
           if-no-files-found: error
           retention-days: 90

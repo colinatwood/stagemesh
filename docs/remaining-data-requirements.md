@@ -14,7 +14,7 @@ Checkpoint 84 restores the full Checkpoint 69 source alongside the newer GitHub 
 | SEC-040 | Actual deployment URL, TLS/proxy/IdP/firewall configuration and authorized workload/failure-injection environment. |
 | PLUG-033, PLUG-035/036/038 | Selected product/version/OS/architecture matrix, licensed fixtures and permission to run the qualification cases. |
 | LEGAL-001, PLUG-037 | Owner-approved license and fixture redistribution/automation terms. Apache-2.0 exists in this repository; owner approval covering recovered source and final packaged notices is not established. |
-| DEV-035, LIVE-033, HW-033/034/035/036 | Named devices, physical routing/loopback or controller/RF environments, and agreed timing/audible measurement conditions. |
+| DEV-035, LIVE-033, HW-033/034/035/036 | Named devices, physical routing/loopback or controller/RF environments, and agreed timing/audible measurement conditions. Native CoreMIDI/WinMM callback delivery and topology-loss behavior also need target-host evidence. |
 
 These are limits on completing the corresponding acceptance criteria. They do
 not turn hosted software tests into physical hardware or product qualification.

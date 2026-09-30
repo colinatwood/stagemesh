@@ -17,6 +17,9 @@
 #ifndef STAGEFORGE_HAS_AUDIOENDPOINT_STABLEID
 #define STAGEFORGE_HAS_AUDIOENDPOINT_STABLEID 0
 #endif
+#ifndef STAGEFORGE_HAS_CM_NOTIFY
+#define STAGEFORGE_HAS_CM_NOTIFY 0
+#endif
 #else
 #include <CoreAudio/CoreAudio.h>
 #include <CoreMIDI/CoreMIDI.h>
@@ -61,9 +64,11 @@ private:
     HRESULT changed() { topology_revision.fetch_add(1, std::memory_order_relaxed); return S_OK; }
 };
 Notifications notifications;
+#if STAGEFORGE_HAS_CM_NOTIFY
 DWORD CALLBACK pnp_changed(HCMNOTIFICATION, PVOID, CM_NOTIFY_ACTION, PCM_NOTIFY_EVENT_DATA, DWORD) {
     topology_revision.fetch_add(1, std::memory_order_relaxed); return ERROR_SUCCESS;
 }
+#endif
 
 DeviceRecord windows_midi_record(UINT index, bool input) {
     const auto message = [&](UINT msg, DWORD_PTR first, DWORD_PTR second) {
@@ -95,6 +100,7 @@ DeviceRecord windows_midi_record(UINT index, bool input) {
     const std::string direction = input ? ":input:" : ":output:";
     DeviceRecord record;
     record.kind = DeviceKind::Midi; record.input = input; record.output = !input;
+    record.native_index = index;
     if (!interface_name.empty()) {
         record.native_hash = sha256_token("winmm-native" + direction + interface_name + ":" + std::to_string(index));
         record.persistent_hash = sha256_token("winmm-installation" + direction + interface_name);
@@ -289,6 +295,7 @@ void DeviceMonitor::start() {
     try {
         checked(impl_->enumerator->RegisterEndpointNotificationCallback(&notifications), "register notifications");
         impl_->audio_registered = true;
+#if STAGEFORGE_HAS_CM_NOTIFY
         CM_NOTIFY_FILTER filter{};
         filter.cbSize = sizeof(filter); filter.FilterType = CM_NOTIFY_FILTER_TYPE_DEVICEINTERFACE;
         // All interface classes avoids missing vendor-specific MIDI interfaces.
@@ -296,6 +303,7 @@ void DeviceMonitor::start() {
         filter.Flags = CM_NOTIFY_FILTER_FLAG_ALL_INTERFACE_CLASSES;
         auto status = CM_Register_Notification(&filter, nullptr, pnp_changed, &impl_->midi_notification);
         if (status != CR_SUCCESS) throw std::runtime_error("register MIDI PnP notifications: " + std::to_string(status));
+#endif
     } catch (...) { stop(); throw; }
 #else
     try {
@@ -310,11 +318,13 @@ void DeviceMonitor::start() {
 void DeviceMonitor::stop() {
     impl_->check_thread();
 #ifdef _WIN32
+#if STAGEFORGE_HAS_CM_NOTIFY
     if (impl_->midi_notification) {
         auto status = CM_Unregister_Notification(impl_->midi_notification);
         if (status != CR_SUCCESS) throw std::runtime_error("unregister MIDI PnP notifications: " + std::to_string(status));
         impl_->midi_notification = nullptr;
     }
+#endif
     if (impl_->audio_registered) {
         checked(impl_->enumerator->UnregisterEndpointNotificationCallback(&notifications), "unregister notifications");
         impl_->audio_registered = false;

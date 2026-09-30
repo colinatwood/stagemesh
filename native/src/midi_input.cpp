@@ -13,6 +13,14 @@
 #include <unistd.h>
 #elif defined(_WIN32) || defined(__APPLE__)
 #include "device_monitor.h"
+#if defined(__APPLE__)
+#include <CoreMIDI/CoreMIDI.h>
+#include <mach/mach_time.h>
+#endif
+#if defined(_WIN32)
+#include <windows.h>
+#include <mmsystem.h>
+#endif
 #endif
 
 namespace stageforge {
@@ -57,6 +65,39 @@ std::string target_midi_identity(const DeviceRecord& record, std::string_view ba
         ";persistent=" + record.persistent_hash +
         ";strength=" + identity_strength_name(record.identity_strength) +
         ";auto=" + (record.automatic_reconnect ? "1" : "0");
+}
+#endif
+
+#if defined(__APPLE__)
+void coremidi_read(const MIDIPacketList* packets, void* refcon, void*) {
+    auto* slot = static_cast<MidiInputManager::DeviceSlot*>(refcon);
+    if (!slot || !slot->owner) return;
+    auto timestamp = static_cast<std::uint64_t>(mach_absolute_time());
+    const MIDIPacket* packet = &packets->packet[0];
+    for (UInt32 packet_index = 0; packet_index < packets->numPackets; ++packet_index) {
+        MidiByteParser parser = slot->parser;
+        for (UInt16 byte_index = 0; byte_index < packet->length; ++byte_index) {
+            MidiInputMessage message{};
+            if (!parser.feed(packet->data[byte_index], timestamp, message)) continue;
+            (void)slot->owner->capture_callback(slot->descriptor.id.data(), slot->player_id.data(), message);
+        }
+        slot->parser = parser;
+        packet = MIDIPacketNext(packet);
+    }
+}
+#endif
+
+#if defined(_WIN32)
+void CALLBACK winmm_read(HMIDIIN, UINT message, DWORD_PTR instance, DWORD_PTR packed, DWORD_PTR timestamp) {
+    if (message != MIM_DATA) return;
+    auto* slot = reinterpret_cast<MidiInputManager::DeviceSlot*>(instance);
+    if (!slot || !slot->owner) return;
+    MidiInputMessage parsed{static_cast<std::uint64_t>(timestamp),
+        static_cast<std::uint8_t>(packed & 0xffu),
+        static_cast<std::uint8_t>((packed >> 8) & 0x7fu),
+        static_cast<std::uint8_t>((packed >> 16) & 0x7fu)};
+    if ((parsed.status & 0x80u) != 0u && (parsed.status & 0xf0u) != 0xf0u)
+        slot->owner->capture_callback(slot->descriptor.id.data(), slot->player_id.data(), parsed);
 }
 #endif
 
@@ -155,9 +196,16 @@ bool MidiByteParser::feed(std::uint8_t byte, std::uint64_t show_time_ns, MidiInp
 MidiInputManager::MidiInputManager() noexcept = default;
 
 MidiInputManager::~MidiInputManager() {
-    for (std::size_t i = 0; i < device_count_; ++i) {
-        close_slot(devices_[i]);
-    }
+    deactivate();
+}
+
+void MidiInputManager::deactivate() noexcept {
+    for (std::size_t i = 0; i < device_count_; ++i) close_slot(devices_[i]);
+    device_count_ = 0;
+#if defined(__APPLE__)
+    if (native_port_) { MIDIPortDispose(static_cast<MIDIPortRef>(native_port_)); native_port_ = 0; }
+    if (native_client_) { MIDIClientDispose(static_cast<MIDIClientRef>(native_client_)); native_client_ = 0; }
+#endif
 }
 
 const MidiDeviceDescriptor* MidiInputManager::device(std::size_t index) const noexcept {
@@ -188,12 +236,24 @@ bool MidiInputManager::attached(std::string_view device_id) const noexcept {
 }
 
 void MidiInputManager::close_slot(DeviceSlot& slot) noexcept {
+#if defined(__APPLE__)
+    if (slot.native_source && native_port_) {
+        MIDIPortDisconnectSource(static_cast<MIDIPortRef>(native_port_), static_cast<MIDIEndpointRef>(slot.native_source));
+    }
+#endif
+#if defined(_WIN32)
+    if (slot.native_source) {
+        const auto handle = reinterpret_cast<HMIDIIN>(slot.native_source);
+        midiInStop(handle); midiInReset(handle); midiInClose(handle);
+    }
+#endif
 #if defined(__linux__)
     if (slot.handle >= 0) {
         ::close(slot.handle);
     }
 #endif
     slot.handle = -1;
+    slot.native_source = 0;
     slot.attached = false;
     slot.player_id[0] = '\0';
     slot.parser.reset();
@@ -231,6 +291,7 @@ std::size_t MidiInputManager::scan() noexcept {
             copy_text(slot.descriptor.name, name);
             slot.descriptor.connected = true;
             slot.descriptor.input = true;
+            slot.owner = this;
 
             if (auto* existing = find_slot(id); existing && existing->attached) {
                 slot.handle = existing->handle;
@@ -267,6 +328,9 @@ std::size_t MidiInputManager::scan() noexcept {
 #endif
             slot.descriptor.connected = true;
             slot.descriptor.input = true;
+            copy_text(slot.native_hash, record.native_hash);
+            slot.native_index = record.native_index;
+            slot.owner = this;
         }
     } catch (...) {
         // Topology observation is non-authoritative. A concurrent change leaves
@@ -303,8 +367,44 @@ bool MidiInputManager::attach(std::string_view device_id, std::string_view playe
     slot->parser.reset();
     return true;
 #else
+#if defined(__APPLE__)
+    if (!native_client_) {
+        MIDIClientRef client = 0;
+        if (MIDIClientCreate(CFSTR("StageMesh MIDI Input"), nullptr, nullptr, &client) != noErr) return false;
+        native_client_ = static_cast<std::uintptr_t>(client);
+    }
+    if (!native_port_) {
+        MIDIPortRef port = 0;
+        if (MIDIInputPortCreate(static_cast<MIDIClientRef>(native_client_), CFSTR("StageMesh MIDI Input Port"), coremidi_read, nullptr, &port) != noErr) return false;
+        native_port_ = static_cast<std::uintptr_t>(port);
+    }
+    for (ItemCount index = 0; index < MIDIGetNumberOfSources(); ++index) {
+        const auto source = MIDIGetSource(index);
+        const auto hash = sha256_token("coremidi-native:" + std::to_string(static_cast<std::uint64_t>(source)) + ":in");
+        if (hash != slot->native_hash.data()) continue;
+        if (MIDIPortConnectSource(static_cast<MIDIPortRef>(native_port_), source, slot) != noErr) return false;
+        slot->native_source = static_cast<std::uintptr_t>(source);
+        slot->attached = true;
+        copy_text(slot->player_id, player_id);
+        slot->parser.reset();
+        return true;
+    }
+    return false;
+#elif defined(_WIN32)
+    if (slot->native_index == 0xffffffffu) return false;
+    HMIDIIN handle = nullptr;
+    if (midiInOpen(&handle, static_cast<UINT>(slot->native_index), reinterpret_cast<DWORD_PTR>(slot),
+                   reinterpret_cast<DWORD_PTR>(&winmm_read), CALLBACK_FUNCTION) != MMSYSERR_NOERROR) return false;
+    if (midiInStart(handle) != MMSYSERR_NOERROR) { midiInClose(handle); return false; }
+    slot->native_source = reinterpret_cast<std::uintptr_t>(handle);
+    slot->attached = true;
+    copy_text(slot->player_id, player_id);
+    slot->parser.reset();
+    return true;
+#else
     (void)player_id;
     return false;
+#endif
 #endif
 }
 
@@ -328,27 +428,19 @@ std::size_t MidiInputManager::attached_count() const noexcept {
 }
 
 bool MidiInputManager::queue(const CapturedMidiInput& event) noexcept {
-    if (queue_size_ >= queue_capacity) {
+    if (!queue_.try_push(event)) {
         audit_queue_drops_.fetch_add(1,std::memory_order_relaxed);
         return false;
     }
-    queue_[queue_head_] = event;
-    queue_head_ = (queue_head_ + 1) % queue_capacity;
-    ++queue_size_;
     return true;
 }
 
 bool MidiInputManager::pop(CapturedMidiInput& out) noexcept {
-    if (queue_size_ == 0) {
-        return false;
-    }
-    out = queue_[queue_tail_];
-    queue_tail_ = (queue_tail_ + 1) % queue_capacity;
-    --queue_size_;
-    return true;
+    return queue_.try_pop(out);
 }
 
-bool MidiInputManager::inject(std::string_view device_id, std::string_view player_id, const MidiInputMessage& message) noexcept {
+bool MidiInputManager::capture_callback(std::string_view device_id, std::string_view player_id,
+                                        const MidiInputMessage& message) noexcept {
     if (device_id.empty() || player_id.empty() || device_id.size() >= 64 || player_id.size() >= 64) {
         return false;
     }
@@ -356,7 +448,16 @@ bool MidiInputManager::inject(std::string_view device_id, std::string_view playe
     copy_text(event.device_id, device_id);
     copy_text(event.player_id, player_id);
     event.message = message;
-    const auto accepted=queue(event);if(accepted){audit_injected_.fetch_add(1,std::memory_order_relaxed);audit_messages_.fetch_add(1,std::memory_order_relaxed);}return accepted;
+    const auto accepted = queue(event);
+    if (accepted) audit_messages_.fetch_add(1, std::memory_order_relaxed);
+    return accepted;
+}
+
+bool MidiInputManager::inject(std::string_view device_id, std::string_view player_id,
+                              const MidiInputMessage& message) noexcept {
+    const auto accepted = capture_callback(device_id, player_id, message);
+    if (accepted) audit_injected_.fetch_add(1, std::memory_order_relaxed);
+    return accepted;
 }
 
 std::size_t MidiInputManager::poll(std::uint64_t show_time_ns) noexcept {
@@ -397,8 +498,40 @@ std::size_t MidiInputManager::poll(std::uint64_t show_time_ns) noexcept {
     return captured;
 }
 
+void MidiInputManager::reconcile() noexcept {
+#if defined(_WIN32) || defined(__APPLE__)
+    try {
+        DeviceMonitor monitor;
+        monitor.start();
+        const auto snapshot = monitor.snapshot();
+        monitor.stop();
+        for (std::size_t index = 0; index < device_count_; ++index) {
+            auto& slot = devices_[index];
+            if (!slot.attached) continue;
+            bool present = false;
+            for (const auto& record : snapshot.devices) {
+                if (record.kind == DeviceKind::Midi && record.input && record.native_hash == slot.native_hash.data()) {
+                    present = true;
+                    break;
+                }
+            }
+            if (!present) {
+                close_slot(slot);
+                audit_topology_detaches_.fetch_add(1, std::memory_order_relaxed);
+            }
+        }
+    } catch (...) {
+        // A failed topology read cannot authorize a rebind. Existing streams
+        // remain attached until a definitive missing/changed identity is seen.
+    }
+#else
+    // Linux poll/read errors are handled by the non-blocking stream itself.
+#endif
+}
+
 MidiIngressAuditStatus MidiInputManager::audit_status() const noexcept {
-    return {audit_polls_.load(std::memory_order_relaxed),audit_bytes_.load(std::memory_order_relaxed),audit_messages_.load(std::memory_order_relaxed),audit_queue_drops_.load(std::memory_order_relaxed),audit_injected_.load(std::memory_order_relaxed),audit_max_poll_ns_.load(std::memory_order_relaxed),false};
+    return {audit_polls_.load(std::memory_order_relaxed),audit_bytes_.load(std::memory_order_relaxed),audit_messages_.load(std::memory_order_relaxed),audit_queue_drops_.load(std::memory_order_relaxed),audit_injected_.load(std::memory_order_relaxed),audit_max_poll_ns_.load(std::memory_order_relaxed),false,audit_topology_detaches_.load(std::memory_order_relaxed)};
 }
 
 } // namespace stageforge
+

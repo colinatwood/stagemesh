@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "StageForge DAW Production API",
+    "title": "StageMesh DAW Production API",
     "version": "0.1.0",
     "description": "Developer-alpha control contract. Physical outputs remain disarmed by these operations."
   },

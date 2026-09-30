@@ -19,6 +19,7 @@ struct DeviceRecord {
     bool automatic_reconnect = false;
     bool input = false;
     bool output = false;
+    std::uint32_t native_index = 0xffffffffu;
 };
 
 struct DeviceSelection {

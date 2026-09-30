@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(StageForge LANGUAGES C CXX)
+project(StageMesh LANGUAGES C CXX)
 
 option(STAGEFORGE_BUILD_TESTS "Build native infrastructure tests" ON)
 option(STAGEFORGE_ENABLE_SANITIZERS "Enable AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
@@ -18,3 +18,26 @@ if(STAGEFORGE_BUILD_TESTS)
 endif()
 
 add_subdirectory(native)
+
+# Keep release artifacts explicit and reproducible. Cross builds may package the
+# linked binaries, but runtime qualification still belongs on matching hosts.
+include(GNUInstallDirs)
+install(TARGETS stageforge_engine stageforge_core
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+if(TARGET stageforge_devices)
+    install(TARGETS stageforge_devices
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+endif()
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY native/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+set(CPACK_PACKAGE_NAME "stagemesh")
+set(CPACK_PACKAGE_VENDOR "StageMesh")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "StageMesh native engine and device services")
+set(CPACK_PACKAGE_VERSION "0.1.0")
+set(CPACK_PACKAGE_FILE_NAME "stagemesh-${CPACK_PACKAGE_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+include(CPack)

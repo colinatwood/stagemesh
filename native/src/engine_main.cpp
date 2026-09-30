@@ -40,6 +40,7 @@
 #include "stageforge/show_execution_loop.hpp"
 #include "stageforge/cue_state.hpp"
 #include "stageforge/midi_input.hpp"
+#include "stageforge/midi_input_owner.hpp"
 #include "stageforge/midi_learn_router.hpp"
 #include "stageforge/midi_mapped_action_dispatcher.hpp"
 #include "stageforge/midi_clock.hpp"
@@ -58,6 +59,8 @@
 #include "stageforge/transport_discipline.hpp"
 #if defined(_WIN32) || defined(__APPLE__)
 #include "native_capture.h"
+#include "native_capture_service.h"
+#include "stageforge/capture_service_owner.hpp"
 #endif
 
 #include <algorithm>
@@ -659,8 +662,7 @@ int main(int argc, char** argv) {
     enum class LightingNetworkProtocol : std::uint8_t { artnet = 0, sacn = 1 };
     LightingNetworkProtocol lighting_network_protocol = LightingNetworkProtocol::artnet;
     std::uint16_t sacn_universe_base = 1;
-    stageforge::MidiInputManager midi_inputs;
-    midi_inputs.scan();
+    stageforge::MidiInputOwner midi_inputs;
     stageforge::AudioDeviceManager audio_devices;
     audio_devices.scan();
     std::array<std::string, kAudioOutputSlots> selected_audio_outputs{};
@@ -697,6 +699,10 @@ int main(int argc, char** argv) {
     }
     std::array<stageforge::AlsaAudioOutput, kAudioOutputSlots> alsa_outputs{};
     std::array<stageforge::AlsaAudioInput, kAudioInputSlots> alsa_inputs{};
+#if defined(_WIN32) || defined(__APPLE__)
+    using NativeOwner = stageforge::CaptureServiceOwner<stageforge::NativeCaptureService>;
+    std::array<std::unique_ptr<NativeOwner>, kAudioInputSlots> native_inputs{};
+#endif
     std::array<std::string, kAudioInputSlots> selected_audio_inputs{};
     std::array<std::string, kAudioOutputSlots> execution_audio_backends{};
     execution_audio_backends.fill("none");
@@ -1317,11 +1323,50 @@ int main(int argc, char** argv) {
             if(!stageforge::canonical_audio_sample_format_from_name(sample_format,requested_input_format)){error("argument","invalid audio input sample format");continue;}
             if(sample_format!="FLOAT_LE"&&(conversion_flags&4U)==0){error("argument","integer audio input requires sample-format conversion permission");continue;}
             if(channels!=2&&(conversion_flags&2U)==0){error("argument","audio input channel conversion permission is required");continue;}
+#if defined(_WIN32) || defined(__APPLE__)
+            native_inputs[slot].reset();
+#endif
             alsa_inputs[slot].close();
             audio_inputs[slot].enabled.store(false, std::memory_order_release);
             audio_inputs[slot].ring.reset();
             execution_audio_input_backends[slot] = "none";
             const auto* device = audio_devices.find(selected_audio_inputs[slot]);
+#if defined(_WIN32) || defined(__APPLE__)
+            if (device && device->input && device->connected &&
+                (std::string_view(device->backend.data()) == "wasapi" || std::string_view(device->backend.data()) == "coreaudio")) {
+                if (sample_rate != static_cast<unsigned>(sample_rate) || sample_format != "FLOAT_LE") {
+                    error("unsupported", "native capture requires integral rate and float32 client format"); continue;
+                }
+                stageforge::AudioRequest request;
+                request.direction = stageforge::AudioDirection::Capture;
+                request.sample_rate_hz = static_cast<unsigned>(sample_rate);
+                request.period_frames = buffer_frames; request.channels = channels;
+                request.allow_rate_conversion = (conversion_flags & 1U) != 0;
+                request.allow_channel_conversion = (conversion_flags & 2U) != 0;
+                request.allow_format_conversion = (conversion_flags & 4U) != 0;
+                audio_inputs[slot].source.store(static_cast<std::uint8_t>(source_index), std::memory_order_release);
+                try {
+                    auto owner = std::make_unique<NativeOwner>([&audio_inputs, slot] {
+                        return std::make_unique<stageforge::NativeCaptureService>(capture_native_audio, &audio_inputs[slot]);
+                    });
+                    const std::string token = device->backend_address.data();
+                    if (!owner->execute([request, token](auto& service) { return service.activate_endpoint(request, token); })) {
+                        error("audio", "selected native input could not be armed"); continue;
+                    }
+                    const auto verified = owner->execute([](auto& service) { return service.stats(); }).last_verified_configuration;
+                    audio_inputs[slot].sample_rate.store(verified.configured_sample_rate_hz, std::memory_order_release);
+                    audio_inputs[slot].enabled.store(true, std::memory_order_release);
+                    native_inputs[slot] = std::move(owner);
+                    execution_audio_input_backends[slot] = device->backend.data();
+                    ok("slot=" + std::to_string(slot) + " execution=" + execution_audio_input_backends[slot] +
+                       " running=1 device=" + selected_audio_inputs[slot] + " source=" + std::to_string(source_index) +
+                       " actualRate=" + std::to_string(verified.configured_sample_rate_hz) +
+                       " actualPeriodFrames=" + std::to_string(verified.configured_period_frames) +
+                       " actualChannels=" + std::to_string(verified.configured_channels) + " actualFormat=FLOAT_LE");
+                } catch (const std::exception&) { error("audio", "native capture owner activation failed"); }
+                continue;
+            }
+#endif
             if (!device || std::string_view(device->backend.data()) != "alsa" || !device->input || !device->connected) {
                 error("unsupported", "selected input has no installed capture adapter"); continue;
             }
@@ -1348,6 +1393,9 @@ int main(int argc, char** argv) {
             std::size_t slot = 0;
             if (parts.size() == 2 && (!parse_number(parts[1], slot) || slot >= kAudioInputSlots)) { error("argument", "invalid audio input slot"); continue; }
             audio_inputs[slot].enabled.store(false, std::memory_order_release);
+#if defined(_WIN32) || defined(__APPLE__)
+            native_inputs[slot].reset();
+#endif
             alsa_inputs[slot].close();
             audio_inputs[slot].ring.reset();
             execution_audio_input_backends[slot] = "none";
@@ -1357,6 +1405,23 @@ int main(int argc, char** argv) {
         if (command == "AUDIO_INPUT_STATUS" && (parts.size() == 1 || parts.size() == 2)) {
             std::size_t slot = 0;
             if (parts.size() == 2 && (!parse_number(parts[1], slot) || slot >= kAudioInputSlots)) { error("argument", "invalid audio input slot"); continue; }
+#if defined(_WIN32) || defined(__APPLE__)
+            if (native_inputs[slot]) {
+                const auto stats = native_inputs[slot]->execute([](auto& service) { return service.stats(); });
+                std::cout << "OK slot=" << slot << " execution=" << execution_audio_input_backends[slot]
+                          << " selected=" << selected_audio_inputs[slot] << " running=" << stats.native_running
+                          << " state=" << static_cast<int>(stats.lifecycle.state) << " callbacks=" << stats.callbacks
+                          << " discontinuities=" << stats.discontinuities
+                          << " sampleRate=" << audio_inputs[slot].sample_rate.load(std::memory_order_acquire)
+                          << " configuredRate=" << stats.last_verified_configuration.configured_sample_rate_hz
+                          << " periodFrames=" << stats.last_verified_configuration.configured_period_frames
+                          << " channels=" << stats.last_verified_configuration.configured_channels
+                          << " explicitRearmRequired=" << stats.lifecycle.explicit_rearm_required
+                          << " source=" << static_cast<unsigned>(audio_inputs[slot].source.load(std::memory_order_acquire))
+                          << '\n' << std::flush;
+                continue;
+            }
+#endif
             const auto stream = alsa_inputs[slot].status();
             const auto requested = alsa_inputs[slot].requested_config();
             std::cout << "OK slot=" << slot
@@ -2265,15 +2330,15 @@ int main(int argc, char** argv) {
         if (command == "MIDI_DEVICE" && parts.size() == 2) {
             std::size_t index = 0;
             if (!parse_number(parts[1], index)) { error("argument", "invalid midi device index"); continue; }
-            const auto* device = midi_inputs.device(index);
-            if (!device) { error("not_found", "unknown midi device index"); continue; }
+            stageforge::MidiDeviceDescriptor device{};
+            if (!midi_inputs.device(index, device)) { error("not_found", "unknown midi device index"); continue; }
             std::cout << "OK index=" << index
-                      << " id=" << token_safe(device->id.data())
-                      << " name=" << token_safe(device->name.data())
-                      << " path=" << token_safe(device->path.data())
-                      << " input=" << (device->input ? 1 : 0)
-                      << " connected=" << (device->connected ? 1 : 0)
-                      << " attached=" << (midi_inputs.attached(device->id.data()) ? 1 : 0) << '\n' << std::flush;
+                      << " id=" << token_safe(device.id.data())
+                      << " name=" << token_safe(device.name.data())
+                      << " path=" << token_safe(device.path.data())
+                      << " input=" << (device.input ? 1 : 0)
+                      << " connected=" << (device.connected ? 1 : 0)
+                      << " attached=" << (midi_inputs.attached(device.id.data()) ? 1 : 0) << '\n' << std::flush;
             continue;
         }
         if (command == "MIDI_ATTACH" && parts.size() == 3) {
@@ -2306,7 +2371,7 @@ int main(int argc, char** argv) {
             continue;
         }
         if (command == "INGRESS_AUDIT_STATUS" && parts.size() == 2 && parts[1] == "MIDI") {
-            const auto s=midi_inputs.audit_status();std::cout<<"OK domain=midi polls="<<s.polls<<" bytes="<<s.bytes<<" messages="<<s.messages<<" queueDrops="<<s.queue_drops<<" injectedMessages="<<s.injected_messages<<" maxDurationNs="<<s.max_poll_duration_ns<<" physicalOutputsArmed=0\n"<<std::flush;
+            const auto s=midi_inputs.audit_status();std::cout<<"OK domain=midi polls="<<s.polls<<" bytes="<<s.bytes<<" messages="<<s.messages<<" queueDrops="<<s.queue_drops<<" injectedMessages="<<s.injected_messages<<" topologyDetaches="<<s.topology_detaches<<" maxDurationNs="<<s.max_poll_duration_ns<<" physicalOutputsArmed=0\n"<<std::flush;
             continue;
         }
         if (command == "INGRESS_AUDIT_STATUS" && parts.size() == 3 && parts[1] == "CAPTURE") {
@@ -2563,6 +2628,9 @@ int main(int argc, char** argv) {
 
     artnet_output.close();
     sacn_output.close();
+#if defined(_WIN32) || defined(__APPLE__)
+    for (auto& owner : native_inputs) owner.reset();
+#endif
     for (auto& input : alsa_inputs) input.close();
     for (auto& output : alsa_outputs) output.close();
     audio.stop();

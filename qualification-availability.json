@@ -2,10 +2,10 @@
   "documentType": "org.upp.qualification-availability",
   "schemaVersion": 1,
   "githubRunId": null,
-  "sourceCommit": "4e274727fe0d059635c5a1da37e32fc00e687af7",
-  "hostOs": "Windows",
+  "sourceCommit": "806f1215f201598314c99ff7e25296cf9096734c",
+  "hostOs": "Darwin",
   "microphoneAccessRequested": false,
   "audioCaptured": false,
   "physicalHardwareQualified": false,
-  "microphoneAuthorization": "not-probed-on-this-platform"
+  "microphoneAuthorization": "authorized"
 }

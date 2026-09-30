@@ -287,6 +287,37 @@ void test_midi_input_queue_injection() {
     SF_CHECK(!full.inject("virtual-test","alex",message));
     const auto full_audit=full.audit_status();
     SF_CHECK(full_audit.messages==2048&&full_audit.queue_drops==1);
+
+    stageforge::MidiInputManager concurrent;
+    constexpr std::size_t producer_count = 4;
+    constexpr std::size_t messages_per_producer = 400;
+    std::array<std::thread, producer_count> producers;
+    std::atomic<std::size_t> finished{0};
+    for (std::size_t producer = 0; producer < producer_count; ++producer) {
+        producers[producer] = std::thread([&, producer] {
+            for (std::size_t index = 0; index < messages_per_producer; ++index) {
+                auto message_from_producer = message;
+                message_from_producer.show_time_ns = producer * messages_per_producer + index;
+                if (!concurrent.capture_callback("native-endpoint", "alex", message_from_producer)) std::abort();
+            }
+            finished.fetch_add(1, std::memory_order_release);
+        });
+    }
+    std::array<bool, producer_count * messages_per_producer> seen{};
+    std::size_t consumed = 0;
+    while (finished.load(std::memory_order_acquire) != producer_count || concurrent.queued() != 0) {
+        if (!concurrent.pop(captured)) continue;
+        const auto index = static_cast<std::size_t>(captured.message.show_time_ns);
+        SF_CHECK(index < seen.size() && !seen[index]);
+        seen[index] = true;
+        ++consumed;
+    }
+    for (auto& producer : producers) producer.join();
+    SF_CHECK(consumed == seen.size());
+    for (const auto value : seen) SF_CHECK(value);
+    const auto concurrent_audit = concurrent.audit_status();
+    SF_CHECK(concurrent_audit.queue_drops == 0 && concurrent_audit.messages == seen.size());
+    SF_CHECK(concurrent_audit.injected_messages == 0);
 }
 void test_midi_scheduler() {
     stageforge::MidiScheduler<4> scheduler;

@@ -56,7 +56,16 @@ int main() {
         auto invalid = request; invalid.direction = AudioDirection::Capture;
         require(!stream.prepare(invalid, missing), "capture silently accepted by playback adapter");
         invalid = request; invalid.allow_rate_conversion = true;
+#ifdef _WIN32
         require(!stream.prepare(invalid, missing), "unimplemented conversion accepted");
+#else
+        bool adaptation_absent = false;
+        try { stream.prepare(invalid, missing); }
+        catch (const std::runtime_error&) { adaptation_absent = true; }
+        require(adaptation_absent && !stream.stats().native_running,
+                "adaptation bypassed missing pinned endpoint");
+        stream.close();
+#endif
         for (int i = 0; i < 3; ++i) {
             bool absent = false;
             try { stream.prepare(request, missing); } catch (const std::runtime_error&) { absent = true; }
