@@ -36,4 +36,7 @@ hashed source identity, connects an input port, parses packet-list bytes and
 disconnects before the owner releases the port. Windows WinMM physical callback
 attach remains the next qualification step: enumeration is identity-safe, but
 legacy interface hookup requires target SDK/hardware execution and must not be
-inferred from a cross-build.
+inferred from a cross-build. WinMM now resolves the owner-thread snapshot index,
+opens `HMIDIIN` with a function callback, forwards packed channel messages, and
+stops/resets/closes the handle before slot release. The remaining target-only
+work is exercising callback delivery and device removal on a real Windows host.

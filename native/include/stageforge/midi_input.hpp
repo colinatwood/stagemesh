@@ -175,6 +175,7 @@ public:
         MidiByteParser parser{};
         int handle{-1};
         std::array<char, 128> native_hash{};
+        std::uint32_t native_index{0xffffffffu};
         std::uintptr_t native_source{0};
         MidiInputManager* owner{nullptr};
         bool attached{false};

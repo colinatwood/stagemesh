@@ -17,6 +17,9 @@
 #include <CoreMIDI/CoreMIDI.h>
 #include <mach/mach_time.h>
 #endif
+#if defined(_WIN32)
+#include <mmsystem.h>
+#endif
 #endif
 
 namespace stageforge {
@@ -80,6 +83,20 @@ void coremidi_read(const MIDIPacketList* packets, void* refcon, void*) {
         slot->parser = parser;
         packet = MIDIPacketNext(packet);
     }
+}
+#endif
+
+#if defined(_WIN32)
+void CALLBACK winmm_read(HMIDIIN, UINT message, DWORD_PTR instance, DWORD_PTR packed, DWORD_PTR timestamp) {
+    if (message != MIM_DATA) return;
+    auto* slot = reinterpret_cast<MidiInputManager::DeviceSlot*>(instance);
+    if (!slot || !slot->owner) return;
+    MidiInputMessage parsed{static_cast<std::uint64_t>(timestamp),
+        static_cast<std::uint8_t>(packed & 0xffu),
+        static_cast<std::uint8_t>((packed >> 8) & 0x7fu),
+        static_cast<std::uint8_t>((packed >> 16) & 0x7fu)};
+    if ((parsed.status & 0x80u) != 0u && (parsed.status & 0xf0u) != 0xf0u)
+        slot->owner->capture_callback(slot->descriptor.id.data(), slot->player_id.data(), parsed);
 }
 #endif
 
@@ -223,6 +240,12 @@ void MidiInputManager::close_slot(DeviceSlot& slot) noexcept {
         MIDIPortDisconnectSource(static_cast<MIDIPortRef>(native_port_), static_cast<MIDIEndpointRef>(slot.native_source));
     }
 #endif
+#if defined(_WIN32)
+    if (slot.native_source) {
+        const auto handle = reinterpret_cast<HMIDIIN>(slot.native_source);
+        midiInStop(handle); midiInReset(handle); midiInClose(handle);
+    }
+#endif
 #if defined(__linux__)
     if (slot.handle >= 0) {
         ::close(slot.handle);
@@ -305,6 +328,7 @@ std::size_t MidiInputManager::scan() noexcept {
             slot.descriptor.connected = true;
             slot.descriptor.input = true;
             copy_text(slot.native_hash, record.native_hash);
+            slot.native_index = record.native_index;
             slot.owner = this;
         }
     } catch (...) {
@@ -350,14 +374,14 @@ bool MidiInputManager::attach(std::string_view device_id, std::string_view playe
     }
     if (!native_port_) {
         MIDIPortRef port = 0;
-        if (MIDIInputPortCreate(static_cast<MIDIClientRef>(native_client_), CFSTR("StageMesh MIDI Input Port"), coremidi_read, nullptr, &port) != noErr) return false;
+        if (MIDIInputPortCreate(reinterpret_cast<MIDIClientRef>(native_client_), CFSTR("StageMesh MIDI Input Port"), coremidi_read, nullptr, &port) != noErr) return false;
         native_port_ = reinterpret_cast<std::uintptr_t>(port);
     }
     for (ItemCount index = 0; index < MIDIGetNumberOfSources(); ++index) {
         const auto source = MIDIGetSource(index);
         const auto hash = sha256_token("coremidi-native:" + std::to_string(static_cast<std::uint64_t>(source)) + ":in");
         if (hash != slot->native_hash.data()) continue;
-        if (MIDIPortConnectSource(static_cast<MIDIPortRef>(native_port_), source, slot) != noErr) return false;
+        if (MIDIPortConnectSource(reinterpret_cast<MIDIPortRef>(native_port_), source, slot) != noErr) return false;
         slot->native_source = reinterpret_cast<std::uintptr_t>(source);
         slot->attached = true;
         copy_text(slot->player_id, player_id);
@@ -365,6 +389,17 @@ bool MidiInputManager::attach(std::string_view device_id, std::string_view playe
         return true;
     }
     return false;
+#elif defined(_WIN32)
+    if (slot->native_index == 0xffffffffu) return false;
+    HMIDIIN handle = nullptr;
+    if (midiInOpen(&handle, static_cast<UINT>(slot->native_index), reinterpret_cast<DWORD_PTR>(slot),
+                   reinterpret_cast<DWORD_PTR>(&winmm_read), CALLBACK_FUNCTION) != MMSYSERR_NOERROR) return false;
+    if (midiInStart(handle) != MMSYSERR_NOERROR) { midiInClose(handle); return false; }
+    slot->native_source = reinterpret_cast<std::uintptr_t>(handle);
+    slot->attached = true;
+    copy_text(slot->player_id, player_id);
+    slot->parser.reset();
+    return true;
 #else
     (void)player_id;
     return false;

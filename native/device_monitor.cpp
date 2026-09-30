@@ -100,6 +100,7 @@ DeviceRecord windows_midi_record(UINT index, bool input) {
     const std::string direction = input ? ":input:" : ":output:";
     DeviceRecord record;
     record.kind = DeviceKind::Midi; record.input = input; record.output = !input;
+    record.native_index = index;
     if (!interface_name.empty()) {
         record.native_hash = sha256_token("winmm-native" + direction + interface_name + ":" + std::to_string(index));
         record.persistent_hash = sha256_token("winmm-installation" + direction + interface_name);
