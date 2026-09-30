@@ -1,8 +1,8 @@
 #!/usr/bin/env sh
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-BUILD_DIR=${STAGEFORGE_BUILD_DIR:-"$ROOT/build"}
-BUILD_CONFIG=${STAGEFORGE_BUILD_CONFIG:-}
+BUILD_DIR=${STAGEMESH_BUILD_DIR:-${STAGEFORGE_BUILD_DIR:-"$ROOT/build"}}
+BUILD_CONFIG=${STAGEMESH_BUILD_CONFIG:-${STAGEFORGE_BUILD_CONFIG:-}}
 
 # Pass generator, toolchain and feature switches after the script name.  This
 # keeps one build entry point usable for native builds and SDK/cross builds.
@@ -18,7 +18,7 @@ fi
 
 # Cross-compiled binaries cannot run on the build host.  The caller must opt
 # out explicitly so native builds retain the test gate by default.
-if [ "${STAGEFORGE_SKIP_TESTS:-0}" != 1 ]; then
+if [ "${STAGEMESH_SKIP_TESTS:-${STAGEFORGE_SKIP_TESTS:-0}}" != 1 ]; then
     if [ -n "$BUILD_CONFIG" ]; then
         ctest --test-dir "$BUILD_DIR" -C "$BUILD_CONFIG" --output-on-failure
     else
