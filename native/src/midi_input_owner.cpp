@@ -22,6 +22,7 @@ MidiInputOwner::~MidiInputOwner() {
 
 void MidiInputOwner::run() {
     manager_.scan();
+    auto next_reconcile = std::chrono::steady_clock::now();
     for (;;) {
         std::function<void(MidiInputManager&)> command;
         {
@@ -35,7 +36,11 @@ void MidiInputOwner::run() {
         const auto now = static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
             std::chrono::steady_clock::now().time_since_epoch()).count());
         manager_.poll(now);
-        manager_.reconcile();
+        const auto wall_now = std::chrono::steady_clock::now();
+        if (wall_now >= next_reconcile) {
+            manager_.reconcile();
+            next_reconcile = wall_now + std::chrono::milliseconds(250);
+        }
     }
     manager_.deactivate();
 }
