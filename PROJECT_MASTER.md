@@ -8,11 +8,14 @@
 - Canonical branch: `main`
 - Baseline commit when this master file was introduced: `e79d8a1fbb9a3eb976cd325dbadb58cc51c457e6`
 - Baseline milestone: **Checkpoint 85 — target-OS device discovery integration (native bridge smoke lane deferred)**
+- Latest main baseline: `e5684a3` — PR #34 records 676 passing Python tests with the native engine configured; its three named CI runs passed.
 - Repository README states that recovered Checkpoint 69 engine/backend/frontend/schemas/packaging/tests are consolidated with Checkpoint 70–83 platform work, with Checkpoint 84 documenting recovery provenance/integration limits.
 
 ## Latest completed work
 
 Checkpoint 85 was documented as merged to `main`. The full engine consumes the native `DeviceMonitor` through `AudioDeviceManager` and exports only hashed target-OS identity metadata. The separately named platform bridge smoke lane was absent, so its orphaned CMake references were removed; native device-monitor qualification remains the authoritative coverage.
+
+PR #34 records a green validation baseline: 676 Python tests with the native engine configured and passing StageForge Platform Modules, StageForge Native Device Lifecycle, and StageForge CI workflow runs.
 
 Recent checkpoint-85 commits include:
 
@@ -60,17 +63,13 @@ Use this file to prevent progress loss when a ChatGPT/project session reaches it
 
 ## Next-session handoff
 
-At this baseline, preserve the green CI state and begin the next explicitly scoped product checkpoint or hardware-backed qualification effort.
-
-When advancing the project, replace this handoff section with:
-
-- **Current checkpoint:** Checkpoint 85, target-OS discovery integrated; dedicated bridge smoke lane deferred
-- **Branch / PR:** `main`, PRs #29–#33 merged
-- **Last known-good commit:** `bc8ce52`
-- **Tests run / result:** 676 Python tests pass with the built native engine; Linux, Windows, and macOS CI checks pass
-- **What changed:** Restored temporary ownership imports, cleaned orphaned native CMake references, fixed bridge failover gap measurement, and aligned plugin-host fixtures with platform launch contracts
-- **Open blockers / external evidence needed:** Physical audio/MIDI qualification, deployed LAN/TLS/IdP qualification, licensed plugin fixtures, and Linux-only release qualification outside this Mac
-- **Exact next action:** Start hardware-backed audio/MIDI qualification or the next explicitly scoped product checkpoint
+- **Current checkpoint:** Checkpoint 86 integration boundary recorded: shared capture ingress helper is implemented and tested; target-OS capture callback integration needs an engine-owned owner-thread service/control loop
+- **Branch / PR:** `checkpoint-86-capture-integration-backlog` based on `main`; PRs #29–#34 merged, no PR opened for Checkpoint 86 per owner direction
+- **Last known-good commit:** `e5684a3` (PR #34; 676 Python tests and three named CI workflows passed)
+- **What changed:** PR #34 records the green software-validation baseline. Checkpoint 86 extracts the engine's capture-ring/recording-queue handoff into a reusable, non-blocking helper and tests generation, sequence-gap, sample, non-finite, ring, and disarmed-queue behavior. A target-OS callback adapter now forwards native packet discontinuities into that helper, but the engine still does not construct or service `NativeCaptureStream`.
+- **Checkpoint 86 verification:** Manually compiled native test executable and Linux engine translation unit pass; all 8 DAW capture Python tests pass. The target-OS adapter is excluded from Linux compilation, so Windows/macOS compile/runtime validation remains open. The full 676-test Python run had 9 failures in temporary-resource process-lifetime tests and one skip in this environment. CMake is unavailable here. Details: `docs/checkpoint-86-capture-ingress.md`.
+- **Open blockers / external evidence needed:** Physical audio/MIDI qualification, deployed LAN/TLS/IdP qualification, licensed plugin fixtures, clean-host/Linux release qualification, assistive-technology exercise, owner license decisions, and independent-host evidence. See `docs/remaining-data-requirements.md` for the complete list.
+- **Exact next action:** Design and test an engine-owned native capture control/service loop, then have it construct `NativeCaptureStream` with the adapter and selected-device fencing. Reuse the same monitor/fence ownership to implement target-OS MIDI attach/poll and hotplug behavior. Validate on Windows/macOS before changing native capture evidence, which still reports `fullEngineIntegrated: false`. Preserve the separate accessible-endpoint and named-device recording-quality gates. Current Linux environment lacks CMake and target-OS SDKs/runners.
 
 ## Backup policy
 
