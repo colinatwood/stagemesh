@@ -115,10 +115,10 @@ MacEventEvidence exercise_macos_events(DeviceMonitor& monitor) {
     const auto midi_before = persistent_set(baseline, DeviceKind::Midi);
     MIDIClientRef midi_client = 0;
     MIDIEndpointRef source = 0;
-    if (MIDIClientCreate(CFSTR("StageForge CI MIDI"), nullptr, nullptr, &midi_client) != noErr) throw std::runtime_error("MIDIClientCreate fixture failed");
+    if (MIDIClientCreate(CFSTR("StageMesh CI MIDI"), nullptr, nullptr, &midi_client) != noErr) throw std::runtime_error("MIDIClientCreate fixture failed");
     const MIDIUniqueID requested_uid = static_cast<MIDIUniqueID>(-1200000000 + (getpid() % 1000000));
     auto revision = monitor.revision();
-    if (MIDISourceCreate(midi_client, CFSTR("StageForge CI Source"), &source) != noErr) throw std::runtime_error("MIDISourceCreate failed");
+    if (MIDISourceCreate(midi_client, CFSTR("StageMesh CI Source"), &source) != noErr) throw std::runtime_error("MIDISourceCreate failed");
     if (MIDIObjectSetIntegerProperty(source, kMIDIPropertyUniqueID, requested_uid) != noErr) throw std::runtime_error("set CoreMIDI unique ID failed");
     evidence.coremidi_notification = wait_revision(monitor, revision);
     auto midi_present = monitor.snapshot();
@@ -131,7 +131,7 @@ MacEventEvidence exercise_macos_events(DeviceMonitor& monitor) {
     require(wait_revision(monitor, revision), "CoreMIDI removal notification was not observed");
     require(resolve_device(midi_selection, monitor.snapshot().devices).status == ResolutionStatus::Detached, "CoreMIDI removal did not detach selection");
     revision = monitor.revision();
-    if (MIDISourceCreate(midi_client, CFSTR("StageForge CI Source 2"), &source) != noErr) throw std::runtime_error("second MIDISourceCreate failed");
+    if (MIDISourceCreate(midi_client, CFSTR("StageMesh CI Source 2"), &source) != noErr) throw std::runtime_error("second MIDISourceCreate failed");
     if (MIDIObjectSetIntegerProperty(source, kMIDIPropertyUniqueID, requested_uid) != noErr) throw std::runtime_error("restore CoreMIDI unique ID failed");
     require(wait_revision(monitor, revision), "CoreMIDI restore notification was not observed");
     auto midi_restored = resolve_device(midi_selection, monitor.snapshot().devices);
@@ -140,9 +140,9 @@ MacEventEvidence exercise_macos_events(DeviceMonitor& monitor) {
     MIDIClientDispose(midi_client); midi_client = 0;
 
     const auto audio_before = persistent_set(baseline, DeviceKind::Audio);
-    CFStringRef uid = CFStringCreateWithFormat(kCFAllocatorDefault, nullptr, CFSTR("org.stageforge.ci.aggregate.%d"), getpid());
+    CFStringRef uid = CFStringCreateWithFormat(kCFAllocatorDefault, nullptr, CFSTR("org.stagemesh.ci.aggregate.%d"), getpid());
     CFMutableDictionaryRef description = CFDictionaryCreateMutable(kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-    CFDictionarySetValue(description, CFSTR(kAudioAggregateDeviceNameKey), CFSTR("StageForge CI Aggregate"));
+    CFDictionarySetValue(description, CFSTR(kAudioAggregateDeviceNameKey), CFSTR("StageMesh CI Aggregate"));
     CFDictionarySetValue(description, CFSTR(kAudioAggregateDeviceUIDKey), uid);
     AudioDeviceID aggregate = kAudioObjectUnknown;
     revision = monitor.revision();
@@ -162,7 +162,7 @@ MacEventEvidence exercise_macos_events(DeviceMonitor& monitor) {
     require(resolve_device(audio_selection, monitor.snapshot().devices).status == ResolutionStatus::Detached, "CoreAudio removal did not detach selection");
 
     description = CFDictionaryCreateMutable(kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-    CFDictionarySetValue(description, CFSTR(kAudioAggregateDeviceNameKey), CFSTR("StageForge CI Aggregate 2"));
+    CFDictionarySetValue(description, CFSTR(kAudioAggregateDeviceNameKey), CFSTR("StageMesh CI Aggregate 2"));
     CFDictionarySetValue(description, CFSTR(kAudioAggregateDeviceUIDKey), uid);
     revision = monitor.revision();
     create_status = AudioHardwareCreateAggregateDevice(description, &aggregate);
