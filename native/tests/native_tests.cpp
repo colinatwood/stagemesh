@@ -411,7 +411,7 @@ void test_sacn_packet_and_explicit_arm() {
     universe.set(512, 207);
     std::array<std::uint8_t,16> cid{};
     for (std::size_t index=0; index<cid.size(); ++index) cid[index]=static_cast<std::uint8_t>(index+1);
-    const auto packet=stageforge::Sacn::encode_dmx(101,universe.values(),9,cid,"StageForge Test",120);
+    const auto packet=stageforge::Sacn::encode_dmx(101,universe.values(),9,cid,"StageMesh Test",120);
     SF_CHECK(packet.size==638);
     SF_CHECK(packet.bytes[0]==0x00&&packet.bytes[1]==0x10);
     SF_CHECK(packet.bytes[4]=='A'&&packet.bytes[15]==0);
