@@ -343,8 +343,10 @@ struct NativeEndpointStream::Impl {
         std::vector<AudioDeviceID> devices(size / sizeof(AudioDeviceID));
         checked(AudioObjectGetPropertyData(kAudioObjectSystemObject, &devices_address, 0, nullptr, &size, devices.data()), "device list");
         for (auto id : devices) if (sha256_token("coreaudio-native:" + std::to_string(id)) == selection.native_hash) device = id;
-        if (device == kAudioObjectUnknown || uid_hash(device) != selection.persistent_hash)
-            throw std::runtime_error("selected CoreAudio identity absent");
+        if (device == kAudioObjectUnknown)
+            throw std::runtime_error("selected CoreAudio native ID absent");
+        if (uid_hash(device) != selection.persistent_hash)
+            throw std::runtime_error("selected CoreAudio UID hash mismatch");
         for (; registered < sizeof(watched) / sizeof(watched[0]); ++registered) {
             auto address = watch_address(registered);
             checked(AudioObjectAddPropertyListener(device, &address, property_changed, nullptr), "listen selected device");
