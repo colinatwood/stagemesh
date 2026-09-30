@@ -22,9 +22,9 @@ class MediaSnapshot:
 
     @classmethod
     def _store_path(cls, root):
-        configured = os.environ.get("STAGEFORGE_SNAPSHOT_DIR", "").strip()
+        configured = os.environ.get("STAGEMESH_SNAPSHOT_DIR", "").strip()
         source_root = Path(root).resolve()
-        return Path(configured).expanduser().resolve() if configured else source_root.parent / ".stageforge-media-snapshots"
+        return Path(configured).expanduser().resolve() if configured else source_root.parent / ".stagemesh-media-snapshots"
 
     @classmethod
     def _configured_bytes(cls, name, default, minimum):
@@ -86,7 +86,7 @@ class MediaSnapshot:
     @classmethod
     def status(cls, root):
         """Return a bounded, path-free projection of the shared snapshot store."""
-        store=cls._store_path(root);max_total=cls._configured_bytes("STAGEFORGE_SNAPSHOT_MAX_BYTES",cls.MAX_TOTAL_BYTES,1024*1024);free_reserve=cls._configured_bytes("STAGEFORGE_SNAPSHOT_FREE_RESERVE_BYTES",cls.FREE_RESERVE_BYTES,0)
+        store=cls._store_path(root);max_total=cls._configured_bytes("STAGEMESH_SNAPSHOT_MAX_BYTES",cls.MAX_TOTAL_BYTES,1024*1024);free_reserve=cls._configured_bytes("STAGEMESH_SNAPSHOT_FREE_RESERVE_BYTES",cls.FREE_RESERVE_BYTES,0)
         result={"documentType":"org.upp.daw-temporary-resource-status","schemaVersion":1,"resourceClass":"media-snapshot","configuredMaximumBytes":max_total,"freeReserveBytes":free_reserve,"reservedBytes":0,"observedBytes":0,"resources":[],"resourceCount":0,"liveCount":0,"reclaimableCount":0,"unknownOwnerCount":0,"scanTruncated":False,"automaticCleanup":"proven-dead-owner-on-create","physicalOutputsArmed":False}
         if not store.exists():return result
         directories=[item for item in sorted(store.glob("snapshot-*")) if item.is_dir() and not item.is_symlink()]
@@ -117,8 +117,8 @@ class MediaSnapshot:
     def __init__(self, root, plan, *, purpose="unspecified"):
         self.reserved_bytes = 0
         source_root = Path(root).resolve()
-        max_total = self._configured_bytes("STAGEFORGE_SNAPSHOT_MAX_BYTES", self.MAX_TOTAL_BYTES, 1024 * 1024)
-        free_reserve = self._configured_bytes("STAGEFORGE_SNAPSHOT_FREE_RESERVE_BYTES", self.FREE_RESERVE_BYTES, 0)
+        max_total = self._configured_bytes("STAGEMESH_SNAPSHOT_MAX_BYTES", self.MAX_TOTAL_BYTES, 1024 * 1024)
+        free_reserve = self._configured_bytes("STAGEMESH_SNAPSHOT_FREE_RESERVE_BYTES", self.FREE_RESERVE_BYTES, 0)
         self.store = self._store_path(source_root)
         self.store.mkdir(mode=0o700, parents=True, exist_ok=True)
         lock_path = self.store / "quota.lock"

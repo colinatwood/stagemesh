@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-option(STAGEFORGE_DEVICE_ASAN "Enable AddressSanitizer for device lifecycle tests" OFF)
+option(STAGEMESH_DEVICE_ASAN "Enable AddressSanitizer for device lifecycle tests" OFF)
 
-add_library(stageforge_devices
+add_library(stagemesh_devices
   device_monitor.cpp
   device_identity.cpp
   device_execution_fence.cpp
@@ -13,7 +13,7 @@ add_library(stageforge_devices
   software_audio_render.cpp
   native_endpoint_stream.cpp
   native_capture_service.cpp)
-target_include_directories(stageforge_devices PUBLIC
+target_include_directories(stagemesh_devices PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -21,47 +21,47 @@ if(WIN32)
   include(CheckCXXSourceCompiles)
   check_cxx_source_compiles(
     "#include <windows.h>\n#include <mmdeviceapi.h>\nint main(){ (void)PKEY_AudioEndpoint_StableId; return 0; }"
-    STAGEFORGE_HAS_AUDIOENDPOINT_STABLEID)
-  if(STAGEFORGE_HAS_AUDIOENDPOINT_STABLEID)
-    target_compile_definitions(stageforge_devices PRIVATE STAGEFORGE_HAS_AUDIOENDPOINT_STABLEID=1)
+    STAGEMESH_HAS_AUDIOENDPOINT_STABLEID)
+  if(STAGEMESH_HAS_AUDIOENDPOINT_STABLEID)
+    target_compile_definitions(stagemesh_devices PRIVATE STAGEMESH_HAS_AUDIOENDPOINT_STABLEID=1)
   else()
-    target_compile_definitions(stageforge_devices PRIVATE STAGEFORGE_HAS_AUDIOENDPOINT_STABLEID=0)
+    target_compile_definitions(stagemesh_devices PRIVATE STAGEMESH_HAS_AUDIOENDPOINT_STABLEID=0)
   endif()
   check_cxx_source_compiles(
     "#include <windows.h>\n#include <cfgmgr32.h>\nint main(){ CM_NOTIFY_FILTER filter{}; HCMNOTIFICATION notification{}; return CM_Register_Notification(&filter, nullptr, nullptr, &notification); }"
-    STAGEFORGE_HAS_CM_NOTIFY)
-  if(STAGEFORGE_HAS_CM_NOTIFY)
-    target_compile_definitions(stageforge_devices PRIVATE STAGEFORGE_HAS_CM_NOTIFY=1)
+    STAGEMESH_HAS_CM_NOTIFY)
+  if(STAGEMESH_HAS_CM_NOTIFY)
+    target_compile_definitions(stagemesh_devices PRIVATE STAGEMESH_HAS_CM_NOTIFY=1)
   else()
-    target_compile_definitions(stageforge_devices PRIVATE STAGEFORGE_HAS_CM_NOTIFY=0)
+    target_compile_definitions(stagemesh_devices PRIVATE STAGEMESH_HAS_CM_NOTIFY=0)
   endif()
-  target_link_libraries(stageforge_devices PUBLIC ole32 uuid winmm cfgmgr32 ksuser)
+  target_link_libraries(stagemesh_devices PUBLIC ole32 uuid winmm cfgmgr32 ksuser)
 elseif(APPLE)
-  target_link_libraries(stageforge_devices PUBLIC "-framework CoreAudio" "-framework CoreMIDI" "-framework CoreFoundation" "-framework AudioToolbox" "-framework AudioUnit")
-  if(STAGEFORGE_DEVICE_ASAN)
-    target_compile_options(stageforge_devices PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+  target_link_libraries(stagemesh_devices PUBLIC "-framework CoreAudio" "-framework CoreMIDI" "-framework CoreFoundation" "-framework AudioToolbox" "-framework AudioUnit")
+  if(STAGEMESH_DEVICE_ASAN)
+    target_compile_options(stagemesh_devices PRIVATE -fsanitize=address -fno-omit-frame-pointer)
   endif()
 else()
   message(FATAL_ERROR "Device monitor requires Windows or macOS")
 endif()
 
 add_executable(device_lifecycle_smoke device_lifecycle_smoke.cpp)
-target_link_libraries(device_lifecycle_smoke PRIVATE stageforge_devices)
+target_link_libraries(device_lifecycle_smoke PRIVATE stagemesh_devices)
 add_executable(device_execution_fence_smoke device_execution_fence_smoke.cpp)
-target_link_libraries(device_execution_fence_smoke PRIVATE stageforge_devices)
+target_link_libraries(device_execution_fence_smoke PRIVATE stagemesh_devices)
 add_executable(audio_preflight_smoke audio_preflight_smoke.cpp)
-target_link_libraries(audio_preflight_smoke PRIVATE stageforge_devices)
+target_link_libraries(audio_preflight_smoke PRIVATE stagemesh_devices)
 add_executable(audio_stream_lifecycle_smoke audio_stream_lifecycle_smoke.cpp)
-target_link_libraries(audio_stream_lifecycle_smoke PRIVATE stageforge_devices)
+target_link_libraries(audio_stream_lifecycle_smoke PRIVATE stagemesh_devices)
 add_executable(native_playback_smoke native_playback_smoke.cpp)
-target_link_libraries(native_playback_smoke PRIVATE stageforge_devices)
+target_link_libraries(native_playback_smoke PRIVATE stagemesh_devices)
 add_executable(native_capture_smoke native_capture_smoke.cpp)
-target_link_libraries(native_capture_smoke PRIVATE stageforge_devices)
+target_link_libraries(native_capture_smoke PRIVATE stagemesh_devices)
 add_executable(native_selected_loss_smoke native_selected_loss_smoke.cpp)
-target_link_libraries(native_selected_loss_smoke PRIVATE stageforge_devices)
+target_link_libraries(native_selected_loss_smoke PRIVATE stagemesh_devices)
 add_executable(audio_conversion_smoke audio_conversion_smoke.cpp)
-target_link_libraries(audio_conversion_smoke PRIVATE stageforge_devices)
-if(APPLE AND STAGEFORGE_DEVICE_ASAN)
+target_link_libraries(audio_conversion_smoke PRIVATE stagemesh_devices)
+if(APPLE AND STAGEMESH_DEVICE_ASAN)
   foreach(target device_lifecycle_smoke device_execution_fence_smoke audio_preflight_smoke audio_stream_lifecycle_smoke native_playback_smoke native_capture_smoke native_selected_loss_smoke audio_conversion_smoke)
     target_compile_options(${target} PRIVATE -fsanitize=address -fno-omit-frame-pointer)
     target_link_options(${target} PRIVATE -fsanitize=address)

@@ -4,7 +4,7 @@
 #include <iostream>
 #include <stdexcept>
 
-using namespace stageforge;
+using namespace stagemesh;
 namespace { void require(bool value, const char* message) { if (!value) throw std::runtime_error(message); } }
 
 int main() {

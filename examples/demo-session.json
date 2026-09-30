@@ -1,7 +1,7 @@
 {
   "documentType": "org.upp.daw-session",
   "schemaVersion": 1,
-  "sessionId": "stageforge-demo",
+  "sessionId": "stagemesh-demo",
   "revision": 0,
   "sampleRate": 192000,
   "sampleFormat": "float32-planar",

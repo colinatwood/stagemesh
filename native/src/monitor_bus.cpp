@@ -1,10 +1,10 @@
-#include "stageforge/monitor_bus.hpp"
+#include "stagemesh/monitor_bus.hpp"
 
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
 
-namespace stageforge {
+namespace stagemesh {
 
 MonitorBus::MonitorBus() noexcept {
     constexpr std::array<float, monitor_channel_count> defaults{76.0F, 58.0F, 62.0F, 38.0F, 45.0F, 28.0F};
@@ -113,4 +113,4 @@ const MonitorBus* MonitorBusRegistry::find(std::string_view player_id) const noe
     return nullptr;
 }
 
-} // namespace stageforge
+} // namespace stagemesh

@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 
 from authority_leases import AuthorityLeaseRegistry
-from runtime import StageForgeRuntime
+from runtime import StageMeshRuntime
 
 
 class GeneralAuthorityLeaseRegistryTests(unittest.TestCase):
@@ -56,11 +56,11 @@ class GeneralAuthorityLeaseRegistryTests(unittest.TestCase):
 
 
 class GeneralAuthorityRuntimeTests(unittest.TestCase):
-    def _runtime(self, root: str) -> StageForgeRuntime:
-        return StageForgeRuntime(Path(root))
+    def _runtime(self, root: str) -> StageMeshRuntime:
+        return StageMeshRuntime(Path(root))
 
     def test_resource_and_department_scopes_work_without_active_venue_patch(self):
-        with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEFORGE_NATIVE_ENGINE": "off"}, clear=False):
+        with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEMESH_NATIVE_ENGINE": "off"}, clear=False):
             runtime = self._runtime(tmp)
             try:
                 dept = runtime.venue_authority_grant({
@@ -82,7 +82,7 @@ class GeneralAuthorityRuntimeTests(unittest.TestCase):
                 runtime.close()
 
     def test_venue_commit_clears_legacy_venue_scope_but_preserves_runtime_resource(self):
-        with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEFORGE_NATIVE_ENGINE": "off"}, clear=False):
+        with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEMESH_NATIVE_ENGINE": "off"}, clear=False):
             runtime = self._runtime(tmp)
             try:
                 venue = {
@@ -116,7 +116,7 @@ class GeneralAuthorityRuntimeTests(unittest.TestCase):
                 runtime.close()
 
     def test_demotion_clears_all_operational_authority_leases(self):
-        with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEFORGE_NATIVE_ENGINE": "off"}, clear=False):
+        with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEMESH_NATIVE_ENGINE": "off"}, clear=False):
             runtime = self._runtime(tmp)
             try:
                 lease = runtime.venue_authority_grant({

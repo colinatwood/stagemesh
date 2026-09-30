@@ -1,6 +1,6 @@
 #pragma once
 #include "native_endpoint_stream.h"
-namespace stageforge {
+namespace stagemesh {
 class NativeCaptureStream final : public NativeEndpointStream {
 public:
     explicit NativeCaptureStream(CaptureReceive receive = nullptr, void* context = nullptr)

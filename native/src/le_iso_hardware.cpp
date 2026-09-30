@@ -1,6 +1,6 @@
-#include "stageforge/le_iso_hardware.hpp"
+#include "stagemesh/le_iso_hardware.hpp"
 
-#include "stageforge/uwb_hardware_bridge.hpp"
+#include "stagemesh/uwb_hardware_bridge.hpp"
 
 #include <algorithm>
 #include <cerrno>
@@ -12,7 +12,7 @@
 #include <unistd.h>
 #endif
 
-namespace stageforge {
+namespace stagemesh {
 namespace {
 
 constexpr std::array<std::uint8_t,4> timing_magic{'S','F','L','E'};
@@ -153,4 +153,4 @@ void LeIsoHardwareSocket::close() noexcept {
     fd_=-1;status_.open=false;status_.connecting=false;status_.connected=false;
 }
 
-} // namespace stageforge
+} // namespace stagemesh

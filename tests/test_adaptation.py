@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 
 from adaptation import AdaptationRevisionConflict, VenueAdaptationManager, build_transaction
-from runtime import StageForgeRuntime
+from runtime import StageMeshRuntime
 
 
 class VenueAdaptationTests(unittest.TestCase):
@@ -97,8 +97,8 @@ class VenueAdaptationTests(unittest.TestCase):
                 manager.schedule_commit(second["transactionId"], mode="cue", show_seconds=0.1, bpm=120, cue_id="scene")
 
     def test_committed_patch_can_supply_explicit_execution_device_without_rewriting_show(self):
-        with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEFORGE_NATIVE_ENGINE": "off"}, clear=False):
-            runtime = StageForgeRuntime(Path(tmp))
+        with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEMESH_NATIVE_ENGINE": "off"}, clear=False):
+            runtime = StageMeshRuntime(Path(tmp))
             try:
                 venue = {
                     "documentType": "org.upp.venue-profile",

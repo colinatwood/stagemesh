@@ -106,7 +106,7 @@ def authorization_policy(environ: Mapping[str, str] | None = None) -> dict[str, 
     revoke or change subsequent requests without restarting the bridge.
     """
     env = os.environ if environ is None else environ
-    path = str(env.get("STAGEFORGE_HTTP_AUTHORIZATION_FILE", "")).strip()
+    path = str(env.get("STAGEMESH_HTTP_AUTHORIZATION_FILE", "")).strip()
     if not path:
         return None
     try:

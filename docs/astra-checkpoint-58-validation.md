@@ -9,7 +9,7 @@ Physical audio execution is now recognized by capability, not by the literal str
 For output activation:
 
 - a running non-null physical backend is reported active;
-- StageForge immediately rescans/revalidates the selected persistent identity after stream start;
+- StageMesh immediately rescans/revalidates the selected persistent identity after stream start;
 - if the endpoint disappeared or no longer resolves, the just-started stream is stopped and activation fails;
 - post-promotion physical-output evidence is marked only after that identity fence passes.
 

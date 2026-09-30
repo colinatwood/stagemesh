@@ -1,6 +1,6 @@
 # Third-party runtime and build dependencies
 
-StageForge source currently vendors no third-party source libraries in this archive.
+StageMesh source currently vendors no third-party source libraries in this archive.
 It dynamically loads the host ALSA library (`libasound.so.2`) on Linux. ALSA is an
 operating-system dependency and is distributed under its own terms by the host
 distribution. The build/test environment uses CMake 4.4.3 from

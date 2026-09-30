@@ -18,9 +18,9 @@ def main()->int:
         print("Missing sanitizer prerequisites: "+", ".join(missing),file=sys.stderr);return 1
     env=os.environ.copy();env["ASAN_OPTIONS"]=f"detect_leaks={1 if args.detect_leaks else 0}:halt_on_error=1:strict_string_checks=1";env["UBSAN_OPTIONS"]="halt_on_error=1:print_stacktrace=1"
     try:
-        with tempfile.TemporaryDirectory(prefix="stageforge-sanitizer-") as temporary:
+        with tempfile.TemporaryDirectory(prefix="stagemesh-sanitizer-") as temporary:
             build=Path(temporary)/"build"
-            subprocess.run(["cmake","-S",str(ROOT),"-B",str(build),"-DCMAKE_BUILD_TYPE=Debug","-DSTAGEFORGE_BUILD_TESTS=ON","-DSTAGEFORGE_ENABLE_SANITIZERS=ON"],cwd=ROOT,check=True,env=env)
+            subprocess.run(["cmake","-S",str(ROOT),"-B",str(build),"-DCMAKE_BUILD_TYPE=Debug","-DSTAGEMESH_BUILD_TESTS=ON","-DSTAGEMESH_ENABLE_SANITIZERS=ON"],cwd=ROOT,check=True,env=env)
             subprocess.run(["cmake","--build",str(build),"--parallel","2"],cwd=ROOT,check=True,env=env)
             subprocess.run(["ctest","--test-dir",str(build),"--output-on-failure"],cwd=ROOT,check=True,env=env)
         suffix=" with leak detection" if args.detect_leaks else " (leak detection disabled; use --detect-leaks on an untraced host)"

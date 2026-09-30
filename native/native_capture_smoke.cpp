@@ -11,7 +11,7 @@
 #include <unistd.h>
 #endif
 
-using namespace stageforge;
+using namespace stagemesh;
 namespace {
 void require(bool condition, const char* message) { if (!condition) throw std::runtime_error(message); }
 struct Context { std::atomic<std::uint64_t> calls{0}; };
@@ -32,9 +32,9 @@ void collect(NativeCaptureStream& stream, const DeviceExecutionFence& fence) {
 struct TopologyFixture {
     AudioDeviceID device = kAudioObjectUnknown;
     TopologyFixture() {
-        auto uid = CFStringCreateWithFormat(nullptr, nullptr, CFSTR("org.stageforge.capture-event.%d"), getpid());
+        auto uid = CFStringCreateWithFormat(nullptr, nullptr, CFSTR("org.stagemesh.capture-event.%d"), getpid());
         auto description = CFDictionaryCreateMutable(nullptr, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-        CFDictionarySetValue(description, CFSTR(kAudioAggregateDeviceNameKey), CFSTR("StageForge Capture Event"));
+        CFDictionarySetValue(description, CFSTR(kAudioAggregateDeviceNameKey), CFSTR("StageMesh Capture Event"));
         CFDictionarySetValue(description, CFSTR(kAudioAggregateDeviceUIDKey), uid);
         auto status = AudioHardwareCreateAggregateDevice(description, &device);
         CFRelease(description); CFRelease(uid);
@@ -83,11 +83,11 @@ int main() {
         AudioPreflightDecision verified;
         if (capabilities.endpoint_present) {
 #ifdef __APPLE__
-            const char* authorized = std::getenv("STAGEFORGE_HOSTED_CAPTURE_AUTHORIZED");
+            const char* authorized = std::getenv("STAGEMESH_HOSTED_CAPTURE_AUTHORIZED");
             if (!authorized || std::string(authorized) != "1")
                 throw std::runtime_error("capture test requires pre-existing authorization; no access requested");
 #endif
-            const char* allowed = std::getenv("STAGEFORGE_ALLOW_ENDPOINT_CAPTURE_TEST");
+            const char* allowed = std::getenv("STAGEMESH_ALLOW_ENDPOINT_CAPTURE_TEST");
             if (!allowed || std::string(allowed) != "1") throw std::runtime_error("capture endpoint test requires explicit environment opt-in");
             DeviceMonitor monitor; monitor.start(); auto snapshot = monitor.snapshot();
             DeviceRecord selected; unsigned matches = 0;

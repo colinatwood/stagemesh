@@ -4,4 +4,4 @@ __pycache__/
 build/
 .DS_Store
 
-.stageforge-witness/
+.stagemesh-witness/

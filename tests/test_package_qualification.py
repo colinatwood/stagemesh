@@ -16,18 +16,18 @@ class PackageQualificationTests(unittest.TestCase):
         for tool in ("systemd-sysusers", "systemd-tmpfiles", "systemd-analyze"):
             if shutil.which(tool) is None:
                 self.skipTest(f"missing {tool}")
-        if os.environ.get("STAGEFORGE_PACKAGE_QUALIFY_SUDO") != "1":
+        if os.environ.get("STAGEMESH_PACKAGE_QUALIFY_SUDO") != "1":
             self.skipTest("isolated rootfs ownership test requires sudo")
         with tempfile.TemporaryDirectory() as raw:
             build = Path(raw) / "build"
             (build / "native").mkdir(parents=True)
-            engine = build / "native/stageforge_engine"
+            engine = build / "native/stagemesh_engine"
             engine.write_text("#!/bin/sh\nexit 0\n")
             engine.chmod(0o755)
-            command = [sys.executable, str(ROOT / "scripts/stageforge-package-qualify.py"), "--build-dir", str(build)]
+            command = [sys.executable, str(ROOT / "scripts/stagemesh-package-qualify.py"), "--build-dir", str(build)]
             # Only the isolated rootfs ownership exercise needs root. The full
             # suite and engine stay under the normal runner identity.
-            if os.environ.get("STAGEFORGE_PACKAGE_QUALIFY_SUDO") == "1":
+            if os.environ.get("STAGEMESH_PACKAGE_QUALIFY_SUDO") == "1":
                 command = ["sudo", "-n", "--", *command]
             result = subprocess.run(
                 command,
@@ -51,7 +51,7 @@ class PackageQualificationTests(unittest.TestCase):
 
     def test_qualification_fails_without_built_engine(self):
         result = subprocess.run(
-            [sys.executable, str(ROOT / "scripts/stageforge-package-qualify.py"), "--build-dir", "/definitely/missing"],
+            [sys.executable, str(ROOT / "scripts/stagemesh-package-qualify.py"), "--build-dir", "/definitely/missing"],
             cwd=ROOT,
             capture_output=True,
             text=True,

@@ -4,12 +4,12 @@ import unittest
 from threading import RLock
 from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
-from runtime import StageForgeRuntime
+from runtime import StageMeshRuntime
 
 
 class AudioActivationPreflightTests(unittest.TestCase):
     def runtime(self):
-        runtime = StageForgeRuntime.__new__(StageForgeRuntime)
+        runtime = StageMeshRuntime.__new__(StageMeshRuntime)
         runtime._audio_control_lock = RLock()
         runtime._audio_activation_preflight = {}
         return runtime

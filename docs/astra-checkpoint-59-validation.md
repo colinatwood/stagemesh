@@ -17,7 +17,7 @@ The authenticated request loop is transport-neutral and still enforces a bounded
 
 `WindowsNamedPipeIpcServer` adds the Windows-side adapter contract:
 
-- pipe names are restricted to `\\.\\pipe\\StageForge\\<safe-name>`;
+- pipe names are restricted to `\\.\\pipe\\StageMesh\\<safe-name>`;
 - the default listener is Windows `AF_PIPE` only; there is no Unix emulation path masquerading as Windows support;
 - startup **requires** an explicit ACL validator and fails closed if that validator is absent or returns anything other than true;
 - a failed ACL check closes the listener before any request is accepted;
@@ -28,7 +28,7 @@ The ACL validator is intentionally not implemented as a Linux guess. A Windows d
 
 ## Validation
 
-- **8 focused local-IPC/named-pipe tests pass**, including authenticated message-pipe roundtrip, exact framing, trailing/truncated packet rejection, StageForge pipe-name scoping, mandatory ACL validation, failed-ACL listener cleanup and bounded request service.
+- **8 focused local-IPC/named-pipe tests pass**, including authenticated message-pipe roundtrip, exact framing, trailing/truncated packet rejection, StageMesh pipe-name scoping, mandatory ACL validation, failed-ACL listener cleanup and bounded request service.
 - Broader session/API/infrastructure slice passes **87 tests**.
 - Release Python suite passes **610 tests with zero skips**.
 - RT native CTest remains **2/2**; native source is unchanged.

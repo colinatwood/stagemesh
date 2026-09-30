@@ -1,6 +1,6 @@
 # Astra checkpoint 56 validation — cross-platform persistence-grade audio/MIDI identity contract
 
-Checkpoint 56 defines how future Windows/macOS device adapters may participate in StageForge's existing fail-closed reconnect/rebind lifecycle. It is a **contract foundation**, not a claim that Windows/macOS hotplug or audio streaming is implemented.
+Checkpoint 56 defines how future Windows/macOS device adapters may participate in StageMesh's existing fail-closed reconnect/rebind lifecycle. It is a **contract foundation**, not a claim that Windows/macOS hotplug or audio streaming is implemented.
 
 ## Audio identity
 
@@ -13,7 +13,7 @@ Checkpoint 56 defines how future Windows/macOS device adapters may participate i
 
 Microsoft documents that ordinary audio endpoint IDs are tied to the device installation and can change across driver/OS updates, while Windows 11 24H2 adds `PKEY_AudioEndpoint_StableId` as the more durable endpoint identity. Checkpoint 56 therefore refuses to elevate the checkpoint-55 snapshot hash into automatic reconnect authority.
 
-Apple documents CoreAudio device UIDs as persistent identifiers; StageForge consumes only a SHA-256 hash so private UID material is not exposed through the runtime's device state. Mutable endpoint properties still have to be re-read after identity resolution.
+Apple documents CoreAudio device UIDs as persistent identifiers; StageMesh consumes only a SHA-256 hash so private UID material is not exposed through the runtime's device state. Mutable endpoint properties still have to be re-read after identity resolution.
 
 ## MIDI identity
 

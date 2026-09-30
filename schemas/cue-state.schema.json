@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://stageforge.dev/schemas/cue-state.schema.json",
+  "$id": "https://stagemesh.dev/schemas/cue-state.schema.json",
   "title": "UPP Core Cue State",
   "type": "object",
   "required": ["currentCueId", "previousCueId", "lastEventId", "lastShowTimeNs", "transitions"],

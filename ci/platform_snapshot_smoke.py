@@ -81,7 +81,7 @@ def windows_unauthorized_denial() -> dict:
     import ctypes
     import windows_named_pipe as wnp
 
-    name = rf"\\.\pipe\StageForge\CI-Deny-{uuid.uuid4().hex}"
+    name = rf"\\.\pipe\StageMesh\CI-Deny-{uuid.uuid4().hex}"
     unauthorized_only_sid = "S-1-5-21-1111111111-2222222222-3333333333-424242"
     listener = wnp.create_secure_windows_pipe_listener(
         name,
@@ -165,8 +165,8 @@ def windows_pipe() -> dict:
     from session_channel import AuthenticatedSessionChannel
 
     sid = current_windows_sid()
-    name = rf"\\.\pipe\StageForge\CI-{uuid.uuid4().hex}"
-    key = hashlib.sha256(b"stageforge-github-bootstrap").digest()
+    name = rf"\\.\pipe\StageMesh\CI-{uuid.uuid4().hex}"
+    key = hashlib.sha256(b"stagemesh-github-bootstrap").digest()
     cluster = "11" * 16
     session = "22" * 32
 
@@ -289,7 +289,7 @@ def main() -> int:
     else:
         report["checks"]["linuxImportReference"] = {"qualified": True}
 
-    out = Path(os.environ.get("STAGEFORGE_CI_EVIDENCE", "platform-module-smoke.json"))
+    out = Path(os.environ.get("STAGEMESH_CI_EVIDENCE", "platform-module-smoke.json"))
     out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(out.read_text(encoding="utf-8"))
     return 0

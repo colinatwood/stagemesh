@@ -4,7 +4,7 @@ Core 5.0 treats controller mapping as a musician-facing action. Select a target,
 
 Mappings are portable `org.upp.midi-mapping-set` documents saved independently from transient device attachment. A disconnected controller can return without losing its map. The target catalog supplies useful defaults for pads, sliders and knobs while preserving explicit behavior, range, curve, quantization, scale and key-sync metadata.
 
-Mapped triggers can run immediately or on the next master quarter, eighth, sixteenth or thirty-second-note boundary. Boundaries use the authoritative master BPM and StageForge Show Time; they do not use browser or controller arrival time. A stopped transport executes immediately because its Show Time cannot advance to a future boundary.
+Mapped triggers can run immediately or on the next master quarter, eighth, sixteenth or thirty-second-note boundary. Boundaries use the authoritative master BPM and StageMesh Show Time; they do not use browser or controller arrival time. A stopped transport executes immediately because its Show Time cannot advance to a future boundary.
 
 Key sync projects mapped note/sample/synth intent to the nearest pitch in the selected major, minor or chromatic scale rooted at the show's master key. Both input and output notes plus the semitone displacement remain visible. Raw performer MIDI and auto-notation are never rewritten, and acoustic performers are not falsely claimed to have been pitch-corrected.
 

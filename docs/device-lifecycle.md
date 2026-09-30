@@ -1,6 +1,6 @@
 # Native device monitor: Checkpoint 75
 
-The `stageforge_devices` C++ library now covers target-OS device observation,
+The `stagemesh_devices` C++ library now covers target-OS device observation,
 privacy-preserving persistent identity, and fail-closed reconciliation. It remains
 a control-thread module: callbacks only advance an atomic topology revision and
 never open streams, allocate audio-path work, invoke user code, or automatically
@@ -31,7 +31,7 @@ fallback behavior.
 
 Checkpoint 74 first proved enumeration and notification registration lifecycle on
 both target OSes. Checkpoint 75 run
-[34881629489](https://github.com/colinatwood/stageforge/actions/runs/34881629489)
+[34881629489](https://github.com/colinatwood/stagemesh/actions/runs/34881629489)
 then exercised identity/reconciliation on Windows and real software topology
 changes on Apple Silicon macOS. PR source head:
 `8028ac5005e81ddd6f69a8df2bfed0a28ee7e313`.
@@ -66,7 +66,7 @@ Every evidence record explicitly keeps `physicalOutputsArmed`,
 ## Remaining implementation and qualification
 
 - Integrate the native snapshots/revisions and selection resolver with the full
-  StageForge engine lifecycle so detach/ambiguity immediately fences unsafe
+  StageMesh engine lifecycle so detach/ambiguity immediately fences unsafe
   physical execution and requires explicit recovery/rearm.
 - Add Windows MIDI native enumeration/notifications and run Windows stable-ID
   evidence with a Windows SDK that exposes `PKEY_AudioEndpoint_StableId` and a
@@ -86,7 +86,7 @@ cmake --build build --config Release
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-Hosted macOS CI additionally configures `-DSTAGEFORGE_DEVICE_ASAN=ON`.
+Hosted macOS CI additionally configures `-DSTAGEMESH_DEVICE_ASAN=ON`.
 
 Historical continuation: [Checkpoint 78 guarded lifecycle and manual rendering](backlog-checkpoint-78.md).
 

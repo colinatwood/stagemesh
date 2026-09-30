@@ -110,7 +110,7 @@ def migrate_show_state(snapshot: dict[str, Any]) -> tuple[dict[str, Any], dict[s
     """Normalize a readable show state to API v1 while preserving unknown data.
 
     API v0 is intentionally tiny and exists only as a compatibility bridge for
-    early StageForge development snapshots. New migrations should be explicit,
+    early StageMesh development snapshots. New migrations should be explicit,
     deterministic and reversible at the data level; never guess semantic
     equivalence for unknown fields.
     """

@@ -28,7 +28,7 @@ def plugin_host_audit_status()->list[dict[str,Any]]:
     return [host.status() for host in hosts]
 
 def _scratch_root(*,create=True)->Path|None:
-    root=Path(os.environ.get("STAGEFORGE_PLUGIN_SCRATCH_DIR","").strip() or (Path(tempfile.gettempdir())/"stageforge-plugin-host-scratch"))
+    root=Path(os.environ.get("STAGEMESH_PLUGIN_SCRATCH_DIR","").strip() or (Path(tempfile.gettempdir())/"stagemesh-plugin-host-scratch"))
     if not root.exists():
         if not create:return None
         root.mkdir(mode=0o700,parents=True,exist_ok=True)
@@ -45,10 +45,10 @@ def _tree_size(root:Path)->int:
     return total
 
 def _scratch_limit()->int:
-    raw=os.environ.get("STAGEFORGE_PLUGIN_SCRATCH_MAX_BYTES",str(512*1024**2))
+    raw=os.environ.get("STAGEMESH_PLUGIN_SCRATCH_MAX_BYTES",str(512*1024**2))
     try:maximum=int(raw)
-    except ValueError:raise RuntimeError("STAGEFORGE_PLUGIN_SCRATCH_MAX_BYTES must be an integer number of bytes") from None
-    if maximum<1024*1024:raise RuntimeError("STAGEFORGE_PLUGIN_SCRATCH_MAX_BYTES must be at least 1048576 bytes")
+    except ValueError:raise RuntimeError("STAGEMESH_PLUGIN_SCRATCH_MAX_BYTES must be an integer number of bytes") from None
+    if maximum<1024*1024:raise RuntimeError("STAGEMESH_PLUGIN_SCRATCH_MAX_BYTES must be at least 1048576 bytes")
     return maximum
 
 def plugin_host_scratch_status()->dict[str,Any]:
@@ -189,7 +189,7 @@ class IsolatedPluginHost:
         self.process:subprocess.Popen[str]|None=None;self.bypassed=True;self.failures=0;self._lock=threading.RLock()
         self.scratch_path:Path|None=None;self.scratch_resource_id=None
         self.starts=0;self.closes=0;self.forced_kills=0;self.last_exit_code=None;self.requests=0;self.process_blocks=0;self.processed_samples=0;self.timeouts=0;self.disconnects=0;self.host_errors=0;self.invalid_responses=0;self.max_request_duration_ns=0;self.last_error=None
-        self.qualification_enabled=os.environ.get("STAGEFORGE_RT_QUALIFICATION","").strip().lower() in {"1","true","yes","on"}
+        self.qualification_enabled=os.environ.get("STAGEMESH_RT_QUALIFICATION","").strip().lower() in {"1","true","yes","on"}
         self.serialization_lock_attempts=0;self.serialization_lock_contentions=0;self.max_serialization_lock_wait_ns=0;self.request_payload_bytes=0;self.response_payload_bytes=0
         self._next_request_id=1;self.protocol_version=None;self.latency_frames=None;self.process_supported=False
         with _HOSTS_LOCK:_HOSTS.add(self)
@@ -219,7 +219,7 @@ class IsolatedPluginHost:
             try:
                 create_owner_manifest(self.scratch_path/"owner.json",self.scratch_path,resource_class="plugin-host-scratch",purpose="isolated-effect-host",extra={"pluginIdHash":hashlib.sha256(self.manifest["pluginId"].encode()).hexdigest()})
                 fsync_directory(scratch_root)
-                environment=os.environ.copy();environment["STAGEFORGE_PLUGIN_INSTANCE_SCRATCH_DIR"]=str(self.scratch_path)
+                environment=os.environ.copy();environment["STAGEMESH_PLUGIN_INSTANCE_SCRATCH_DIR"]=str(self.scratch_path)
                 launch_command=self.command;launch_kwargs:dict[str,Any]={}
                 adapter_fd=None
                 if self.manifest["format"]!="builtin" and sys.platform.startswith("linux"):

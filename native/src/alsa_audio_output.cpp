@@ -1,4 +1,4 @@
-#include "stageforge/alsa_audio_output.hpp"
+#include "stagemesh/alsa_audio_output.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -10,7 +10,7 @@
 #include <dlfcn.h>
 #endif
 
-namespace stageforge {
+namespace stagemesh {
 
 namespace {
 
@@ -365,4 +365,4 @@ void AlsaAudioOutput::render_loop() noexcept {
 #endif
 }
 
-} // namespace stageforge
+} // namespace stagemesh

@@ -1,6 +1,6 @@
 # Plugin adapter compatibility
 
-StageForge treats VST3, CLAP, LV2 and Audio Unit support as an external adapter
+StageMesh treats VST3, CLAP, LV2 and Audio Unit support as an external adapter
 contract. Listing a format does not mean that Core contains or certifies a native
 loader for that format.
 
@@ -12,7 +12,7 @@ Before an external adapter process can start, its manifest must provide:
 - adapter protocol version `1`; and
 - a `sha256:` digest of the executable.
 
-The current system and architecture must be explicitly listed. On Linux, StageForge
+The current system and architecture must be explicitly listed. On Linux, StageMesh
 opens the adapter as a non-symlink regular file, hashes that exact descriptor and
 launches through the inherited `/proc/self/fd/<fd>` handle. Replacing the manifest
 path after verification therefore cannot substitute different bytes for that launch.
@@ -35,12 +35,12 @@ handshake. Any failure leaves the effect bypassed and immediately reaps the fail
 adapter process.
 
 Each launched adapter receives a private per-instance directory through
-`STAGEFORGE_PLUGIN_INSTANCE_SCRATCH_DIR`. The parent records exact boot/process-start
+`STAGEMESH_PLUGIN_INSTANCE_SCRATCH_DIR`. The parent records exact boot/process-start
 ownership, removes the directory on normal close and reports crash residue through
 `GET /api/v1/daw/plugin-hosts/lifecycle` and the aggregate DAW temporary-resource
 status. Acknowledged cleanup removes only scratch owned by a process proven dead.
-Malformed or unverifiable ownership is retained. `STAGEFORGE_PLUGIN_SCRATCH_DIR`
-selects a private service-owned root and `STAGEFORGE_PLUGIN_SCRATCH_MAX_BYTES`
+Malformed or unverifiable ownership is retained. `STAGEMESH_PLUGIN_SCRATCH_DIR`
+selects a private service-owned root and `STAGEMESH_PLUGIN_SCRATCH_MAX_BYTES`
 sets the shared admission threshold (512 MiB by default, minimum 1 MiB).
 
 The host discards adapter stderr so an unread diagnostic pipe cannot deadlock audio
@@ -57,7 +57,7 @@ the isolated host boundary.
 Linux binds verification and execution to the same opened file descriptor. Windows and
 macOS manifests now require explicit native-signing/file-identity attestations and the host
 refuses unbound launch, but the OS-native binder itself still must be implemented and
-exercised on those platforms before StageForge can claim verification-to-launch parity.
+exercised on those platforms before StageMesh can claim verification-to-launch parity.
 
 No third-party plugin binaries are bundled. Actual VST3, CLAP, LV2 and Audio Unit
 products still require licensed test fixtures and runs on each claimed operating

@@ -5,12 +5,12 @@ from threading import RLock
 from unittest.mock import Mock
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"backend"))
-from runtime import StageForgeRuntime
+from runtime import StageMeshRuntime
 from plugin_latency import latency_compensation_plan
 
 class DelayGraphContractTests(unittest.TestCase):
     def runtime(self):
-        runtime=StageForgeRuntime.__new__(StageForgeRuntime)
+        runtime=StageMeshRuntime.__new__(StageMeshRuntime)
         runtime._mutation_lock=RLock()
         runtime._has_authority=Mock(return_value=True)
         runtime.state=Mock()

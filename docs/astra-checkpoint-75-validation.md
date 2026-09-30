@@ -8,8 +8,8 @@ reconciliation to the native Windows/macOS device lifecycle layer.
 Source head `8028ac5005e81ddd6f69a8df2bfed0a28ee7e313` passed all three GitHub workflows:
 
 - generic CI: run `34881629544`
-- StageForge Platform Modules: run `34881629490`
-- StageForge Native Device Lifecycle: run `34881629489`
+- StageMesh Platform Modules: run `34881629490`
+- StageMesh Native Device Lifecycle: run `34881629489`
 
 The native lifecycle matrix passed on Windows Server 2025 x64 and Apple Silicon
 macOS 14.8.9. The macOS build/test used AddressSanitizer.
@@ -69,7 +69,7 @@ identified:
 This checkpoint qualifies native software topology event delivery and strong
 identity recovery on macOS software fixtures. It does not qualify physical
 hotplug, a physical audio device, audio streaming, Windows live StableId retrieval,
-or the full StageForge engine's stream-fencing/rearm behavior.
+or the full StageMesh engine's stream-fencing/rearm behavior.
 
 The remaining device software work is integration of these observations and
 reconciliation decisions into the full engine lifecycle. WASAPI/CoreAudio stream

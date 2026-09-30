@@ -1,4 +1,4 @@
-#include "stageforge/uwb_hardware_bridge.hpp"
+#include "stagemesh/uwb_hardware_bridge.hpp"
 
 #include <algorithm>
 #include <cerrno>
@@ -11,7 +11,7 @@
 #include <unistd.h>
 #endif
 
-namespace stageforge {
+namespace stagemesh {
 namespace {
 
 constexpr std::array<std::uint8_t,4> magic{'S','F','U','W'};
@@ -137,4 +137,4 @@ bool UwbHardwareBridge::try_read(UwbHardwareObservation& observation) noexcept {
     return parse_buffer(observation);
 }
 
-} // namespace stageforge
+} // namespace stagemesh

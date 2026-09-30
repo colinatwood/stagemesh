@@ -5,12 +5,12 @@ from unittest.mock import Mock,patch
 
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/"backend"))
 from audio_identity import AudioIdentityStore
-from runtime import StageForgeRuntime
+from runtime import StageMeshRuntime
 
 
 class AudioHotplugTests(unittest.TestCase):
     def runtime(self,raw):
-        runtime=StageForgeRuntime.__new__(StageForgeRuntime);runtime.native=Mock();runtime.native.available=True
+        runtime=StageMeshRuntime.__new__(StageMeshRuntime);runtime.native=Mock();runtime.native.available=True
         runtime.state=Mock();runtime.state.snapshot.return_value={"audio":{"sampleRate":192000,"bufferFrames":256,"outputs":[{"slot":0,"deviceId":"alsa-old"}],"inputs":[]}}
         runtime.audio_identities=AudioIdentityStore(Path(raw)/"audio-identities.json");runtime.audio_identities.record("alsa-old",{"persistentId":"audio-serial","identityStrength":"hardware-serial","automaticReconnectEligible":True})
         runtime._audio_devices=[];runtime._audio_control_lock=RLock();runtime._audio_scan_lock=RLock();runtime._audio_hotplug_generation=0;runtime._audio_hotplug_changes=[];runtime._last_audio_scan=0

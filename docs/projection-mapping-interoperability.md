@@ -1,6 +1,6 @@
 # Projection-mapping interoperability
 
-StageForge can treat projection mapping as a presentation surface driven by
+StageMesh can treat projection mapping as a presentation surface driven by
 time-aligned show events. This guidance is informed by
 [Splash](https://github.com/paperManu/splash), a modular video-mapping system
 that uses calibrated 3D surfaces, multiple projectors, video inputs, and
@@ -44,7 +44,7 @@ validated; unsupported mesh, codec, color, or display metadata must produce a
 diagnostic rather than a silent fallback.
 
 Real-time scheduling and GPU/display tuning are host qualifications, not
-assumptions of the portable StageForge core. Record them as environment facts
+assumptions of the portable StageMesh core. Record them as environment facts
 and keep the software usable in a non-real-time preview environment.
 
 ## Qualification scenarios
@@ -61,7 +61,7 @@ and keep the software usable in a non-real-time preview environment.
 
 ## Licensing and reuse
 
-Splash is GPL-licensed according to its project documentation. StageForge should
+Splash is GPL-licensed according to its project documentation. StageMesh should
 borrow interoperability concepts and documented boundaries without copying
 implementation code or bundling dependencies unless licensing and distribution
 obligations have been reviewed.

@@ -1,11 +1,11 @@
-# StageForge hardware qualification bench kit
+# StageMesh hardware qualification bench kit
 
 Status: blocked on access to physical equipment. No hardware is qualified by this kit.
 Baseline source checkpoint: Core 5.10.5, engine handshake 5.0, public ABI 1.67.
 
 ## Observed preflight
 
-On 2026-09-11, `python3 scripts/stageforge-qualify.py` found zero sound cards,
+On 2026-09-11, `python3 scripts/stagemesh-qualify.py` found zero sound cards,
 zero Bluetooth controllers, zero candidate UWB serial devices, and no
 `bluetoothctl`. `/dev/snd` and USB device passthrough were not exposed in this
 environment. The machine reported Linux 6.18.35 x86_64. This observation concerns
@@ -71,7 +71,7 @@ is operator-supplied metadata, not verified hardware provenance.
 Run from the kit root on the bench host (Python is required):
 
 ```sh
-python3 scripts/stageforge-qualify.py > platform-observation.json
+python3 scripts/stagemesh-qualify.py > platform-observation.json
 ```
 
 For LE/UWB only, an actual timestamp adapter must capture JSON Lines records with
@@ -80,7 +80,7 @@ capture file. The kit does not supply a universal device driver or capture adapt
 Then use the existing analyzer, substituting real paths, IDs and measured duration:
 
 ```sh
-python3 scripts/stageforge-hardware-bench.py --input captured.jsonl --source hardware --duration-ms ACTUAL_DURATION_MS --uwb-device ACTUAL_UWB_ID --le-controller ACTUAL_LE_ID --output timing-summary.json
+python3 scripts/stagemesh-hardware-bench.py --input captured.jsonl --source hardware --duration-ms ACTUAL_DURATION_MS --uwb-device ACTUAL_UWB_ID --le-controller ACTUAL_LE_ID --output timing-summary.json
 ```
 
 Do not label synthetic/loopback fixtures as hardware evidence. The analyzer's
@@ -96,7 +96,7 @@ handoff testing.
 
 ## HTTP controller/rate workload reference
 
-Run `python3 scripts/stageforge-http-workload.py --json` from the repository root.
+Run `python3 scripts/stagemesh-http-workload.py --json` from the repository root.
 The harness records normal loopback control responsiveness and abusive-rate containment
 using the current HTTP policy. `http-workload-reference.json` is the checkpoint-38
 reference result; it is not physical-controller, LAN, proxy/IdP/firewall or hardware

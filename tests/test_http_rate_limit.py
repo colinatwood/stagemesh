@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'backend'))
-from dev_server import RequestRateLimiter, StageForgeHTTPServer, StageForgeHandler
+from dev_server import RequestRateLimiter, StageMeshHTTPServer, StageMeshHandler
 
 
 class RateTests(unittest.TestCase):
@@ -37,7 +37,7 @@ class RateTests(unittest.TestCase):
         self.assertEqual(set(limiter.peers), {'b'})
 
     def test_http_rejection_closes_unread_body_and_ignores_forwarded_ip(self):
-        server = StageForgeHTTPServer(('127.0.0.1', 0), StageForgeHandler)
+        server = StageMeshHTTPServer(('127.0.0.1', 0), StageMeshHandler)
         server.request_limiter = RequestRateLimiter(clock=lambda: 0.0, peer_rate=1, peer_burst=1)
         worker = threading.Thread(target=server.serve_forever, daemon=True)
         worker.start()

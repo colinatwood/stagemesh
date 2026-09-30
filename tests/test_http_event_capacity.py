@@ -6,12 +6,12 @@ from pathlib import Path
 from unittest.mock import Mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'backend'))
-from dev_server import StageForgeHTTPServer, StageForgeHandler
+from dev_server import StageMeshHTTPServer, StageMeshHandler
 
 
 class EventCapacityTests(unittest.TestCase):
     def test_stream_failure_releases_slot_and_closes_connection(self):
-        handler = object.__new__(StageForgeHandler)
+        handler = object.__new__(StageMeshHandler)
         handler.server = Mock(_event_slots=threading.BoundedSemaphore(1))
         handler._stream_events = Mock(side_effect=TimeoutError())
         with self.assertRaises(TimeoutError):
@@ -20,7 +20,7 @@ class EventCapacityTests(unittest.TestCase):
         self.assertTrue(handler.server._event_slots.acquire(False))
 
     def test_normal_stream_exit_releases_slot(self):
-        handler = object.__new__(StageForgeHandler)
+        handler = object.__new__(StageMeshHandler)
         handler.server = Mock(_event_slots=threading.BoundedSemaphore(1))
         handler._stream_events = Mock()
         handler._serve_events(17)
@@ -31,11 +31,11 @@ class EventCapacityTests(unittest.TestCase):
     def test_saturated_stream_pool_preserves_http_control_capacity(self):
         entered, release = threading.Event(), threading.Event()
 
-        class Server(StageForgeHTTPServer):
+        class Server(StageMeshHTTPServer):
             max_connections = 3
             max_event_streams = 1
 
-        class Handler(StageForgeHandler):
+        class Handler(StageMeshHandler):
             def do_GET(self):
                 if self.path == '/events':
                     self._serve_events(0)

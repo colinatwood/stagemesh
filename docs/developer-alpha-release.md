@@ -76,7 +76,7 @@ show hardware attached; the existing tests are not a production monitoring tool.
 ## Native sanitizer gate
 
 `scripts/sanitizer-check.py` creates a fresh Debug CMake tree with
-`STAGEFORGE_ENABLE_SANITIZERS=ON`, builds all native targets, and runs CTest under
+`STAGEMESH_ENABLE_SANITIZERS=ON`, builds all native targets, and runs CTest under
 AddressSanitizer and UndefinedBehaviorSanitizer with halt-on-error behavior. The
 default disables LeakSanitizer because traced/containerized environments may deny
 the `/proc` task inspection it requires. Run `--detect-leaks` on an untraced Linux
@@ -97,7 +97,7 @@ coverage must remain experimental until end-to-end qualification exists.
 ## Staged Linux installation
 
 The service unit currently supports only `/usr`. The installer accepts an absolute
-`DESTDIR` for package staging and `STAGEFORGE_BUILD_DIR` for the selected build.
+`DESTDIR` for package staging and `STAGEMESH_BUILD_DIR` for the selected build.
 It does not create the service account, enable/start a service, or activate devices.
 Unsupported prefixes and missing engines fail before destination creation.
 The staged smoke tests use a placeholder engine to validate packaging independently;
@@ -141,9 +141,9 @@ on cleanup or preparation failure. Free-space checks conservatively include exis
 reservations plus a 64 MiB reserve. Source growth beyond the reserved size is rejected.
 These checks do not reserve filesystem blocks against other processes; disk writes
 can still fail. The shared store serializes reservations across processes and counts
-the greater of reserved or observed bytes. `STAGEFORGE_SNAPSHOT_MAX_BYTES` and
-`STAGEFORGE_SNAPSHOT_FREE_RESERVE_BYTES` configure strict byte limits; invalid values
-fail closed. `STAGEFORGE_SNAPSHOT_DIR` selects the store. Live or unverifiable owners
+the greater of reserved or observed bytes. `STAGEMESH_SNAPSHOT_MAX_BYTES` and
+`STAGEMESH_SNAPSHOT_FREE_RESERVE_BYTES` configure strict byte limits; invalid values
+fail closed. `STAGEMESH_SNAPSHOT_DIR` selects the store. Live or unverifiable owners
 are never reclaimed automatically. Starting a replacement while an old snapshot is retained must fit both within
 the shared budget.
 

@@ -17,7 +17,7 @@ served-UI acceptance boundary without overstating rendered-browser coverage.
 ## Qualification boundary
 
 The managed Chrome session returned `ERR_BLOCKED_BY_CLIENT` for the loopback service
-before any StageForge content loaded. Consequently, responsive layout, browser event
+before any StageMesh content loaded. Consequently, responsive layout, browser event
 integration, focus traversal order, screen-reader behavior and visual regressions
 remain open for a browser environment that can reach the service.
 

@@ -5,12 +5,12 @@ from unittest.mock import Mock,patch
 
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/"backend"))
 from midi_identity import MidiIdentityStore
-from runtime import StageForgeRuntime
+from runtime import StageMeshRuntime
 
 
 class MidiHotplugTests(unittest.TestCase):
     def runtime(self,raw):
-        runtime=StageForgeRuntime.__new__(StageForgeRuntime)
+        runtime=StageMeshRuntime.__new__(StageMeshRuntime)
         runtime.native=Mock();runtime.native.available=True
         runtime.state=Mock();runtime.state.snapshot.return_value={"midi":{"bindings":{"win-old":"player-a"}}}
         runtime.replication=Mock();runtime.replication.is_primary.return_value=True

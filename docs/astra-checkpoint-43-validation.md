@@ -28,7 +28,7 @@ The bundled v2 catalog currently contains two architecture-specific records for 
 
 - Focused driver-catalog suite: 6 tests passed.
 - Driver + hardware diagnostics + installer integration group: 17 tests passed.
-- Fresh release native build with `STAGEFORGE_RT_QUALIFICATION=ON`: 2/2 CTest targets passed.
+- Fresh release native build with `STAGEMESH_RT_QUALIFICATION=ON`: 2/2 CTest targets passed.
 - Release Python suite against that exact engine: 531 tests passed.
 - Automation performance: passed with 4096 points / 8192 frames and binary block-entry search.
 - Public JSON schemas: 117 parsed successfully.
@@ -37,4 +37,4 @@ The bundled v2 catalog currently contains two architecture-specific records for 
 
 ## Remaining boundary
 
-The bundled set is intentionally tiny and is not a general device-compatibility database. Windows/macOS endpoint evidence adapters, additional reviewed vendor records, periodic re-review, real driver installation and physical device qualification remain separate work. A catalog match is package metadata evidence, not proof that StageForge or a particular device works correctly.
+The bundled set is intentionally tiny and is not a general device-compatibility database. Windows/macOS endpoint evidence adapters, additional reviewed vendor records, periodic re-review, real driver installation and physical device qualification remain separate work. A catalog match is package metadata evidence, not proof that StageMesh or a particular device works correctly.

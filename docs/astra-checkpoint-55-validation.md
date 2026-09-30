@@ -12,9 +12,9 @@ Microsoft documents MMDevice endpoint properties and notes that ordinary endpoin
 
 ## macOS evidence contract
 
-The macOS adapter reads `system_profiler SPAudioDataType -json -detailLevel mini`. Parsing is intentionally tolerant because `system_profiler` field names vary by release. When available, StageForge reports device name, manufacturer, transport and input/output channel hints. CoreAudio device UID material is hashed before export.
+The macOS adapter reads `system_profiler SPAudioDataType -json -detailLevel mini`. Parsing is intentionally tolerant because `system_profiler` field names vary by release. When available, StageMesh reports device name, manufacturer, transport and input/output channel hints. CoreAudio device UID material is hashed before export.
 
-The corresponding driver evidence is `coreaudio-device-present` with package semantics set to `not-applicable-no-windows-style-package-claim`. StageForge does not manufacture INF/package/version concepts for CoreAudio. Apple documents persistent CoreAudio device UID/model UID concepts and HAL plug-ins; actual host execution remains required before claiming platform support.
+The corresponding driver evidence is `coreaudio-device-present` with package semantics set to `not-applicable-no-windows-style-package-claim`. StageMesh does not manufacture INF/package/version concepts for CoreAudio. Apple documents persistent CoreAudio device UID/model UID concepts and HAL plug-ins; actual host execution remains required before claiming platform support.
 
 ## Failure isolation
 

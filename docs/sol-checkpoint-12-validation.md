@@ -17,7 +17,7 @@ class. Power-loss, filesystem-fault and multi-host qualification remain deferred
 
 - 390 Python unit/integration tests passed without skips with the qualification
   native engine selected.
-- `stageforge_native_tests` and `stageforge_current_abi_smoke` passed.
+- `stagemesh_native_tests` and `stagemesh_current_abi_smoke` passed.
 - All 112 JSON schemas and the OpenAPI document parsed.
 - Frontend JavaScript syntax and the Production DOM workflow harness passed.
 

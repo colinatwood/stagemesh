@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "backend"
 sys.path.insert(0, str(BACKEND))
 
-KEY = hashlib.sha256(b"stageforge-windows-service-ci").digest()
+KEY = hashlib.sha256(b"stagemesh-windows-service-ci").digest()
 CLUSTER = "31" * 16
 SESSION = "41" * 32
 CAPABILITY = 7
@@ -175,8 +175,8 @@ def roundtrip(pipe_name: str) -> None:
 
 
 def controller_mode(args) -> int:
-    service_name = "StageForgeCI" + uuid.uuid4().hex[:12]
-    pipe_name = rf"\\.\pipe\StageForge\Svc-{uuid.uuid4().hex}"
+    service_name = "StageMeshCI" + uuid.uuid4().hex[:12]
+    pipe_name = rf"\\.\pipe\StageMesh\Svc-{uuid.uuid4().hex}"
     operator_sid = current_sid()
     marker = Path(os.environ.get("RUNNER_TEMP", str(ROOT))) / f"{service_name}.json"
     evidence = Path(args.evidence)

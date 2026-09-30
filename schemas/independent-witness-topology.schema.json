@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://upp.stageforge.dev/schema/independent-witness-topology-v1.json",
+  "$id": "https://upp.stagemesh.dev/schema/independent-witness-topology-v1.json",
   "title": "UPP Independent Witness Topology v1",
   "type": "object",
   "additionalProperties": false,

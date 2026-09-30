@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 MANIFEST_SCHEMA_VERSION = 2
-MANIFEST_DOCUMENT_TYPE = "org.stageforge.temporary-resource-owner"
+MANIFEST_DOCUMENT_TYPE = "org.stagemesh.temporary-resource-owner"
 
 
 def process_identity(pid: int | None = None) -> dict[str, Any]:

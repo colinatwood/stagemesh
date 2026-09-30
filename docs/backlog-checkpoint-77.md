@@ -1,6 +1,6 @@
 # Master backlog through merged Checkpoint 77
 
-[Current workbook](backlog/StageForge-Master-Backlog-Checkpoint-77.xlsx) reconciles
+[Current workbook](backlog/StageMesh-Master-Backlog-Checkpoint-77.xlsx) reconciles
 the prior Checkpoint 74 workbook with merged PRs #9, #10 and #11. Source baseline:
 `c4e2c6a4fdd5f8759ce2056f013a48a4b41df6aa`. No additional row is closed.
 
@@ -17,7 +17,7 @@ native CoreAudio/CoreMIDI identities/events (75), explicit-rearm device fencing
 (76), and WASAPI/CoreAudio preflight (77). The fence is a safety state machine;
 integration with the owner of a real stream remains necessary.
 
-[Checkpoint 77 hosted run](https://github.com/colinatwood/stageforge/actions/runs/34885284915)
+[Checkpoint 77 hosted run](https://github.com/colinatwood/stagemesh/actions/runs/34885284915)
 passed three native CTests per OS. macOS playback and capture preflight observed
 48 kHz, 512-frame default period, 2-channel float32 endpoints. Windows had no
 endpoints: its successful no-endpoint checks are not live WASAPI preflight proof.

@@ -19,7 +19,7 @@ Reselection still never activates a physical stream. Strong persistent identity 
 
 The runtime uses that resolver for desired MIDI bindings. A show binding may therefore remain keyed to the original logical endpoint while the currently enumerated OS/native endpoint token changes. The native attach call uses the current endpoint token, but authoritative show intent is not silently rewritten.
 
-On endpoint disappearance or same-token identity replacement, StageForge detaches the unsafe MIDI input before any rebind attempt. MIDI hotplug state now publishes a bounded generation/change history analogous to the audio hotplug status and still reports `automaticActivation: false` and `physicalOutputsArmed: false`.
+On endpoint disappearance or same-token identity replacement, StageMesh detaches the unsafe MIDI input before any rebind attempt. MIDI hotplug state now publishes a bounded generation/change history analogous to the audio hotplug status and still reports `automaticActivation: false` and `physicalOutputsArmed: false`.
 
 ## Concurrency
 

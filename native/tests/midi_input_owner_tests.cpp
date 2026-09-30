@@ -1,11 +1,11 @@
-#include "stageforge/midi_input_owner.hpp"
+#include "stagemesh/midi_input_owner.hpp"
 
 #include <cassert>
 #include <thread>
 
 int main() {
-    stageforge::MidiInputOwner owner;
-    stageforge::MidiInputMessage message{123, 0x90, 60, 100};
+    stagemesh::MidiInputOwner owner;
+    stagemesh::MidiInputMessage message{123, 0x90, 60, 100};
     constexpr unsigned producers = 4;
     constexpr unsigned per_producer = 100;
     std::thread workers[producers];
@@ -21,7 +21,7 @@ int main() {
     for (auto& worker : workers) worker.join();
 
     unsigned received = 0;
-    stageforge::CapturedMidiInput event{};
+    stagemesh::CapturedMidiInput event{};
     while (owner.pop(event)) ++received;
     assert(received == producers * per_producer);
     assert(owner.audit_status().injected_messages == received);

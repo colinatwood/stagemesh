@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'backend'))
 
 from admin_mail import AdminMailer
 from community_governance import CommunityGovernance, durable_fraction, hype_value
-from runtime import StageForgeRuntime
+from runtime import StageMeshRuntime
 
 
 class HypeLogicTests(unittest.TestCase):
@@ -36,7 +36,7 @@ class CommunityGovernanceTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name)
-        with patch.dict('os.environ', {'STAGEFORGE_ADMIN_EMAIL_MODE': 'outbox'}, clear=False):
+        with patch.dict('os.environ', {'STAGEMESH_ADMIN_EMAIL_MODE': 'outbox'}, clear=False):
             self.gov = CommunityGovernance(self.root, AdminMailer(self.root))
         self.gov.upsert_account({'id': 'user-a', 'email': 'a@example.test', 'displayName': 'A'})
         self.proposal = self.gov.create_proposal({'id': 'proposal-a', 'title': 'Change the thing', 'description': 'A test change.'})
@@ -45,7 +45,7 @@ class CommunityGovernanceTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def _issue_and_token(self, hours=48):
-        issued = self.gov.issue_vote_emails('proposal-a', ['user-a'], window_hours=hours, base_url='https://stageforge.test')
+        issued = self.gov.issue_vote_emails('proposal-a', ['user-a'], window_hours=hours, base_url='https://stagemesh.test')
         self.assertEqual(issued['issued'][0]['status'], 'sent')
         eml_path = next((self.root / 'admin-email-outbox').glob('*.eml'))
         eml = BytesParser(policy=policy.default).parsebytes(eml_path.read_bytes()).get_content()
@@ -123,7 +123,7 @@ class CommunityGovernanceTests(unittest.TestCase):
             'change': {'kind': 'community-governance-policy', 'payload': {'minRawVotes': 5}},
             'description': 'Raise the raw participation floor to five.'
         })
-        self.gov.issue_vote_emails('proposal-a', ['user-a', 'user-b', 'user-c'], window_hours=48, base_url='https://stageforge.test')
+        self.gov.issue_vote_emails('proposal-a', ['user-a', 'user-b', 'user-c'], window_hours=48, base_url='https://stagemesh.test')
         tokens = self._tokens_by_recipient()
         for uid, email in [('user-a','a@example.test'), ('user-b','b@example.test'), ('user-c','c@example.test')]:
             self.gov.cast_vote(tokens[email], 'yes', authenticated_user_id=uid)
@@ -136,8 +136,8 @@ class CommunityGovernanceTests(unittest.TestCase):
         self.assertEqual(self.gov.proposals['proposal-a']['appliedChangeHash'], self.gov.proposals['proposal-a']['change']['hash'])
 
     def test_runtime_locks_direct_policy_edits_after_community_process_begins(self):
-        with tempfile.TemporaryDirectory() as tmp, patch.dict('os.environ', {'STAGEFORGE_NATIVE_ENGINE': 'off'}, clear=False):
-            runtime = StageForgeRuntime(Path(tmp))
+        with tempfile.TemporaryDirectory() as tmp, patch.dict('os.environ', {'STAGEMESH_NATIVE_ENGINE': 'off'}, clear=False):
+            runtime = StageMeshRuntime(Path(tmp))
             try:
                 runtime.community_create_proposal({'id': 'lock-proposal', 'title': 'Begin governance'})
                 with self.assertRaises(PermissionError):
@@ -156,7 +156,7 @@ class CommunityGovernanceTests(unittest.TestCase):
         self.gov.upsert_account({'id': 'user-b', 'email': 'b@example.test'})
         self.gov.upsert_account({'id': 'user-c', 'email': 'c@example.test'})
         self.gov.update_proposal('proposal-a', {'change': {'kind': 'community-governance-policy', 'payload': {'minRawVotes': 5}}})
-        self.gov.issue_vote_emails('proposal-a', ['user-a', 'user-b', 'user-c'], window_hours=48, base_url='https://stageforge.test')
+        self.gov.issue_vote_emails('proposal-a', ['user-a', 'user-b', 'user-c'], window_hours=48, base_url='https://stagemesh.test')
         tokens = self._tokens_by_recipient()
         for uid, email in [('user-a','a@example.test'), ('user-b','b@example.test'), ('user-c','c@example.test')]:
             self.gov.cast_vote(tokens[email], 'yes', authenticated_user_id=uid)
@@ -167,7 +167,7 @@ class CommunityGovernanceTests(unittest.TestCase):
 
     def test_persistence_keeps_vote_and_email_window(self):
         invitation, token = self._issue_and_token()
-        with patch.dict('os.environ', {'STAGEFORGE_ADMIN_EMAIL_MODE': 'outbox'}, clear=False):
+        with patch.dict('os.environ', {'STAGEMESH_ADMIN_EMAIL_MODE': 'outbox'}, clear=False):
             restored = CommunityGovernance(self.root, AdminMailer(self.root))
         detail = restored.snapshot(detail=True)
         self.assertEqual(detail['voteCount'], 0)
@@ -190,7 +190,7 @@ class CommunityPublicRecordTests(unittest.TestCase):
             index = len(self.events)
             return {'recordId': f'record-{index:020d}', 'recordHash': f'{index:064x}'}
 
-        with patch.dict('os.environ', {'STAGEFORGE_ADMIN_EMAIL_MODE': 'outbox'}, clear=False):
+        with patch.dict('os.environ', {'STAGEMESH_ADMIN_EMAIL_MODE': 'outbox'}, clear=False):
             self.gov = CommunityGovernance(self.root, AdminMailer(self.root), public_record_append=record)
         for uid, email in [('user-a', 'a@example.test'), ('user-b', 'b@example.test'), ('user-c', 'c@example.test')]:
             self.gov.upsert_account({'id': uid, 'email': email})
@@ -215,7 +215,7 @@ class CommunityPublicRecordTests(unittest.TestCase):
 
     def test_public_record_redacts_recipient_identity_and_individual_choice(self):
         self.gov.issue_vote_emails(
-            'proposal-public', ['user-a'], window_hours=24, base_url='https://stageforge.test'
+            'proposal-public', ['user-a'], window_hours=24, base_url='https://stagemesh.test'
         )
         token = self._tokens_by_recipient()['a@example.test']
         vote = self.gov.cast_vote(token, 'yes', authenticated_user_id='user-a')
@@ -239,7 +239,7 @@ class CommunityPublicRecordTests(unittest.TestCase):
 
     def test_ratification_record_contains_aggregate_not_voter_choice_map(self):
         self.gov.issue_vote_emails(
-            'proposal-public', ['user-a', 'user-b', 'user-c'], window_hours=24, base_url='https://stageforge.test'
+            'proposal-public', ['user-a', 'user-b', 'user-c'], window_hours=24, base_url='https://stagemesh.test'
         )
         tokens = self._tokens_by_recipient()
         for uid, email in [('user-a', 'a@example.test'), ('user-b', 'b@example.test'), ('user-c', 'c@example.test')]:
@@ -269,7 +269,7 @@ class CommunityPublicRecordTests(unittest.TestCase):
                 raise OSError('ledger unavailable')
             return {'recordId': f'record-{calls["count"]:020d}', 'recordHash': f'{calls["count"]:064x}'}
 
-        with tempfile.TemporaryDirectory() as tmp, patch.dict('os.environ', {'STAGEFORGE_ADMIN_EMAIL_MODE': 'outbox'}, clear=False):
+        with tempfile.TemporaryDirectory() as tmp, patch.dict('os.environ', {'STAGEMESH_ADMIN_EMAIL_MODE': 'outbox'}, clear=False):
             gov = CommunityGovernance(Path(tmp), AdminMailer(Path(tmp)), public_record_append=flaky)
             proposal = gov.create_proposal({'id': 'pending', 'title': 'Pending evidence'})
             self.assertTrue(proposal['publicRecordPending'])
@@ -282,15 +282,15 @@ class CommunityPublicRecordTests(unittest.TestCase):
 
     def test_runtime_public_record_contains_privacy_preserving_governance_events(self):
         with tempfile.TemporaryDirectory() as tmp, patch.dict(
-            'os.environ', {'STAGEFORGE_NATIVE_ENGINE': 'off', 'STAGEFORGE_ADMIN_EMAIL_MODE': 'outbox'}, clear=False
+            'os.environ', {'STAGEMESH_NATIVE_ENGINE': 'off', 'STAGEMESH_ADMIN_EMAIL_MODE': 'outbox'}, clear=False
         ):
-            runtime = StageForgeRuntime(Path(tmp))
+            runtime = StageMeshRuntime(Path(tmp))
             try:
                 runtime.community_upsert_account({'id': 'runtime-user', 'email': 'runtime@example.test'})
                 proposal = runtime.community_create_proposal({'id': 'runtime-proposal', 'title': 'Runtime audit'})
                 self.assertTrue(proposal['publicRecordRef'].startswith('upp-public-record:record-'))
                 issued = runtime.community_issue_vote_emails(
-                    'runtime-proposal', {'userIds': ['runtime-user'], 'windowHours': 24, 'baseUrl': 'https://stageforge.test'}
+                    'runtime-proposal', {'userIds': ['runtime-user'], 'windowHours': 24, 'baseUrl': 'https://stagemesh.test'}
                 )
                 eml_path = next((Path(tmp) / 'admin-email-outbox').glob('*.eml'))
                 message = BytesParser(policy=policy.default).parsebytes(eml_path.read_bytes())

@@ -8,9 +8,9 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 
 def main():
-    engine = os.environ.get("STAGEFORGE_NATIVE_ENGINE", "")
+    engine = os.environ.get("STAGEMESH_NATIVE_ENGINE", "")
     if not engine or not Path(engine).is_file():
-        print("Release tests require STAGEFORGE_NATIVE_ENGINE pointing to a built engine", file=sys.stderr)
+        print("Release tests require STAGEMESH_NATIVE_ENGINE pointing to a built engine", file=sys.stderr)
         return 1
     sys.path.insert(0, str(ROOT))
     suite = unittest.defaultTestLoader.discover(str(ROOT / "tests"), pattern="test_*.py")

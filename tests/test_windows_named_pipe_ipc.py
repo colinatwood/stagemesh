@@ -39,27 +39,27 @@ class WindowsNamedPipeIpcTests(unittest.TestCase):
         send_message_frame(connection,server.encode(7,b"response"));reply=client.decode(decode_transport_packet(connection.outgoing[0]))
         self.assertEqual(reply["payload"],b"response")
 
-    def test_pipe_name_is_stageforge_scoped(self):
-        self.assertEqual(validate_windows_pipe_name(r"\\.\pipe\StageForge\Control"),r"\\.\pipe\StageForge\Control")
-        for value in (r"\\.\pipe\Other\Control",r"\\.\pipe\StageForge\..\Admin","StageForge"):
+    def test_pipe_name_is_stagemesh_scoped(self):
+        self.assertEqual(validate_windows_pipe_name(r"\\.\pipe\StageMesh\Control"),r"\\.\pipe\StageMesh\Control")
+        for value in (r"\\.\pipe\Other\Control",r"\\.\pipe\StageMesh\..\Admin","StageMesh"):
             with self.subTest(value=value),self.assertRaises(ValueError):validate_windows_pipe_name(value)
 
     def test_server_refuses_start_without_acl_validation(self):
         client,server=self.channels();listener=FakeListener(FakeConnection())
-        endpoint=WindowsNamedPipeIpcServer(r"\\.\pipe\StageForge\Control",lambda:server,lambda c,p:b"ok",listener_factory=lambda _:listener)
+        endpoint=WindowsNamedPipeIpcServer(r"\\.\pipe\StageMesh\Control",lambda:server,lambda c,p:b"ok",listener_factory=lambda _:listener)
         with self.assertRaises(PermissionError):endpoint.start()
         self.assertFalse(listener.closed)
 
     def test_failed_acl_validation_closes_listener(self):
         _,server=self.channels();listener=FakeListener(FakeConnection())
-        endpoint=WindowsNamedPipeIpcServer(r"\\.\pipe\StageForge\Control",lambda:server,lambda c,p:b"ok",listener_factory=lambda _:listener,acl_validator=lambda *_:False)
+        endpoint=WindowsNamedPipeIpcServer(r"\\.\pipe\StageMesh\Control",lambda:server,lambda c,p:b"ok",listener_factory=lambda _:listener,acl_validator=lambda *_:False)
         with self.assertRaises(PermissionError):endpoint.start()
         self.assertTrue(listener.closed)
 
     def test_authenticated_server_is_request_bounded(self):
         client,server=self.channels();incoming=[encode_transport_packet(client.encode(7,b"a")),encode_transport_packet(client.encode(7,b"b"))]
         connection=FakeConnection(incoming);listener=FakeListener(connection)
-        endpoint=WindowsNamedPipeIpcServer(r"\\.\pipe\StageForge\Control",lambda:server,lambda c,p:p.upper(),max_requests=1,listener_factory=lambda _:listener,acl_validator=lambda *_:True)
+        endpoint=WindowsNamedPipeIpcServer(r"\\.\pipe\StageMesh\Control",lambda:server,lambda c,p:p.upper(),max_requests=1,listener_factory=lambda _:listener,acl_validator=lambda *_:True)
         endpoint.start();endpoint.serve_once();self.assertTrue(connection.closed);self.assertEqual(len(connection.outgoing),1)
         response=client.decode(decode_transport_packet(connection.outgoing[0]));self.assertEqual(response["payload"],b"A")
 

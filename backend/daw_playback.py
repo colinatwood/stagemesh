@@ -41,7 +41,7 @@ class ArrangementProducer:
         generation=int(self.native.daw_playback_status()["generation"]);self.stop_event.clear()
         with self.lock:self.state={"running":True,"generation":generation,"startFrame":start_frame,"endFrame":end_frame,"looping":loop,"producedBlocks":0,"producedFrames":0,"errors":0,"lastError":None,"physicalOutputsArmed":False}
         self.reader=OfflineRenderer(snapshot.root)
-        self.thread=Thread(target=self._run,args=(snapshot.plan,generation,start_frame,end_frame,loop,snapshot),name="stageforge-daw-producer",daemon=True);self.thread.start();return self.status()
+        self.thread=Thread(target=self._run,args=(snapshot.plan,generation,start_frame,end_frame,loop,snapshot),name="stagemesh-daw-producer",daemon=True);self.thread.start();return self.status()
     def start_clip(self,session:dict[str,Any],clip_id:str,*,loop:bool=False)->dict[str,Any]:
         isolated=deepcopy(session);selected=None
         for track in isolated.get("tracks",[]):

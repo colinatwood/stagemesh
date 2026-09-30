@@ -4,9 +4,9 @@ Checkpoint 68 prepares the remaining Linux packaging/device-permission gate with
 
 `backend/device_permissions.py` accepts only absolute device paths and `r`, `w` or `rw` modes. It uses `lstat`, rejects symlinks and non-character devices, records major/minor/ownership/mode, and evaluates effective access. The qualification fails if the process effective UID is not the requested service account, which prevents root from accidentally proving permissions the unprivileged service does not have.
 
-`scripts/stageforge-device-permissions.py` emits a bounded JSON report with `hardwarePermissionsQualified`, `serviceIdentityQualified` and `physicalOutputsArmed=false`. It never mutates ACLs, groups, udev rules or device nodes. The installer packages the helper and checkpoint-61 isolated-rootfs qualification verifies it is present.
+`scripts/stagemesh-device-permissions.py` emits a bounded JSON report with `hardwarePermissionsQualified`, `serviceIdentityQualified` and `physicalOutputsArmed=false`. It never mutates ACLs, groups, udev rules or device nodes. The installer packages the helper and checkpoint-61 isolated-rootfs qualification verifies it is present.
 
-Real `PKG-034` evidence still requires a clean host/VM running the helper as `stageforge` against the exact ALSA/MIDI/UWB nodes used by that deployment.
+Real `PKG-034` evidence still requires a clean host/VM running the helper as `stagemesh` against the exact ALSA/MIDI/UWB nodes used by that deployment.
 
 ## Release gate
 

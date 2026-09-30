@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace stageforge {
+namespace stagemesh {
 
 enum class ExecutionFenceState {
     Unarmed,

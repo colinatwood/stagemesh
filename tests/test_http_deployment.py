@@ -44,7 +44,7 @@ class BackendConnection:
         h = self.request_headers
         allowed = (h.get("Host") == "stage.internal"
                    and h.get("Origin") == "https://stage.internal"
-                   and h.get("X-StageForge-API-Token") == "a" * 32)
+                   and h.get("X-StageMesh-API-Token") == "a" * 32)
         return FakeResponse(200 if allowed else 403, SECURITY_HEADERS)
     def close(self):
         pass
@@ -70,8 +70,8 @@ class HttpDeploymentTests(unittest.TestCase):
     def profile_env(self, root: Path):
         credentials = root / "credentials.json"
         credentials.write_text(json.dumps({
-            "STAGEFORGE_API_TOKEN": "a" * 32,
-            "STAGEFORGE_AUTH_PROXY_TOKEN": "b" * 32,
+            "STAGEMESH_API_TOKEN": "a" * 32,
+            "STAGEMESH_AUTH_PROXY_TOKEN": "b" * 32,
         }), encoding="utf-8")
         credentials.chmod(0o600)
         authorization = root / "authorization.json"
@@ -81,11 +81,11 @@ class HttpDeploymentTests(unittest.TestCase):
         }), encoding="utf-8")
         authorization.chmod(0o600)
         return {
-            "STAGEFORGE_DEPLOYMENT_PROFILE": "proxy-https",
-            "STAGEFORGE_ALLOWED_HOSTS": "stage.internal",
-            "STAGEFORGE_ALLOWED_ORIGINS": "https://stage.internal",
-            "STAGEFORGE_HTTP_CREDENTIAL_FILE": str(credentials),
-            "STAGEFORGE_HTTP_AUTHORIZATION_FILE": str(authorization),
+            "STAGEMESH_DEPLOYMENT_PROFILE": "proxy-https",
+            "STAGEMESH_ALLOWED_HOSTS": "stage.internal",
+            "STAGEMESH_ALLOWED_ORIGINS": "https://stage.internal",
+            "STAGEMESH_HTTP_CREDENTIAL_FILE": str(credentials),
+            "STAGEMESH_HTTP_AUTHORIZATION_FILE": str(authorization),
         }
 
     def test_proxy_https_profile_requires_private_credentials_and_user_roles(self):
@@ -104,7 +104,7 @@ class HttpDeploymentTests(unittest.TestCase):
             effective = credential_environment(env)
             with self.assertRaisesRegex(ValueError, "loopback"):
                 validate_proxy_https_profile("0.0.0.0", effective)
-            effective["STAGEFORGE_ALLOWED_ORIGINS"] = "http://stage.internal"
+            effective["STAGEMESH_ALLOWED_ORIGINS"] = "http://stage.internal"
             with self.assertRaisesRegex(ValueError, "HTTPS"):
                 validate_proxy_https_profile("127.0.0.1", effective)
 

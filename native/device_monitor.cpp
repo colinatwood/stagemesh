@@ -14,11 +14,11 @@
 #include <mmsystem.h>
 #include <mmddk.h>
 #include <cfgmgr32.h>
-#ifndef STAGEFORGE_HAS_AUDIOENDPOINT_STABLEID
-#define STAGEFORGE_HAS_AUDIOENDPOINT_STABLEID 0
+#ifndef STAGEMESH_HAS_AUDIOENDPOINT_STABLEID
+#define STAGEMESH_HAS_AUDIOENDPOINT_STABLEID 0
 #endif
-#ifndef STAGEFORGE_HAS_CM_NOTIFY
-#define STAGEFORGE_HAS_CM_NOTIFY 0
+#ifndef STAGEMESH_HAS_CM_NOTIFY
+#define STAGEMESH_HAS_CM_NOTIFY 0
 #endif
 #else
 #include <CoreAudio/CoreAudio.h>
@@ -26,7 +26,7 @@
 #include <CoreFoundation/CoreFoundation.h>
 #endif
 
-namespace stageforge {
+namespace stagemesh {
 namespace {
 std::atomic<std::uint64_t> topology_revision{0};
 
@@ -64,7 +64,7 @@ private:
     HRESULT changed() { topology_revision.fetch_add(1, std::memory_order_relaxed); return S_OK; }
 };
 Notifications notifications;
-#if STAGEFORGE_HAS_CM_NOTIFY
+#if STAGEMESH_HAS_CM_NOTIFY
 DWORD CALLBACK pnp_changed(HCMNOTIFICATION, PVOID, CM_NOTIFY_ACTION, PCM_NOTIFY_EVENT_DATA, DWORD) {
     topology_revision.fetch_add(1, std::memory_order_relaxed); return ERROR_SUCCESS;
 }
@@ -132,7 +132,7 @@ DeviceRecord windows_record(IMMDevice* device) {
 
     std::string persistent_material;
     bool stable = false;
-#if STAGEFORGE_HAS_AUDIOENDPOINT_STABLEID
+#if STAGEMESH_HAS_AUDIOENDPOINT_STABLEID
     Microsoft::WRL::ComPtr<IPropertyStore> store;
     if (SUCCEEDED(device->OpenPropertyStore(STGM_READ, store.GetAddressOf()))) {
         PROPVARIANT value;
@@ -174,7 +174,7 @@ MIDIClientRef process_midi_client() {
     // and rebuilding the MIDI service connection after HAL I/O has executed.
     struct Client {
         MIDIClientRef value = 0;
-        Client() { checked(MIDIClientCreate(CFSTR("StageForge Device Monitor"), midi_changed, nullptr, &value), "MIDIClientCreate"); }
+        Client() { checked(MIDIClientCreate(CFSTR("StageMesh Device Monitor"), midi_changed, nullptr, &value), "MIDIClientCreate"); }
         ~Client() { if (value && MIDIClientDispose(value) != noErr) std::terminate(); }
     };
     static Client client;
@@ -295,7 +295,7 @@ void DeviceMonitor::start() {
     try {
         checked(impl_->enumerator->RegisterEndpointNotificationCallback(&notifications), "register notifications");
         impl_->audio_registered = true;
-#if STAGEFORGE_HAS_CM_NOTIFY
+#if STAGEMESH_HAS_CM_NOTIFY
         CM_NOTIFY_FILTER filter{};
         filter.cbSize = sizeof(filter); filter.FilterType = CM_NOTIFY_FILTER_TYPE_DEVICEINTERFACE;
         // All interface classes avoids missing vendor-specific MIDI interfaces.
@@ -318,7 +318,7 @@ void DeviceMonitor::start() {
 void DeviceMonitor::stop() {
     impl_->check_thread();
 #ifdef _WIN32
-#if STAGEFORGE_HAS_CM_NOTIFY
+#if STAGEMESH_HAS_CM_NOTIFY
     if (impl_->midi_notification) {
         auto status = CM_Unregister_Notification(impl_->midi_notification);
         if (status != CR_SUCCESS) throw std::runtime_error("unregister MIDI PnP notifications: " + std::to_string(status));
@@ -345,7 +345,7 @@ DeviceSnapshot DeviceMonitor::snapshot() const {
     if (!impl_->active) throw std::logic_error("snapshot requires an active monitor");
     DeviceSnapshot result{};
 #ifdef _WIN32
-    result.stable_audio_identity_api_compiled = STAGEFORGE_HAS_AUDIOENDPOINT_STABLEID != 0;
+    result.stable_audio_identity_api_compiled = STAGEMESH_HAS_AUDIOENDPOINT_STABLEID != 0;
     Microsoft::WRL::ComPtr<IMMDeviceCollection> devices;
     checked(impl_->enumerator->EnumAudioEndpoints(eAll, DEVICE_STATE_ACTIVE, devices.GetAddressOf()), "enumerate endpoints");
     checked(devices->GetCount(&result.device_count), "endpoint count");

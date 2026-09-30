@@ -28,7 +28,7 @@ Checkpoint 47 replaces string-shaped maturity credentials with signed Public Rec
 
 Validated on 2026-09-14:
 
-- fresh Release + `STAGEFORGE_RT_QUALIFICATION=ON` native build;
+- fresh Release + `STAGEMESH_RT_QUALIFICATION=ON` native build;
 - native CTest: **2/2 passed**;
 - full Python suite against that fresh engine: **548 tests passed with zero test skips**;
 - focused technology/Public Record/authorization tests passed, including missing receipt, fake reference, stale evidence, grandfathered Standard recognition and current-scale Core receipt fencing;
@@ -40,6 +40,6 @@ The release wrapper's own clean build was represented by the explicit equivalent
 
 ## Remaining risk
 
-A node signature proves that StageForge recorded and assessed the stated evidence; it is not by itself proof that the independent implementations or interoperability tests happened in independently controlled infrastructure. Production-independent witness deployment and witness clock/failure-domain qualification remain separate evidence work.
+A node signature proves that StageMesh recorded and assessed the stated evidence; it is not by itself proof that the independent implementations or interoperability tests happened in independently controlled infrastructure. Production-independent witness deployment and witness clock/failure-domain qualification remain separate evidence work.
 
 Per operator direction, the next checkpoint prioritizes the **independent witness option** before community-governance/Public Record expansion.

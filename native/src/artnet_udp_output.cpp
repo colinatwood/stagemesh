@@ -1,4 +1,4 @@
-#include "stageforge/artnet_udp_output.hpp"
+#include "stagemesh/artnet_udp_output.hpp"
 
 #include <algorithm>
 #include <cstring>
@@ -14,7 +14,7 @@
 #include <unistd.h>
 #endif
 
-namespace stageforge {
+namespace stagemesh {
 
 namespace {
 
@@ -138,4 +138,4 @@ ArtNetUdpStatus ArtNetUdpOutput::status() const noexcept {
     return value;
 }
 
-} // namespace stageforge
+} // namespace stagemesh

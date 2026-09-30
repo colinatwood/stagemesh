@@ -12,7 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
 from sampler_preload import MAX_NATIVE_SAMPLER_FRAMES, SamplerPreloadRegistry
-from runtime import StageForgeRuntime
+from runtime import StageMeshRuntime
 
 
 class FakeNativeSampler:
@@ -67,7 +67,7 @@ class SamplerPreloadTests(unittest.TestCase):
             mapping={"mappingId":"sample-pad","source":{"deviceId":"pads","channel":0,"message":"note","number":36},
                 "target":{"targetId":"sample.trigger","resourceId":"clip-a"},"behavior":"trigger","quantize":"off","keySync":True,"scale":"major","enabled":True}
             (root/"midi-mappings.json").write_text(json.dumps({"revision":1,"mappings":[mapping]}),encoding="utf-8")
-            runtime=StageForgeRuntime(root)
+            runtime=StageMeshRuntime(root)
             if not runtime.native.available:
                 runtime.close();self.skipTest("native engine not built")
             try:

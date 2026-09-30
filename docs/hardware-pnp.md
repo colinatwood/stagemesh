@@ -6,7 +6,7 @@ the server host, not the browser's computer. Rescan after connecting or removing
 a device. The command-line equivalent is:
 
 ```sh
-python3 scripts/stageforge-hardware-doctor.py
+python3 scripts/stagemesh-hardware-doctor.py
 ```
 
 `GET /api/v1/hardware/diagnostics` returns a fresh, read-only USB inventory, host OS,
@@ -34,9 +34,9 @@ appearing in this list does not establish BAP support or clock synchronization.
 
 Checkpoint 55 adds `audioEndpoints`, `audioDrivers` and `endpointIssues` to the existing diagnostics response. These fields are read-only evidence, never stream authority.
 
-On Windows, StageForge runs a fixed PowerShell inventory for present `AudioEndpoint` devices and signed `MEDIA` PnP drivers. Full endpoint/PnP instance strings are not exported: StageForge emits one-way SHA-256 hashes plus safe USB VID/PID when derivable. Installed provider/version/INF/signature metadata is explicitly `installed-os-evidence-not-reviewed-package-catalog`; it never inherits reviewed-catalog status and never authorizes installation. The endpoint hash is a snapshot correlation aid, not a claim that StageForge retrieved Windows 11 `PKEY_AudioEndpoint_StableId`.
+On Windows, StageMesh runs a fixed PowerShell inventory for present `AudioEndpoint` devices and signed `MEDIA` PnP drivers. Full endpoint/PnP instance strings are not exported: StageMesh emits one-way SHA-256 hashes plus safe USB VID/PID when derivable. Installed provider/version/INF/signature metadata is explicitly `installed-os-evidence-not-reviewed-package-catalog`; it never inherits reviewed-catalog status and never authorizes installation. The endpoint hash is a snapshot correlation aid, not a claim that StageMesh retrieved Windows 11 `PKEY_AudioEndpoint_StableId`.
 
-On macOS, StageForge runs `system_profiler SPAudioDataType -json` and normalizes device name, manufacturer, transport and channel hints when the host reports them. A reported CoreAudio UID is hashed before export. The matching driver-evidence record says `coreaudio-device-present` and deliberately has no package version/INF semantics. Apple CoreAudio device/plugin identity is therefore represented as OS-native evidence rather than translated into a Windows package model.
+On macOS, StageMesh runs `system_profiler SPAudioDataType -json` and normalizes device name, manufacturer, transport and channel hints when the host reports them. A reported CoreAudio UID is hashed before export. The matching driver-evidence record says `coreaudio-device-present` and deliberately has no package version/INF semantics. Apple CoreAudio device/plugin identity is therefore represented as OS-native evidence rather than translated into a Windows package model.
 
 Probe failure is isolated: USB inventory may remain usable while `endpointIssues` reports the missing audio-endpoint evidence. All endpoint/driver evidence remains `qualified: false`.
 
@@ -104,7 +104,7 @@ The engine's canonical format is separate from the device's negotiated format.
 Then validate real hardware using `qualification/README.md`. Universal device
 support cannot be guaranteed by inventory or driver installation alone.
 
-Checkpoint 53 adds `stageforge-driver-catalog-audit.py`, an offline review-freshness
+Checkpoint 53 adds `stagemesh-driver-catalog-audit.py`, an offline review-freshness
 report. It never contacts vendors or refreshes evidence automatically; it tells the
 operator which reviewed records are approaching expiry or have become stale so a
 new human/vendor evidence review can happen deliberately.

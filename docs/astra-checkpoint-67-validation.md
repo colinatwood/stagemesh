@@ -4,7 +4,7 @@ Checkpoint 67 strengthens the checkpoint-66 Win32 listener by validating the sec
 
 ## Kernel-handle attestation
 
-After `CreateNamedPipeW`, the native adapter calls `GetSecurityInfo` and inspects the returned DACL. StageForge requires:
+After `CreateNamedPipeW`, the native adapter calls `GetSecurityInfo` and inspects the returned DACL. StageMesh requires:
 
 - the DACL to be protected from inherited ACEs;
 - a non-null DACL;

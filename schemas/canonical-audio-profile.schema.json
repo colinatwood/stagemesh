@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://stageforge.dev/schemas/canonical-audio-profile.schema.json",
-  "title": "StageForge Canonical Audio Profile",
+  "$id": "https://stagemesh.dev/schemas/canonical-audio-profile.schema.json",
+  "title": "StageMesh Canonical Audio Profile",
   "type": "object",
   "additionalProperties": true,
   "required": ["engineSampleRate", "engineSampleFormat", "bitsPerSample", "processingDomain"],

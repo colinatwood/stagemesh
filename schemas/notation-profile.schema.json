@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://upp.stageforge.dev/schema/notation-profile-v1.json",
-  "title": "StageForge / UPP Auto Notation Part v1",
+  "$id": "https://upp.stagemesh.dev/schema/notation-profile-v1.json",
+  "title": "StageMesh / UPP Auto Notation Part v1",
   "type": "object",
   "additionalProperties": true,
   "required": [

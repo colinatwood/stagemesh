@@ -20,7 +20,7 @@ Result: 22 tests passed after the synthetic-handler compatibility patch. Six tes
 
 ## Release validation
 
-A fresh Release native build with `STAGEFORGE_RT_QUALIFICATION=ON` passed both CTest targets (`stageforge_native_tests` and `stageforge_current_abi_smoke`). The combined release Python suite then ran against that fresh engine with system Python first on `PATH`: **506 tests passed with zero skips**. The external adapter fixture uses `/usr/bin/env python3`; placing the preinstalled virtualenv first on `PATH` can exceed its existing 250 ms startup watchdog in this loaded environment, so validation pinned `/usr/bin` first without changing production watchdog values.
+A fresh Release native build with `STAGEMESH_RT_QUALIFICATION=ON` passed both CTest targets (`stagemesh_native_tests` and `stagemesh_current_abi_smoke`). The combined release Python suite then ran against that fresh engine with system Python first on `PATH`: **506 tests passed with zero skips**. The external adapter fixture uses `/usr/bin/env python3`; placing the preinstalled virtualenv first on `PATH` can exceed its existing 250 ms startup watchdog in this loaded environment, so validation pinned `/usr/bin` first without changing production watchdog values.
 
 Additional gates passed:
 

@@ -9,7 +9,7 @@ from unittest import mock
 
 ROOT=Path(__file__).resolve().parents[1]
 SCRIPT=ROOT/"scripts/platform-ci-smoke.py"
-spec=importlib.util.spec_from_file_location("stageforge_platform_ci_smoke",SCRIPT)
+spec=importlib.util.spec_from_file_location("stagemesh_platform_ci_smoke",SCRIPT)
 module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
 
 class PlatformCiSmokeTests(unittest.TestCase):
@@ -23,7 +23,7 @@ class PlatformCiSmokeTests(unittest.TestCase):
 
     def test_linux_report_is_non_physical_and_hashes_exact_engine(self):
         with tempfile.TemporaryDirectory() as td:
-            engine=Path(td)/"stageforge_engine";engine.write_bytes(b"engine")
+            engine=Path(td)/"stagemesh_engine";engine.write_bytes(b"engine")
             expected=module.hashlib.sha256(b"engine").hexdigest()
             with mock.patch.object(module,"_find_engine",return_value=engine), \
                  mock.patch.object(module.platform,"system",return_value="Linux"):

@@ -9,8 +9,8 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
-engine = root / 'build' / 'native' / ('Release/stageforge_engine.exe' if os.name == 'nt' else 'stageforge_engine')
-token = 'stageforge-ci-stdio-dispatch-fixture'
+engine = root / 'build' / 'native' / ('Release/stagemesh_engine.exe' if os.name == 'nt' else 'stagemesh_engine')
+token = 'stagemesh-ci-stdio-dispatch-fixture'
 
 
 def fields(line: str) -> dict[str, str]:
@@ -35,9 +35,9 @@ def valid_identity_token(value: str, *, midi: bool = False) -> bool:
     return re.fullmatch(pattern, value or '') is not None
 
 
-with tempfile.TemporaryDirectory(prefix='stageforge-stdio-') as temporary:
-    env = {k: v for k, v in os.environ.items() if not k.startswith('STAGEFORGE_')}
-    env.update(STAGEFORGE_IPC_TOKEN=token, STAGEFORGE_DATA_DIR=temporary)
+with tempfile.TemporaryDirectory(prefix='stagemesh-stdio-') as temporary:
+    env = {k: v for k, v in os.environ.items() if not k.startswith('STAGEMESH_')}
+    env.update(STAGEMESH_IPC_TOKEN=token, STAGEMESH_DATA_DIR=temporary)
     process = subprocess.Popen(
         [str(engine), '--stdio'], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
         stderr=subprocess.PIPE, text=True, bufsize=1, env=env)

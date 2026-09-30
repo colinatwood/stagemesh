@@ -6,7 +6,7 @@ Checkpoint 51 closes the Linux verification-to-launch race for external plugin a
 
 - External adapter paths remain absolute and must name executable regular files.
 - Linux opens the adapter with `O_NOFOLLOW` and rejects symlink adapters.
-- StageForge hashes the opened file descriptor and compares it with the manifest `adapterSha256` immediately before launch.
+- StageMesh hashes the opened file descriptor and compares it with the manifest `adapterSha256` immediately before launch.
 - The child inherits that exact descriptor and executes `/proc/self/fd/<fd>`; Python adapters are passed to the configured Python interpreter through that inherited descriptor.
 - Replacing or renaming the manifest path after verification cannot change the bytes executed by that launch.
 - The inherited verification descriptor is closed by the parent immediately after process creation.
@@ -23,7 +23,7 @@ The focused plugin-host suite includes an adversarial replacement test. It opens
 
 Validated on 2026-09-14:
 
-- fresh Release + `STAGEFORGE_RT_QUALIFICATION=ON` native build;
+- fresh Release + `STAGEMESH_RT_QUALIFICATION=ON` native build;
 - native CTest: **2/2 passed**;
 - full Python suite against that engine: **568 tests passed**;
 - focused plugin/latency/security regressions: **36 tests passed**;
@@ -31,7 +31,7 @@ Validated on 2026-09-14:
 - **125 JSON schemas plus OpenAPI parsed**;
 - **7/7 frontend JavaScript files** passed `node --check`.
 
-The first full Python attempt omitted the installed Node directory from `PATH`, producing five harness-launch errors and no StageForge assertion failures. The rerun restored Node while keeping `/usr/bin/python3` and the same freshly built native engine; all 568 tests passed. No production timeout or watchdog value was changed.
+The first full Python attempt omitted the installed Node directory from `PATH`, producing five harness-launch errors and no StageMesh assertion failures. The rerun restored Node while keeping `/usr/bin/python3` and the same freshly built native engine; all 568 tests passed. No production timeout or watchdog value was changed.
 
 ## Remaining boundary
 

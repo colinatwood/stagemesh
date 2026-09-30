@@ -2,10 +2,10 @@
 
 WLED is a useful reference for network-controlled LED fixtures: segmented
 outputs, presets, JSON control, Art-Net/E1.31 input, realtime sync, brightness
-limiting, and embedded-device recovery. StageForge should treat WLED-class
+limiting, and embedded-device recovery. StageMesh should treat WLED-class
 devices as explicitly identified network fixtures, not as generic UDP sinks.
 
-## StageForge adapter direction
+## StageMesh adapter direction
 
 - Model LED strips, matrices, RGBW, and RGB+CCT outputs as declared fixture
   capabilities with bounded channel footprints.

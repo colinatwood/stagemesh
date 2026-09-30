@@ -2,7 +2,7 @@
 #include <iostream>
 #include <stdexcept>
 
-using namespace stageforge;
+using namespace stagemesh;
 namespace {
 void require(bool condition, const char* message) { if (!condition) throw std::runtime_error(message); }
 AudioPreflightDecision plan() {

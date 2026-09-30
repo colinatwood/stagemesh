@@ -15,8 +15,8 @@ Validated 2026-09-11 in the available Linux development environment.
 
 - 354 Python unit/integration tests passed without skips when pointed at the fresh
   qualification-enabled native engine.
-- `stageforge_native_tests` passed.
-- `stageforge_current_abi_smoke` passed.
+- `stagemesh_native_tests` passed.
+- `stagemesh_current_abi_smoke` passed.
 - All 108 JSON schema files parsed successfully.
 - `frontend/app.js` passed the runtime Node syntax check.
 - The focused plugin-host and DAW-production suite passed 15 tests.

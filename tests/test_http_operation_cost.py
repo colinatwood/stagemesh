@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
-from dev_server import OperationCostLimiter, StageForgeHTTPServer, StageForgeHandler, expensive_operation_class
+from dev_server import OperationCostLimiter, StageMeshHTTPServer, StageMeshHandler, expensive_operation_class
 
 
 class OperationCostLimiterTests(unittest.TestCase):
@@ -33,12 +33,12 @@ class OperationCostLimiterTests(unittest.TestCase):
 
 
 class OperationCostHttpTests(unittest.TestCase):
-    class Server(StageForgeHTTPServer):
+    class Server(StageMeshHTTPServer):
         max_connections = 4
         max_expensive_operations = 1
         expensive_class_limits = {"maintenance": 1, "discovery": 1, "planning": 1, "storage": 1, "external": 1}
 
-    class Handler(StageForgeHandler):
+    class Handler(StageMeshHandler):
         body_reads = 0
         fail_once = False
 

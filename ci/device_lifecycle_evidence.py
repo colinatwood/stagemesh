@@ -31,7 +31,7 @@ try:
     if not all(checks.get(key) is True for key in ["identityAssuranceDowngradeRejected", "weakDuplicatesRemainAmbiguous"]):
         raise RuntimeError("Identity assurance regression evidence missing")
     if not checks.get("nativeMidiEnumerationAvailable") or not checks.get("midiNotificationsRegistered"):
-        if os.environ.get("STAGEFORGE_ALLOW_UNAVAILABLE_NATIVE_MIDI") != "1":
+        if os.environ.get("STAGEMESH_ALLOW_UNAVAILABLE_NATIVE_MIDI") != "1":
             raise RuntimeError("Native MIDI enumeration and notification registration are required")
         report["status"] = "unavailable"
         report["qualificationNote"] = "Hosted runner did not expose a native MIDI notification source"
