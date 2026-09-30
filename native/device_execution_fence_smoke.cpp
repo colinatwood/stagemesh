@@ -118,11 +118,11 @@ bool exercise_midi_fence(DeviceMonitor& monitor) {
     const auto before = persistent_set(baseline, DeviceKind::Midi);
     MIDIClientRef client = 0;
     MIDIEndpointRef source = 0;
-    require(MIDIClientCreate(CFSTR("StageForge Fence CI"), nullptr, nullptr, &client) == noErr,
+    require(MIDIClientCreate(CFSTR("StageMesh Fence CI"), nullptr, nullptr, &client) == noErr,
             "MIDIClientCreate fence fixture failed");
     const MIDIUniqueID uid = static_cast<MIDIUniqueID>(-1100000000 + (getpid() % 1000000));
     auto revision = monitor.revision();
-    require(MIDISourceCreate(client, CFSTR("StageForge Fence Source"), &source) == noErr,
+    require(MIDISourceCreate(client, CFSTR("StageMesh Fence Source"), &source) == noErr,
             "MIDISourceCreate fence fixture failed");
     require(MIDIObjectSetIntegerProperty(source, kMIDIPropertyUniqueID, uid) == noErr,
             "CoreMIDI fence UID set failed");
@@ -140,7 +140,7 @@ bool exercise_midi_fence(DeviceMonitor& monitor) {
             "CoreMIDI removal did not fence execution");
 
     revision = monitor.revision();
-    require(MIDISourceCreate(client, CFSTR("StageForge Fence Source 2"), &source) == noErr,
+    require(MIDISourceCreate(client, CFSTR("StageMesh Fence Source 2"), &source) == noErr,
             "CoreMIDI fence recreate failed");
     require(MIDIObjectSetIntegerProperty(source, kMIDIPropertyUniqueID, uid) == noErr,
             "CoreMIDI fence UID restore failed");
@@ -161,7 +161,7 @@ bool exercise_audio_fence(DeviceMonitor& monitor) {
     const auto baseline = monitor.snapshot();
     const auto before = persistent_set(baseline, DeviceKind::Audio);
     CFStringRef uid = CFStringCreateWithFormat(kCFAllocatorDefault, nullptr,
-                                               CFSTR("org.stageforge.fence.aggregate.%d"), getpid());
+                                               CFSTR("org.stagemesh.fence.aggregate.%d"), getpid());
     auto make_description = [&](CFStringRef name) {
         auto dictionary = CFDictionaryCreateMutable(kCFAllocatorDefault, 0,
             &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
@@ -171,7 +171,7 @@ bool exercise_audio_fence(DeviceMonitor& monitor) {
     };
 
     AudioDeviceID aggregate = kAudioObjectUnknown;
-    auto description = make_description(CFSTR("StageForge Fence Aggregate"));
+    auto description = make_description(CFSTR("StageMesh Fence Aggregate"));
     auto revision = monitor.revision();
     auto status = AudioHardwareCreateAggregateDevice(description, &aggregate);
     CFRelease(description);
@@ -190,7 +190,7 @@ bool exercise_audio_fence(DeviceMonitor& monitor) {
     require(removed.state == ExecutionFenceState::FencedDetached && !removed.execution_allowed,
             "CoreAudio removal did not fence execution");
 
-    description = make_description(CFSTR("StageForge Fence Aggregate 2"));
+    description = make_description(CFSTR("StageMesh Fence Aggregate 2"));
     revision = monitor.revision();
     status = AudioHardwareCreateAggregateDevice(description, &aggregate);
     CFRelease(description);
