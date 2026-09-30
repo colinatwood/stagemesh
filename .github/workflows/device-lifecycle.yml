@@ -1,4 +1,4 @@
-name: StageForge Native Device Lifecycle
+name: StageMesh Native Device Lifecycle
 on:
   pull_request:
   workflow_dispatch:

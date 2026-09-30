@@ -11,7 +11,8 @@ add_library(stageforge_devices
   audio_stream_lifecycle.cpp
   audio_conversion.cpp
   software_audio_render.cpp
-  native_endpoint_stream.cpp)
+  native_endpoint_stream.cpp
+  native_capture_service.cpp)
 target_include_directories(stageforge_devices PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -26,7 +27,15 @@ if(WIN32)
   else()
     target_compile_definitions(stageforge_devices PRIVATE STAGEFORGE_HAS_AUDIOENDPOINT_STABLEID=0)
   endif()
-  target_link_libraries(stageforge_devices PUBLIC ole32 uuid winmm cfgmgr32)
+  check_cxx_source_compiles(
+    "#include <windows.h>\n#include <cfgmgr32.h>\nint main(){ CM_NOTIFY_FILTER filter{}; HCMNOTIFICATION notification{}; return CM_Register_Notification(&filter, nullptr, nullptr, &notification); }"
+    STAGEFORGE_HAS_CM_NOTIFY)
+  if(STAGEFORGE_HAS_CM_NOTIFY)
+    target_compile_definitions(stageforge_devices PRIVATE STAGEFORGE_HAS_CM_NOTIFY=1)
+  else()
+    target_compile_definitions(stageforge_devices PRIVATE STAGEFORGE_HAS_CM_NOTIFY=0)
+  endif()
+  target_link_libraries(stageforge_devices PUBLIC ole32 uuid winmm cfgmgr32 ksuser)
 elseif(APPLE)
   target_link_libraries(stageforge_devices PUBLIC "-framework CoreAudio" "-framework CoreMIDI" "-framework CoreFoundation" "-framework AudioToolbox" "-framework AudioUnit")
   if(STAGEFORGE_DEVICE_ASAN)

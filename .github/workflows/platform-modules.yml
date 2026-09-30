@@ -1,4 +1,4 @@
-name: StageForge Platform Modules
+name: StageMesh Platform Modules
 
 on:
   pull_request:
@@ -16,13 +16,13 @@ jobs:
         include:
           - os: ubuntu-latest
             name: Linux
-            artifact: stageforge-module-linux
+            artifact: stagemesh-module-linux
           - os: windows-latest
             name: Windows x64
-            artifact: stageforge-module-windows
+            artifact: stagemesh-module-windows
           - os: macos-14
             name: macOS Apple Silicon
-            artifact: stageforge-module-macos
+            artifact: stagemesh-module-macos
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:

@@ -328,27 +328,19 @@ std::size_t MidiInputManager::attached_count() const noexcept {
 }
 
 bool MidiInputManager::queue(const CapturedMidiInput& event) noexcept {
-    if (queue_size_ >= queue_capacity) {
+    if (!queue_.try_push(event)) {
         audit_queue_drops_.fetch_add(1,std::memory_order_relaxed);
         return false;
     }
-    queue_[queue_head_] = event;
-    queue_head_ = (queue_head_ + 1) % queue_capacity;
-    ++queue_size_;
     return true;
 }
 
 bool MidiInputManager::pop(CapturedMidiInput& out) noexcept {
-    if (queue_size_ == 0) {
-        return false;
-    }
-    out = queue_[queue_tail_];
-    queue_tail_ = (queue_tail_ + 1) % queue_capacity;
-    --queue_size_;
-    return true;
+    return queue_.try_pop(out);
 }
 
-bool MidiInputManager::inject(std::string_view device_id, std::string_view player_id, const MidiInputMessage& message) noexcept {
+bool MidiInputManager::capture_callback(std::string_view device_id, std::string_view player_id,
+                                        const MidiInputMessage& message) noexcept {
     if (device_id.empty() || player_id.empty() || device_id.size() >= 64 || player_id.size() >= 64) {
         return false;
     }
@@ -356,7 +348,16 @@ bool MidiInputManager::inject(std::string_view device_id, std::string_view playe
     copy_text(event.device_id, device_id);
     copy_text(event.player_id, player_id);
     event.message = message;
-    const auto accepted=queue(event);if(accepted){audit_injected_.fetch_add(1,std::memory_order_relaxed);audit_messages_.fetch_add(1,std::memory_order_relaxed);}return accepted;
+    const auto accepted = queue(event);
+    if (accepted) audit_messages_.fetch_add(1, std::memory_order_relaxed);
+    return accepted;
+}
+
+bool MidiInputManager::inject(std::string_view device_id, std::string_view player_id,
+                              const MidiInputMessage& message) noexcept {
+    const auto accepted = capture_callback(device_id, player_id, message);
+    if (accepted) audit_injected_.fetch_add(1, std::memory_order_relaxed);
+    return accepted;
 }
 
 std::size_t MidiInputManager::poll(std::uint64_t show_time_ns) noexcept {

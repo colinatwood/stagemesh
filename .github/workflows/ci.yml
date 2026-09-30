@@ -1,4 +1,4 @@
-name: StageForge CI
+name: StageMesh CI
 
 on:
   push:
@@ -39,10 +39,10 @@ jobs:
         include:
           - os: windows-latest
             name: Windows x64
-            artifact: stageforge-platform-windows
+            artifact: stagemesh-platform-windows
           - os: macos-14
             name: macOS Apple Silicon
-            artifact: stageforge-platform-macos
+            artifact: stagemesh-platform-macos
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:

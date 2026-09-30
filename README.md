@@ -1,6 +1,6 @@
-# StageForge
+# StageMesh
 
-This repository consolidates the recovered Checkpoint 69 engine, backend,
+StageMesh consolidates the recovered Checkpoint 69 engine, backend,
 frontend, schemas, packaging and tests with the Checkpoint 70–83 platform work.
 GitHub is the canonical source. Recovery provenance and integration limits are
 recorded in `docs/consolidation-checkpoint-84.md`.
@@ -33,7 +33,7 @@ The open-source audio, lighting, media, mapping, robotics, and safety
 reference board is documented in
 `docs/open-source-hardware-reference-board.md`.
 
-The corresponding StageForge interoperability boundaries and qualification
+The corresponding StageMesh interoperability boundaries and qualification
 guides are collected in `docs/`:
 
 - Audio and media: `daw-interoperability.md`, `media-editing-interoperability.md`,

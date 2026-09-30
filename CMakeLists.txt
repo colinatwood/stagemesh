@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(StageForge LANGUAGES C CXX)
+project(StageMesh LANGUAGES C CXX)
 
 option(STAGEFORGE_BUILD_TESTS "Build native infrastructure tests" ON)
 option(STAGEFORGE_ENABLE_SANITIZERS "Enable AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
