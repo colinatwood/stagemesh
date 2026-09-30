@@ -8,7 +8,7 @@
 - Canonical branch: `main`
 - Baseline commit when this master file was introduced: `e79d8a1fbb9a3eb976cd325dbadb58cc51c457e6`
 - Baseline milestone: **Checkpoint 85 — target-OS device discovery integration (native bridge smoke lane deferred)**
-- Latest main baseline: `1ee20c4` — PRs #36 and #37 merged. All 10 owner-run macOS native CTests and all three GitHub workflows passed for PR #37.
+- Latest main baseline: `e818caa` — PR #38 merged after macOS, Linux, platform-module and native-lifecycle checks passed; Windows hosted validation completed in the same CI run.
 - Repository README states that recovered Checkpoint 69 engine/backend/frontend/schemas/packaging/tests are consolidated with Checkpoint 70–83 platform work, with Checkpoint 84 documenting recovery provenance/integration limits.
 
 ## Latest completed work
@@ -63,8 +63,8 @@ Use this file to prevent progress loss when a ChatGPT/project session reaches it
 
 ## Next-session handoff
 
-- **Current checkpoint:** Checkpoint 86 shared capture ingress is on main. Native capture service ownership, concurrent MIDI callback ingress, SDK helpers and visible StageMesh naming are consolidated on `backlog/sdk-service-baseline`, based on `1ee20c4`. No PR is opened for this new slice.
-- **Last known-good main:** `1ee20c4` (PR #37). The owner reported 10/10 macOS native tests passing; all three GitHub workflows passed. The original Mac evidence source commit references are preserved.
+- **Current checkpoint:** Checkpoint 86 shared capture ingress, native capture service ownership, concurrent MIDI callback ingress, SDK helpers and visible StageMesh naming are on `main` through merged PR #38 (`e818caa`).
+- **Last known-good main:** `e818caa` (PR #38). macOS, Linux, platform-module and native-lifecycle checks passed; target-host hardware qualification remains separate.
 - **Native capture service:** `NativeCaptureService` owns one stream's monitor, execution fence, callback context, activation, service and close ordering. The engine now constructs and drives it on a dedicated owner thread per active input. Idle service, unique selected-token resolution and callback-drain shutdown are integrated; physical target execution remains unqualified. Details: `docs/native-engine-service-loop.md`.
 - **Native MIDI ingress:** A fixed-capacity MPMC queue handles concurrent callbacks, and `MidiInputOwner` now owns discovery, polling, attach/detach commands, periodic identity reconciliation, and shutdown on a dedicated worker. Linux tests submit 400 concurrent injections; CoreMIDI and WinMM source matching, callback delivery, close paths, and fail-closed missing-identity handling are implemented. Target callback delivery and topology-loss execution still require target hardware. Details: `docs/native-midi-callback-ingress.md`.
 - **SDK build helpers:** `scripts/build-native.sh` accepts CMake generator/toolchain/configuration arguments, keeps CTest on by default, and requires explicit opt-out for cross-builds. Older Windows SDK headers can compile without optional Configuration Manager notifications, with that availability reported separately. Details: `docs/sdk-builds.md`.
