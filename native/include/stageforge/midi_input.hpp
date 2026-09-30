@@ -55,6 +55,7 @@ struct CapturedMidiInput {
 struct MidiIngressAuditStatus {
     std::uint64_t polls{0}, bytes{0}, messages{0}, queue_drops{0}, injected_messages{0}, max_poll_duration_ns{0};
     bool physical_outputs_armed{false};
+    std::uint64_t topology_detaches{0};
 };
 
 // Bounded multi-producer/multi-consumer ingress. Native MIDI APIs may invoke
@@ -196,7 +197,7 @@ private:
     std::array<DeviceSlot, max_devices> devices_{};
     std::size_t device_count_{0};
     BoundedMpmcQueue<CapturedMidiInput, queue_capacity> queue_{};
-    std::atomic<std::uint64_t> audit_polls_{0},audit_bytes_{0},audit_messages_{0},audit_queue_drops_{0},audit_injected_{0},audit_max_poll_ns_{0};
+    std::atomic<std::uint64_t> audit_polls_{0},audit_bytes_{0},audit_messages_{0},audit_queue_drops_{0},audit_injected_{0},audit_max_poll_ns_{0},audit_topology_detaches_{0};
     std::uintptr_t native_client_{0}, native_port_{0};
 };
 

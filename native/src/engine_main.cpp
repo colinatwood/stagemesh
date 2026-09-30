@@ -2371,7 +2371,7 @@ int main(int argc, char** argv) {
             continue;
         }
         if (command == "INGRESS_AUDIT_STATUS" && parts.size() == 2 && parts[1] == "MIDI") {
-            const auto s=midi_inputs.audit_status();std::cout<<"OK domain=midi polls="<<s.polls<<" bytes="<<s.bytes<<" messages="<<s.messages<<" queueDrops="<<s.queue_drops<<" injectedMessages="<<s.injected_messages<<" maxDurationNs="<<s.max_poll_duration_ns<<" physicalOutputsArmed=0\n"<<std::flush;
+            const auto s=midi_inputs.audit_status();std::cout<<"OK domain=midi polls="<<s.polls<<" bytes="<<s.bytes<<" messages="<<s.messages<<" queueDrops="<<s.queue_drops<<" injectedMessages="<<s.injected_messages<<" topologyDetaches="<<s.topology_detaches<<" maxDurationNs="<<s.max_poll_duration_ns<<" physicalOutputsArmed=0\n"<<std::flush;
             continue;
         }
         if (command == "INGRESS_AUDIT_STATUS" && parts.size() == 3 && parts[1] == "CAPTURE") {

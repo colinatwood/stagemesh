@@ -514,7 +514,10 @@ void MidiInputManager::reconcile() noexcept {
                     break;
                 }
             }
-            if (!present) close_slot(slot);
+            if (!present) {
+                close_slot(slot);
+                audit_topology_detaches_.fetch_add(1, std::memory_order_relaxed);
+            }
         }
     } catch (...) {
         // A failed topology read cannot authorize a rebind. Existing streams
@@ -526,7 +529,7 @@ void MidiInputManager::reconcile() noexcept {
 }
 
 MidiIngressAuditStatus MidiInputManager::audit_status() const noexcept {
-    return {audit_polls_.load(std::memory_order_relaxed),audit_bytes_.load(std::memory_order_relaxed),audit_messages_.load(std::memory_order_relaxed),audit_queue_drops_.load(std::memory_order_relaxed),audit_injected_.load(std::memory_order_relaxed),audit_max_poll_ns_.load(std::memory_order_relaxed),false};
+    return {audit_polls_.load(std::memory_order_relaxed),audit_bytes_.load(std::memory_order_relaxed),audit_messages_.load(std::memory_order_relaxed),audit_queue_drops_.load(std::memory_order_relaxed),audit_injected_.load(std::memory_order_relaxed),audit_max_poll_ns_.load(std::memory_order_relaxed),false,audit_topology_detaches_.load(std::memory_order_relaxed)};
 }
 
 } // namespace stageforge
