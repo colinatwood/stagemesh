@@ -57,3 +57,27 @@ executables are compile/link evidence only. A prior Wine attempt could not
 create its server socket in this workspace. The owner subsequently passed all
 10 macOS native tests on merged main for PR #37; that validates main components,
 not this newer service boundary or full-engine capture integration.
+
+## Capture owner integration (2026-09-30)
+
+Windows/macOS engine input activation now creates a dedicated capture owner per
+active slot. The worker constructs, services, closes and destroys the native
+monitor/stream on one thread; stdin waits do not suspend WASAPI pumping or device
+fence checks. Deactivation, replacement and process exit join the worker before
+resetting capture rings or releasing callback contexts. Activation resolves the
+exact privacy-preserving discovery token against a fresh monitor snapshot and
+requires a unique input match; it never substitutes a default endpoint.
+
+The control command queue permits one pending command and serializes concurrent
+callers. Startup exceptions reach the caller, command exceptions do not kill the
+worker, and service exceptions deactivate capture. Device loss stays disarmed
+until another explicit activation. Status retains stream evidence after stop.
+Native client format is currently float32; integer requests fail explicitly.
+
+Validation: Linux owner tests cover idle progress, thread affinity, concurrent
+control callers, startup/command/service failures, repeated shutdown and use after
+shutdown. Linux ABI and DAW/MIDI Python regressions pass. Complete Windows MinGW
+build compiles and links the integration. Real Windows/macOS capture, device-loss
+and shutdown execution still require target machines; cross-builds do not qualify
+hardware or microphone access. Full Linux socket-dependent tests remain blocked
+by the execution sandbox's Unix-socket restriction.

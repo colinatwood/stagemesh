@@ -21,6 +21,7 @@ public:
     NativeCaptureService& operator=(const NativeCaptureService&) = delete;
 
     [[nodiscard]] bool activate(const AudioRequest& request, DeviceSelection selection);
+    bool activate_endpoint(const AudioRequest&, const std::string& identity_token);
     void service(std::uint32_t wait_ms = 0);
     void deactivate() noexcept;
 
@@ -35,6 +36,8 @@ private:
     CaptureReceive receive_;
     void* context_;
     bool active_{false};
+    EndpointStreamStats last_stats_{};
+    FenceObservation last_fence_{};
 };
 
 } // namespace stageforge
