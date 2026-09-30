@@ -40,6 +40,7 @@
 #include "stageforge/show_execution_loop.hpp"
 #include "stageforge/cue_state.hpp"
 #include "stageforge/midi_input.hpp"
+#include "stageforge/midi_input_owner.hpp"
 #include "stageforge/midi_learn_router.hpp"
 #include "stageforge/midi_mapped_action_dispatcher.hpp"
 #include "stageforge/midi_clock.hpp"
@@ -661,8 +662,7 @@ int main(int argc, char** argv) {
     enum class LightingNetworkProtocol : std::uint8_t { artnet = 0, sacn = 1 };
     LightingNetworkProtocol lighting_network_protocol = LightingNetworkProtocol::artnet;
     std::uint16_t sacn_universe_base = 1;
-    stageforge::MidiInputManager midi_inputs;
-    midi_inputs.scan();
+    stageforge::MidiInputOwner midi_inputs;
     stageforge::AudioDeviceManager audio_devices;
     audio_devices.scan();
     std::array<std::string, kAudioOutputSlots> selected_audio_outputs{};
@@ -2330,15 +2330,15 @@ int main(int argc, char** argv) {
         if (command == "MIDI_DEVICE" && parts.size() == 2) {
             std::size_t index = 0;
             if (!parse_number(parts[1], index)) { error("argument", "invalid midi device index"); continue; }
-            const auto* device = midi_inputs.device(index);
-            if (!device) { error("not_found", "unknown midi device index"); continue; }
+            stageforge::MidiDeviceDescriptor device{};
+            if (!midi_inputs.device(index, device)) { error("not_found", "unknown midi device index"); continue; }
             std::cout << "OK index=" << index
-                      << " id=" << token_safe(device->id.data())
-                      << " name=" << token_safe(device->name.data())
-                      << " path=" << token_safe(device->path.data())
-                      << " input=" << (device->input ? 1 : 0)
-                      << " connected=" << (device->connected ? 1 : 0)
-                      << " attached=" << (midi_inputs.attached(device->id.data()) ? 1 : 0) << '\n' << std::flush;
+                      << " id=" << token_safe(device.id.data())
+                      << " name=" << token_safe(device.name.data())
+                      << " path=" << token_safe(device.path.data())
+                      << " input=" << (device.input ? 1 : 0)
+                      << " connected=" << (device.connected ? 1 : 0)
+                      << " attached=" << (midi_inputs.attached(device.id.data()) ? 1 : 0) << '\n' << std::flush;
             continue;
         }
         if (command == "MIDI_ATTACH" && parts.size() == 3) {

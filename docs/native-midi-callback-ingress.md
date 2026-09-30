@@ -20,3 +20,18 @@ resolution, callback context ownership, stop/disconnect/drain ordering, and
 Windows/macOS compilation and runtime checks. In particular, the manager and
 queue must outlive every native callback, and rescans or detach operations must
 quiesce callback producers before mutating endpoint state.
+## Owner-thread integration
+
+`MidiInputOwner` now owns the `MidiInputManager` registry on a dedicated worker.
+The worker performs initial discovery, non-blocking polls, attach/detach and
+shutdown; command callers receive copied descriptors or scalar results. The
+bounded callback queue remains independent of the command mutex, so native
+callbacks can enqueue while a control command is waiting. Shutdown closes native
+handles on the owner before the manager is destroyed.
+
+The engine uses this owner for MIDI scan/device/attach/detach/poll/inject paths;
+event routing drains the queue on the engine thread. Linux owner tests cover four
+concurrent producers and 400 callback-safe injections. Target Windows/macOS
+physical handle attach remains the next qualification step: enumeration is
+identity-safe, but native callback hookup still requires target SDK/hardware
+execution and must not be inferred from a cross-build.

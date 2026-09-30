@@ -13,6 +13,7 @@ add_library(stageforge_core STATIC
     src/monitor_mixer.cpp
     src/monitor_graph_router.cpp
     src/midi_input.cpp
+    src/midi_input_owner.cpp
     src/transport_clock.cpp
     src/uwb_hardware_bridge.cpp
     src/le_iso_hardware.cpp
@@ -85,3 +86,8 @@ target_include_directories(capture_service_owner_tests PRIVATE ${CMAKE_CURRENT_S
 target_link_libraries(capture_service_owner_tests PRIVATE Threads::Threads)
 add_test(NAME capture_service_owner COMMAND capture_service_owner_tests)
 set_tests_properties(capture_service_owner PROPERTIES TIMEOUT 10)
+
+add_executable(midi_input_owner_tests tests/midi_input_owner_tests.cpp)
+target_link_libraries(midi_input_owner_tests PRIVATE stageforge_core)
+add_test(NAME midi_input_owner COMMAND midi_input_owner_tests)
+set_tests_properties(midi_input_owner PROPERTIES TIMEOUT 10)

@@ -155,6 +155,9 @@ public:
     // Reads all currently available bytes from attached devices and appends
     // parsed events to a bounded queue. Returns newly captured event count.
     std::size_t poll(std::uint64_t show_time_ns) noexcept;
+    // Owner-thread shutdown. No callback context is released until all native
+    // handles have been closed.
+    void deactivate() noexcept;
     [[nodiscard]] bool pop(CapturedMidiInput& out) noexcept;
     // Safe for concurrent native MIDI callbacks. Performs only bounded copies,
     // atomic queue operations and atomic audit updates; it never takes the

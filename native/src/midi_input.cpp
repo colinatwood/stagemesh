@@ -155,9 +155,12 @@ bool MidiByteParser::feed(std::uint8_t byte, std::uint64_t show_time_ns, MidiInp
 MidiInputManager::MidiInputManager() noexcept = default;
 
 MidiInputManager::~MidiInputManager() {
-    for (std::size_t i = 0; i < device_count_; ++i) {
-        close_slot(devices_[i]);
-    }
+    deactivate();
+}
+
+void MidiInputManager::deactivate() noexcept {
+    for (std::size_t i = 0; i < device_count_; ++i) close_slot(devices_[i]);
+    device_count_ = 0;
 }
 
 const MidiDeviceDescriptor* MidiInputManager::device(std::size_t index) const noexcept {
