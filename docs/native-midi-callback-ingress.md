@@ -11,15 +11,14 @@ counters.
 The existing Linux byte-stream poller and the engine's consumer use the same
 queue. A four-producer native regression submits 1,600 uniquely timestamped
 events while the consumer drains them, then verifies there are no duplicates,
-missing events or drops. The ordinary full native test executable passes.
+missing events or drops. The owner-specific regression submits 400 concurrent
+callback-safe injections. The ordinary full native test executable passes.
 
-This is an ingress boundary only. Windows WinMM and macOS CoreMIDI input
-handles are not yet opened by `MidiInputManager`; its target-OS `attach()` and
-`poll()` paths remain fail-closed. Platform backends still need stable endpoint
-resolution, callback context ownership, stop/disconnect/drain ordering, and
-Windows/macOS compilation and runtime checks. In particular, the manager and
-queue must outlive every native callback, and rescans or detach operations must
-quiesce callback producers before mutating endpoint state.
+The manager now opens CoreMIDI and WinMM input handles behind the owner-thread
+boundary. Stable hashed endpoint resolution, callback context ownership, and
+stop/disconnect ordering are implemented. Windows/macOS compilation and runtime
+checks remain target evidence; rescans and detach operations still require
+hardware testing to confirm callback quiescence during topology changes.
 ## Owner-thread integration
 
 `MidiInputOwner` now owns the `MidiInputManager` registry on a dedicated worker.
