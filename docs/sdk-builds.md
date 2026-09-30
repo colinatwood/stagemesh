@@ -2,12 +2,14 @@
 
 `scripts/build-native.sh` is the single configure/build entry point for native
 and target-SDK builds. CMake generator, toolchain, and feature switches are
-passed after the script name; `STAGEFORGE_BUILD_DIR` selects the output tree.
+passed after the script name; `STAGEMESH_BUILD_DIR` selects the output tree.
+The legacy `STAGEFORGE_BUILD_DIR` name remains accepted as a compatibility
+alias, as do the corresponding `*_BUILD_CONFIG` and `*_SKIP_TESTS` variables.
 
 Native builds run CTest by default:
 
 ```sh
-STAGEFORGE_BUILD_DIR=build ./scripts/build-native.sh \
+STAGEMESH_BUILD_DIR=build ./scripts/build-native.sh \
   -G Ninja -DSTAGEFORGE_BUILD_TESTS=ON
 ```
 
@@ -15,7 +17,7 @@ Cross-compiled binaries are linked but cannot run on the host. Skip CTest only
 for that case, explicitly:
 
 ```sh
-STAGEFORGE_BUILD_DIR=build-mingw STAGEFORGE_SKIP_TESTS=1 \
+STAGEMESH_BUILD_DIR=build-mingw STAGEMESH_SKIP_TESTS=1 \
   ./scripts/build-native.sh -G Ninja \
   -DCMAKE_TOOLCHAIN_FILE=/path/to/mingw-toolchain.cmake \
   -DSTAGEFORGE_BUILD_TESTS=ON
