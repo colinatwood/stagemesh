@@ -18,6 +18,7 @@
 #include <mach/mach_time.h>
 #endif
 #if defined(_WIN32)
+#include <windows.h>
 #include <mmsystem.h>
 #endif
 #endif
