@@ -497,6 +497,34 @@ std::size_t MidiInputManager::poll(std::uint64_t show_time_ns) noexcept {
     return captured;
 }
 
+void MidiInputManager::reconcile() noexcept {
+#if defined(_WIN32) || defined(__APPLE__)
+    try {
+        DeviceMonitor monitor;
+        monitor.start();
+        const auto snapshot = monitor.snapshot();
+        monitor.stop();
+        for (std::size_t index = 0; index < device_count_; ++index) {
+            auto& slot = devices_[index];
+            if (!slot.attached) continue;
+            bool present = false;
+            for (const auto& record : snapshot.devices) {
+                if (record.kind == DeviceKind::Midi && record.input && record.native_hash == slot.native_hash.data()) {
+                    present = true;
+                    break;
+                }
+            }
+            if (!present) close_slot(slot);
+        }
+    } catch (...) {
+        // A failed topology read cannot authorize a rebind. Existing streams
+        // remain attached until a definitive missing/changed identity is seen.
+    }
+#else
+    // Linux poll/read errors are handled by the non-blocking stream itself.
+#endif
+}
+
 MidiIngressAuditStatus MidiInputManager::audit_status() const noexcept {
     return {audit_polls_.load(std::memory_order_relaxed),audit_bytes_.load(std::memory_order_relaxed),audit_messages_.load(std::memory_order_relaxed),audit_queue_drops_.load(std::memory_order_relaxed),audit_injected_.load(std::memory_order_relaxed),audit_max_poll_ns_.load(std::memory_order_relaxed),false};
 }

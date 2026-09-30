@@ -155,6 +155,9 @@ public:
     // Reads all currently available bytes from attached devices and appends
     // parsed events to a bounded queue. Returns newly captured event count.
     std::size_t poll(std::uint64_t show_time_ns) noexcept;
+    // Reconcile attached target endpoints against a fresh identity snapshot.
+    // Missing or changed identities are detached; no automatic rebind occurs.
+    void reconcile() noexcept;
     // Owner-thread shutdown. No callback context is released until all native
     // handles have been closed.
     void deactivate() noexcept;

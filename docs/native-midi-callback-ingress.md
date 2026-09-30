@@ -39,3 +39,7 @@ inferred from a cross-build. WinMM now resolves the owner-thread snapshot index,
 opens `HMIDIIN` with a function callback, forwards packed channel messages, and
 stops/resets/closes the handle before slot release. The remaining target-only
 work is exercising callback delivery and device removal on a real Windows host.
+
+The owner also reconciles attached target identities periodically. A missing or
+changed native hash detaches the slot and closes its handle; failed snapshots do
+not authorize a rebind, and no endpoint is silently substituted.

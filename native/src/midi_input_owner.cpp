@@ -35,6 +35,7 @@ void MidiInputOwner::run() {
         const auto now = static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
             std::chrono::steady_clock::now().time_since_epoch()).count());
         manager_.poll(now);
+        manager_.reconcile();
     }
     manager_.deactivate();
 }
