@@ -9,9 +9,12 @@ add_library(stageforge_devices
   device_execution_fence.cpp
   audio_preflight.cpp
   audio_stream_lifecycle.cpp
+  audio_conversion.cpp
   software_audio_render.cpp
   native_endpoint_stream.cpp)
-target_include_directories(stageforge_devices PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(stageforge_devices PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 if(WIN32)
   include(CheckCXXSourceCompiles)
@@ -47,8 +50,10 @@ add_executable(native_capture_smoke native_capture_smoke.cpp)
 target_link_libraries(native_capture_smoke PRIVATE stageforge_devices)
 add_executable(native_selected_loss_smoke native_selected_loss_smoke.cpp)
 target_link_libraries(native_selected_loss_smoke PRIVATE stageforge_devices)
+add_executable(audio_conversion_smoke audio_conversion_smoke.cpp)
+target_link_libraries(audio_conversion_smoke PRIVATE stageforge_devices)
 if(APPLE AND STAGEFORGE_DEVICE_ASAN)
-  foreach(target device_lifecycle_smoke device_execution_fence_smoke audio_preflight_smoke audio_stream_lifecycle_smoke native_playback_smoke native_capture_smoke native_selected_loss_smoke)
+  foreach(target device_lifecycle_smoke device_execution_fence_smoke audio_preflight_smoke audio_stream_lifecycle_smoke native_playback_smoke native_capture_smoke native_selected_loss_smoke audio_conversion_smoke)
     target_compile_options(${target} PRIVATE -fsanitize=address -fno-omit-frame-pointer)
     target_link_options(${target} PRIVATE -fsanitize=address)
   endforeach()
@@ -72,3 +77,5 @@ set_tests_properties(native_capture PROPERTIES TIMEOUT 30)
 
 add_test(NAME native_selected_loss COMMAND native_selected_loss_smoke)
 set_tests_properties(native_selected_loss PROPERTIES TIMEOUT 30)
+add_test(NAME audio_conversion COMMAND audio_conversion_smoke)
+set_tests_properties(audio_conversion PROPERTIES TIMEOUT 30)

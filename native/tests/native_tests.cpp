@@ -56,6 +56,7 @@
 #include "stageforge/realtime_audit.hpp"
 #include "stageforge/realtime_qualification.hpp"
 #include "stageforge/capture_ingress_audit.hpp"
+#include "stageforge/capture_ingress.hpp"
 #include "stageforge/lighting_ingress_audit.hpp"
 #include "stageforge/midi_learn_router.hpp"
 #include "stageforge/midi_mapped_action_dispatcher.hpp"
@@ -616,6 +617,40 @@ void test_audio_fanout_ring() {
 }
 
 void test_capture_ingress_audit_is_bounded_and_unarmed(){stageforge::CaptureIngressAudit audit;audit.finish(256,1,0,2,100);audit.finish(128,1,1,0,80);const auto s=audit.status();SF_CHECK(s.callbacks==2&&s.frames==384&&s.record_blocks==2&&s.queue_rejections==1&&s.nonfinite_samples==2&&s.max_duration_ns==100&&!s.physical_outputs_armed);}
+void test_shared_capture_ingress_preserves_samples_generation_and_discontinuities(){
+    using Queue=stageforge::DawRecordingQueue<2,4,4>;
+    stageforge::AudioFanoutRing<32,1> ring;
+    ring.set_reader_active(0,true);
+    Queue queue;
+    SF_CHECK(queue.arm(0,true));
+    std::atomic<std::uint64_t> sequence{0},frame{0},generation{queue.generation(0)};
+    const float first[]{.1F,-.1F,.2F,-.2F,.3F,-.3F,.4F,-.4F};
+    auto result=stageforge::submit_capture_packet(ring,&queue,0,sequence,frame,generation,first,4,2);
+    SF_CHECK(result.blocks==1&&result.rejected==0&&result.nonfinite_samples==0);
+    Queue::Block block{};
+    SF_CHECK(queue.pop(0,block));
+    SF_CHECK(block.sequence==1&&block.generation==generation.load()&&block.show_frame==0&&block.frames==4);
+    SF_CHECK(std::abs(block.left[2]-.3F)<.0001F&&std::abs(block.right[2]+.3F)<.0001F);
+
+    const float second[]{.5F,-.5F,.6F,-.6F};
+    const stageforge::CapturePacketInfo discontinuity{true,false,0.0};
+    result=stageforge::submit_capture_packet(ring,&queue,0,sequence,frame,generation,second,2,2,discontinuity);
+    SF_CHECK(result.blocks==1&&result.rejected==0);
+    SF_CHECK(queue.pop(0,block)&&block.sequence==3&&block.show_frame==4&&block.frames==2);
+    SF_CHECK(queue.status(0).sequence_gaps==1);
+
+    const float damaged[]{NAN,.25F,INFINITY,-.25F};
+    result=stageforge::submit_capture_packet(ring,&queue,0,sequence,frame,generation,damaged,2,2);
+    SF_CHECK(result.nonfinite_samples==2&&queue.pop(0,block));
+    SF_CHECK(block.left[0]==0.0F&&block.right[0]==.25F&&block.left[1]==0.0F&&block.right[1]==-.25F);
+    float ring_left[8]{},ring_right[8]{};
+    SF_CHECK(ring.pop_planar(0,ring_left,ring_right,8)==8);
+    SF_CHECK(std::abs(ring_left[0]-.1F)<.0001F&&std::abs(ring_right[0]+.1F)<.0001F);
+    SF_CHECK(ring_left[6]==0.0F&&ring_right[6]==.25F&&ring_left[7]==0.0F&&ring_right[7]==-.25F);
+    queue.disarm(0);
+    result=stageforge::submit_capture_packet(ring,&queue,0,sequence,frame,generation,first,4,2);
+    SF_CHECK(result.rejected==1&&queue.status(0).stale==1);
+}
 void test_lighting_ingress_audit_is_bounded_and_unarmed(){stageforge::LightingIngressAudit audit;audit.note_handoff(true);audit.note_handoff(false);audit.note_drain(3,90);audit.note_drain(2,50);const auto s=audit.status();SF_CHECK(s.accepted==1&&s.queue_rejections==1&&s.drained==5&&s.drain_calls==2&&s.max_drain_duration_ns==90&&!s.physical_outputs_armed);}
 
 void test_adaptive_drift_controller_and_resampler() {
@@ -1664,6 +1699,7 @@ int main() {
     }
     test_lighting_ingress_audit_is_bounded_and_unarmed();
     test_capture_ingress_audit_is_bounded_and_unarmed();
+    test_shared_capture_ingress_preserves_samples_generation_and_discontinuities();
     test_recording_disarm_stabilizes_tail_and_rearm_fences_old_generation();
     test_sampler_voice_engine_polyphony_steal_choke_and_loop();
     test_midi_mapped_actions_become_authoritative_show_events();
@@ -1735,4 +1771,3 @@ int main() {
     test_notation_quantizer();
     return 0;
 }
-

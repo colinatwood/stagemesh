@@ -12,6 +12,13 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"backend"))
 from plugin_host import IsolatedPluginHost,plugin_host_audit_status,plugin_host_scratch_cleanup,plugin_host_scratch_status,validate_platform_launch_evidence,validate_plugin_manifest
 
+def platform_attestation():
+    if platform.system() == "Darwin":
+        return {"platformLaunchAttestations": {"Darwin": {"mode": "macos-codesign-cdhash-v1", "teamId": "ABC123DEF4", "codeDirectoryHash": "cdhash:" + "5" * 40}}}
+    if platform.system() == "Windows":
+        return {"platformLaunchAttestations": {"Windows": {"mode": "windows-authenticode-fileid-v1", "publisherCertificateSha256": "sha256:" + "2" * 64, "fileIdentityRequired": True}}}
+    return {}
+
 class PluginHostTests(unittest.TestCase):
     def test_slow_uncontended_acquisition_is_not_contention(self):
         with patch.dict("os.environ", {"STAGEFORGE_RT_QUALIFICATION": "1"}):
@@ -58,13 +65,14 @@ class PluginHostTests(unittest.TestCase):
 
     def test_external_requires_adapter(self):
         with self.assertRaises(ValueError):validate_plugin_manifest({"format":"vst3","pluginId":"x"})
-        manifest={"format":"vst3","pluginId":"x","adapterExecutable":"relative-adapter","hostSystems":[platform.system()],"hostArchitectures":[platform.machine()],"adapterProtocolVersions":[1],"adapterSha256":"sha256:"+"0"*64}
+        manifest={"format":"vst3","pluginId":"x","adapterExecutable":"relative-adapter","hostSystems":[platform.system()],"hostArchitectures":[platform.machine()],"adapterProtocolVersions":[1],"adapterSha256":"sha256:"+"0"*64,**platform_attestation()}
         with self.assertRaisesRegex(ValueError,"absolute executable"):IsolatedPluginHost(ROOT/"scripts/stageforge-plugin-host.py",manifest)
 
+    @unittest.skipUnless(sys.platform.startswith("linux"), "Linux external adapter launch binding")
     def test_external_adapter_uses_explicit_executable_without_shell(self):
         with tempfile.TemporaryDirectory() as raw:
             adapter=Path(raw)/"adapter";adapter.write_text("#!/usr/bin/env python3\nimport json,sys\nfor line in sys.stdin:\n r=json.loads(line);o={'ok':True,'active':True,'protocolVersion':1,'pluginId':'external','format':'vst3','supportsProcess':True,'latencyFrames':64} if r['op']=='activate' else {'ok':True,'samples':[v*.5 for v in r['samples']]};o['requestId']=r['requestId'];print(json.dumps(o),flush=True)\n");adapter.chmod(0o700)
-            manifest={"format":"vst3","pluginId":"external","adapterExecutable":str(adapter),"hostSystems":[platform.system()],"hostArchitectures":[platform.machine()],"adapterProtocolVersions":[1],"adapterSha256":"sha256:"+hashlib.sha256(adapter.read_bytes()).hexdigest()}
+            manifest={"format":"vst3","pluginId":"external","adapterExecutable":str(adapter),"hostSystems":[platform.system()],"hostArchitectures":[platform.machine()],"adapterProtocolVersions":[1],"adapterSha256":"sha256:"+hashlib.sha256(adapter.read_bytes()).hexdigest(),**platform_attestation()}
             host=IsolatedPluginHost(ROOT/"scripts/stageforge-plugin-host.py",manifest)
             try:self.assertEqual(host.start()["handshake"]["latencyFrames"],64);self.assertEqual(host.process_block([.5,-.5]),[.25,-.25]);self.assertEqual(host.executable,adapter)
             finally:host.close()
@@ -145,10 +153,11 @@ class PluginHostTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError,"launch binding is not implemented"):
                     IsolatedPluginHost(adapter,manifest)
 
+    @unittest.skipUnless(sys.platform.startswith("linux"), "Linux external adapter launch binding")
     def test_external_adapter_hash_mismatch_fails_before_launch(self):
         with tempfile.TemporaryDirectory() as raw:
             adapter=Path(raw)/"adapter";adapter.write_text("#!/bin/sh\nexit 0\n");adapter.chmod(0o700)
-            manifest={"format":"lv2","pluginId":"external","adapterExecutable":str(adapter),"hostSystems":[platform.system()],"hostArchitectures":[platform.machine()],"adapterProtocolVersions":[1],"adapterSha256":"sha256:"+"0"*64}
+            manifest={"format":"lv2","pluginId":"external","adapterExecutable":str(adapter),"hostSystems":[platform.system()],"hostArchitectures":[platform.machine()],"adapterProtocolVersions":[1],"adapterSha256":"sha256:"+"0"*64,**platform_attestation()}
             with self.assertRaisesRegex(ValueError,"hash mismatch"):IsolatedPluginHost(ROOT/"scripts/stageforge-plugin-host.py",manifest)
 
     def test_timeout_is_reaped_and_audited_before_bypass(self):

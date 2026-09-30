@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from typing import Any
 
 
@@ -116,7 +116,25 @@ class AdapterRegistry:
         }
 
     def snapshot(self) -> list[dict[str, Any]]:
-        return [asdict(adapter) for adapter in self._adapters.values()]
+        # Keep the public projection aligned with adapter-manifest-v1.  The
+        # dataclass retains Pythonic field names internally, but callers and
+        # manifest validators consume the schema's camelCase names.
+        return [
+            {
+                "id": adapter.id,
+                "name": adapter.name,
+                "kind": adapter.kind,
+                "priority": adapter.priority,
+                "estimatedCpu": adapter.estimated_cpu,
+                "estimatedMemoryMb": adapter.estimated_memory_mb,
+                "capabilities": list(adapter.capabilities),
+                "fallbacks": list(adapter.fallbacks),
+                "realtime": adapter.realtime,
+                "healthy": adapter.healthy,
+                "physicalOutputsArmed": False,
+            }
+            for adapter in self._adapters.values()
+        ]
 
     def plan(self, capacity: float, mode: str) -> dict[str, Any]:
         capacity = max(0.0, min(100.0, float(capacity)))

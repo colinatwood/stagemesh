@@ -1,13 +1,9 @@
 #pragma once
 #include "audio_stream_lifecycle.h"
+#include "stageforge/capture_packet_info.hpp"
 #include <memory>
 
 namespace stageforge {
-struct CapturePacketInfo {
-    bool discontinuity = false;
-    bool timestamp_valid = false;
-    double sample_position = 0;
-};
 // Interleaved float32 borrowed for this call only; do not retain this pointer.
 // A consumer may copy samples into its own preallocated storage. A null consumer
 // discards input. Both callbacks must be bounded, allocation-free and noexcept;
