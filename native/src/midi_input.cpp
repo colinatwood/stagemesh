@@ -79,7 +79,7 @@ void coremidi_read(const MIDIPacketList* packets, void* refcon, void*) {
         for (UInt16 byte_index = 0; byte_index < packet->length; ++byte_index) {
             MidiInputMessage message{};
             if (!parser.feed(packet->data[byte_index], timestamp, message)) continue;
-            slot->owner->capture_callback(slot->descriptor.id.data(), slot->player_id.data(), message);
+            (void)slot->owner->capture_callback(slot->descriptor.id.data(), slot->player_id.data(), message);
         }
         slot->parser = parser;
         packet = MIDIPacketNext(packet);
@@ -371,19 +371,19 @@ bool MidiInputManager::attach(std::string_view device_id, std::string_view playe
     if (!native_client_) {
         MIDIClientRef client = 0;
         if (MIDIClientCreate(CFSTR("StageMesh MIDI Input"), nullptr, nullptr, &client) != noErr) return false;
-        native_client_ = reinterpret_cast<std::uintptr_t>(client);
+        native_client_ = static_cast<std::uintptr_t>(client);
     }
     if (!native_port_) {
         MIDIPortRef port = 0;
-        if (MIDIInputPortCreate(reinterpret_cast<MIDIClientRef>(native_client_), CFSTR("StageMesh MIDI Input Port"), coremidi_read, nullptr, &port) != noErr) return false;
-        native_port_ = reinterpret_cast<std::uintptr_t>(port);
+        if (MIDIInputPortCreate(static_cast<MIDIClientRef>(native_client_), CFSTR("StageMesh MIDI Input Port"), coremidi_read, nullptr, &port) != noErr) return false;
+        native_port_ = static_cast<std::uintptr_t>(port);
     }
     for (ItemCount index = 0; index < MIDIGetNumberOfSources(); ++index) {
         const auto source = MIDIGetSource(index);
         const auto hash = sha256_token("coremidi-native:" + std::to_string(static_cast<std::uint64_t>(source)) + ":in");
         if (hash != slot->native_hash.data()) continue;
-        if (MIDIPortConnectSource(reinterpret_cast<MIDIPortRef>(native_port_), source, slot) != noErr) return false;
-        slot->native_source = reinterpret_cast<std::uintptr_t>(source);
+        if (MIDIPortConnectSource(static_cast<MIDIPortRef>(native_port_), source, slot) != noErr) return false;
+        slot->native_source = static_cast<std::uintptr_t>(source);
         slot->attached = true;
         copy_text(slot->player_id, player_id);
         slot->parser.reset();
@@ -534,3 +534,4 @@ MidiIngressAuditStatus MidiInputManager::audit_status() const noexcept {
 }
 
 } // namespace stageforge
+
