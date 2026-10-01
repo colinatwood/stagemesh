@@ -707,6 +707,14 @@ class StageForgeHandler(BaseHTTPRequestHandler):
         if path == "/api/v1/stage/launcher":
             self._json(200, RUNTIME.stage_launcher_status())
             return
+        if path == "/api/v1/templates":
+            self._json(200, RUNTIME.stage_template_list())
+            return
+        template_prefix = "/api/v1/templates/"
+        if path.startswith(template_prefix) and path.count("/") == 4:
+            try: self._json(200, RUNTIME.stage_template_get(path[len(template_prefix):]))
+            except KeyError: self._json(404, {"error": "template not found"})
+            return
         if path == "/api/v1/hardware/qualification":
             self._json(200, RUNTIME.hardware_qualification())
             return
@@ -920,6 +928,13 @@ class StageForgeHandler(BaseHTTPRequestHandler):
             if path == "/api/v1/hardware/audio-preflight":
                 self._json(200, RUNTIME.audio_hardware_preflight(body))
                 return
+            if path == "/api/v1/templates":
+                self._json(201, RUNTIME.stage_template_create(body)); return
+            template_prefix = "/api/v1/templates/"
+            if path.startswith(template_prefix) and path.endswith("/validate"):
+                self._json(200, RUNTIME.stage_template_validate(path[len(template_prefix):-len("/validate")].strip("/"))); return
+            if path.startswith(template_prefix) and path.endswith("/publish"):
+                self._json(200, RUNTIME.stage_template_publish(path[len(template_prefix):-len("/publish")].strip("/"))); return
             if path == "/api/v1/hardware/audio-conversion-plan":
                 self._json(200, RUNTIME.audio_conversion_plan(body))
                 return
