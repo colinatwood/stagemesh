@@ -69,6 +69,40 @@
       </aside>
     </section>
 
+    <section class="panel templatePanel" aria-labelledby="templateTitle">
+      <div class="sectionHead"><div><span class="eyebrow">Frontend slice 1</span><h2 id="templateTitle">Stage template editor</h2></div><span id="templateStatus" class="tag">LOCAL DRAFT</span></div>
+      <p class="hint">Design-only canvas. Templates are stored locally and exported as JSON; saving never arms hardware or changes show authority.</p>
+      <div class="templateToolbar" role="toolbar" aria-label="Stage template tools">
+        <label>Object type<select id="templateObjectType"><option value="performer">Performer</option><option value="microphone">Microphone</option><option value="monitor">Monitor</option><option value="speaker">Speaker</option><option value="light">Light</option><option value="marker">Marker</option></select></label>
+        <label>Label<input id="templateObjectLabel" maxlength="48" value="New object"></label>
+        <button id="templateAdd" type="button" class="primary">Add object</button>
+        <button id="templateDelete" type="button" disabled>Delete selected</button>
+        <button id="templateExport" type="button">Export JSON</button>
+        <label class="buttonLike">Import JSON<input id="templateImport" type="file" accept="application/json" hidden></label>
+        <button id="templateReset" type="button">Reset draft</button>
+      </div>
+      <div class="templateLibrary" aria-labelledby="templateLibraryTitle">
+        <div class="sectionHead compact"><h3 id="templateLibraryTitle">Open template library</h3><span class="hint">Drag a preset onto the canvas or apply it</span></div>
+        <div id="templatePresets" class="templatePresets"></div>
+      </div>
+      <div id="templateCanvas" class="templateCanvas" tabindex="0" aria-label="Editable stage template canvas"><span class="templateEmpty">Add an object to begin a local stage layout.</span></div>
+      <p id="templateHint" class="hint" role="status">Select an object to edit or delete it. Drag objects to position them.</p>
+    </section>
+
+    <section class="panel readinessPanel" aria-labelledby="readinessTitle">
+      <div class="sectionHead">
+        <div><span class="eyebrow">Qualification boundary</span><h2 id="readinessTitle">Readiness overview</h2></div>
+        <span class="tag readinessTag">SOFTWARE READY</span>
+      </div>
+      <p class="hint">This view summarizes available evidence. It never arms hardware or turns a software check into a physical qualification claim.</p>
+      <div class="readinessGrid">
+        <article class="readinessCard ready"><strong>Software suite</strong><span>Native ownership, lifecycle, MIDI, conversion</span><b>Validated</b></article>
+        <article class="readinessCard ready"><strong>macOS runtime</strong><span>CoreAudio playback, capture, selected-loss</span><b>Validated</b></article>
+        <article class="readinessCard pending"><strong>Physical loopback</strong><span>Breakbox, audible return, latency/dropout soak</span><b>Hardware required</b></article>
+        <article class="readinessCard pending"><strong>Deployed browser</strong><span>LAN/TLS/IdP and assistive-technology exercise</span><b>Deployment required</b></article>
+      </div>
+    </section>
+
     <section class="layout lower">
       <section class="panel systemPanel">
         <div class="sectionHead"><div><span class="eyebrow">Graceful degradation</span><h2>System capacity</h2></div><span id="modeTag" class="tag">FULL</span></div>
@@ -222,5 +256,6 @@
   <script src="/automation.js"></script>
   <script src="/production.js"></script>
   <script src="/recovery.js"></script>
+  <script src="/stage-template.js"></script>
 </body>
 </html>
