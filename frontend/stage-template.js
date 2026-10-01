@@ -1,0 +1,89 @@
+(function () {
+  "use strict";
+  const q = (selector) => document.querySelector(selector);
+  const canvas = q("#templateCanvas");
+  if (!canvas) return;
+  const storageKey = "stagemesh.stage-template.v1";
+  let objects = [];
+  let selectedId = null;
+  let drag = null;
+  const presets = {
+    club: {name: "Small club", description: "Compact vocal, guitar, drum, and monitor layout", objects: [
+      ["performer", "Lead vocal", 50, 42], ["microphone", "Vocal mic", 50, 53], ["monitor", "Wedge L", 35, 62], ["monitor", "Wedge R", 65, 62], ["speaker", "Main L", 16, 30], ["speaker", "Main R", 84, 30]
+    ]},
+    arena: {name: "Arena stage", description: "Frontline, backline, PA, and side-fill starter layout", objects: [
+      ["performer", "Lead vocal", 50, 40], ["performer", "Drums", 50, 25], ["performer", "Bass", 32, 42], ["performer", "Keys", 68, 42], ["microphone", "Vocal mic", 50, 52], ["monitor", "Side-fill L", 18, 50], ["monitor", "Side-fill R", 82, 50], ["speaker", "PA L", 9, 26], ["speaker", "PA R", 91, 26], ["light", "Front wash", 50, 10]
+    ]},
+    festival: {name: "Festival stage", description: "Large-stage systems, FOH, power, and calibration markers", objects: [
+      ["performer", "Lead vocal", 50, 45], ["performer", "Drums", 50, 28], ["performer", "Guitar L", 30, 45], ["performer", "Guitar R", 70, 45], ["microphone", "Calibration mic", 50, 72], ["monitor", "Monitor L", 27, 63], ["monitor", "Monitor R", 73, 63], ["speaker", "Array L", 8, 25], ["speaker", "Array R", 92, 25], ["light", "Truss wash L", 25, 12], ["light", "Truss wash R", 75, 12], ["marker", "FOH", 50, 88]
+    ]}
+  };
+  const esc = (value) => String(value).replace(/[&<>\"]/g, (char) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[char]));
+  const save = () => localStorage.setItem(storageKey, JSON.stringify({version: 1, objects}));
+  const load = () => {
+    try { const parsed = JSON.parse(localStorage.getItem(storageKey) || "null"); objects = Array.isArray(parsed?.objects) ? parsed.objects : []; }
+    catch (_) { objects = []; }
+  };
+  const selected = () => objects.find((item) => item.id === selectedId);
+  const render = () => {
+    canvas.querySelectorAll(".templateObject").forEach((node) => node.remove());
+    q("#templateDelete").disabled = !selected();
+    q("#templateStatus").textContent = `${objects.length} OBJECT${objects.length === 1 ? "" : "S"} · LOCAL DRAFT`;
+    const empty = q(".templateEmpty");
+    if (empty) empty.hidden = objects.length > 0;
+    objects.forEach((item) => {
+      const node = document.createElement("button");
+      node.type = "button"; node.className = `templateObject template-${item.type}${item.id === selectedId ? " selected" : ""}`;
+      node.dataset.id = item.id; node.style.left = `${item.x}%`; node.style.top = `${item.y}%`;
+      node.setAttribute("aria-label", `${item.label}, ${item.type}`);
+      node.innerHTML = `<strong>${esc(item.label)}</strong><small>${esc(item.type)}</small>`;
+      node.addEventListener("pointerdown", (event) => {
+        event.preventDefault(); selectedId = item.id; drag = {id: item.id, pointerId: event.pointerId}; node.setPointerCapture(event.pointerId); render();
+      });
+      node.addEventListener("pointermove", (event) => {
+        if (!drag || drag.id !== item.id || drag.pointerId !== event.pointerId) return;
+        const rect = canvas.getBoundingClientRect();
+        item.x = Math.max(4, Math.min(96, ((event.clientX - rect.left) / rect.width) * 100));
+        item.y = Math.max(7, Math.min(93, ((event.clientY - rect.top) / rect.height) * 100));
+        node.style.left = `${item.x}%`; node.style.top = `${item.y}%`;
+      });
+      node.addEventListener("pointerup", () => { if (drag?.id === item.id) { drag = null; save(); q("#templateHint").textContent = "Position saved to this local draft."; } });
+      canvas.appendChild(node);
+    });
+  };
+  const makeObjects = (preset) => preset.objects.map(([type, label, x, y], index) => ({id: `${type}-${Date.now()}-${index}-${Math.random().toString(16).slice(2)}`, type, label, x, y}));
+  const applyPreset = (key) => { const preset = presets[key]; if (!preset) return; objects = makeObjects(preset); selectedId = null; save(); render(); q("#templateHint").textContent = `${preset.name} loaded into the local draft. Customize before export.`; };
+  const renderPresets = () => {
+    const host = q("#templatePresets");
+    Object.entries(presets).forEach(([key, preset]) => {
+      const card = document.createElement("article"); card.className = "templatePreset"; card.draggable = true;
+      card.innerHTML = `<div><strong>${esc(preset.name)}</strong><span>${esc(preset.description)}</span><small>${preset.objects.length} starter objects · open JSON</small></div><button type="button">Apply</button>`;
+      card.querySelector("button").addEventListener("click", () => applyPreset(key));
+      card.addEventListener("dragstart", (event) => { event.dataTransfer.setData("application/x-stagemesh-template", key); event.dataTransfer.effectAllowed = "copy"; });
+      host.appendChild(card);
+    });
+  };
+  q("#templateAdd").addEventListener("click", () => {
+    const type = q("#templateObjectType").value;
+    const label = q("#templateObjectLabel").value.trim() || "New object";
+    const item = {id: `${type}-${Date.now()}-${Math.random().toString(16).slice(2)}`, type, label, x: 50, y: 50};
+    objects.push(item); selectedId = item.id; save(); render(); q("#templateHint").textContent = `${label} added. Drag it to position it.`;
+  });
+  q("#templateDelete").addEventListener("click", () => { if (!selected()) return; objects = objects.filter((item) => item.id !== selectedId); selectedId = null; save(); render(); });
+  q("#templateReset").addEventListener("click", () => { objects = []; selectedId = null; save(); render(); q("#templateHint").textContent = "Draft reset. No backend or hardware state was changed."; });
+  q("#templateExport").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify({version: 1, name: "StageMesh stage template", objects}, null, 2)], {type: "application/json"});
+    const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "stagemesh-stage-template.json"; link.click(); URL.revokeObjectURL(link.href);
+  });
+  q("#templateImport").addEventListener("change", async (event) => {
+    const file = event.target.files?.[0]; if (!file) return;
+    try { const parsed = JSON.parse(await file.text()); if (!Array.isArray(parsed.objects)) throw new Error("objects array missing"); objects = parsed.objects.filter((item) => item && typeof item.label === "string").map((item) => ({id: String(item.id || `object-${Date.now()}-${Math.random()}`), type: String(item.type || "marker"), label: item.label.slice(0, 48), x: Number(item.x) || 50, y: Number(item.y) || 50})); selectedId = null; save(); render(); q("#templateHint").textContent = "Template imported into the local draft."; }
+    catch (error) { q("#templateHint").textContent = `Import rejected: ${error.message}`; }
+    event.target.value = "";
+  });
+  canvas.addEventListener("dragover", (event) => { if (event.dataTransfer.types.includes("application/x-stagemesh-template")) { event.preventDefault(); canvas.classList.add("dropTarget"); } });
+  canvas.addEventListener("dragleave", () => canvas.classList.remove("dropTarget"));
+  canvas.addEventListener("drop", (event) => { const key = event.dataTransfer.getData("application/x-stagemesh-template"); if (!key) return; event.preventDefault(); canvas.classList.remove("dropTarget"); applyPreset(key); });
+  load(); render();
+  renderPresets();
+}());

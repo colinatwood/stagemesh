@@ -25,4 +25,8 @@ if [ "${STAGEMESH_SKIP_TESTS:-${STAGEFORGE_SKIP_TESTS:-0}}" != 1 ]; then
         ctest --test-dir "$BUILD_DIR" --output-on-failure
     fi
 fi
-printf '\nNative engine: %s\n' "$BUILD_DIR/native/stageforge_engine"
+ENGINE_PATH="$BUILD_DIR/native/stageforge_engine"
+if [ ! -e "$ENGINE_PATH" ] && [ -n "$BUILD_CONFIG" ]; then
+    ENGINE_PATH="$BUILD_DIR/native/$BUILD_CONFIG/stageforge_engine"
+fi
+printf '\nNative engine: %s\n' "$ENGINE_PATH"
