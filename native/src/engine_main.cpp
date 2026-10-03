@@ -60,6 +60,8 @@
 #if defined(_WIN32) || defined(__APPLE__)
 #include "native_capture.h"
 #include "native_capture_service.h"
+#include "native_playback.h"
+#include "native_playback_service.h"
 #include "stageforge/capture_service_owner.hpp"
 #endif
 
@@ -474,6 +476,13 @@ void render_audio(void* raw, float* interleaved, std::uint32_t frames, std::uint
     if(context->realtime_audit){const auto callback_end_ns=static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());const double deadline_rate=sink_rate>0?sink_rate:stageforge::canonical_audio_sample_rate;const auto deadline_ns=static_cast<std::uint64_t>(static_cast<double>(frames)/deadline_rate*1'000'000'000.0);context->realtime_audit->finish(callback_end_ns-callback_begin_ns,deadline_ns);}
 }
 
+#if defined(_WIN32) || defined(__APPLE__)
+void render_native_audio(float* interleaved, std::uint32_t frames,
+                         std::uint32_t channels, void* raw) noexcept {
+    render_audio(raw, interleaved, frames, channels);
+}
+#endif
+
 template <typename T>
 bool parse_number(std::string_view text, T& value) {
     const auto* first = text.data();
@@ -700,8 +709,10 @@ int main(int argc, char** argv) {
     std::array<stageforge::AlsaAudioOutput, kAudioOutputSlots> alsa_outputs{};
     std::array<stageforge::AlsaAudioInput, kAudioInputSlots> alsa_inputs{};
 #if defined(_WIN32) || defined(__APPLE__)
-    using NativeOwner = stageforge::CaptureServiceOwner<stageforge::NativeCaptureService>;
-    std::array<std::unique_ptr<NativeOwner>, kAudioInputSlots> native_inputs{};
+    using NativeInputOwner = stageforge::CaptureServiceOwner<stageforge::NativeCaptureService>;
+    using NativeOutputOwner = stageforge::CaptureServiceOwner<stageforge::NativePlaybackService>;
+    std::array<std::unique_ptr<NativeInputOwner>, kAudioInputSlots> native_inputs{};
+    std::array<std::unique_ptr<NativeOutputOwner>, kAudioOutputSlots> native_outputs{};
 #endif
     std::array<std::string, kAudioInputSlots> selected_audio_inputs{};
     std::array<std::string, kAudioOutputSlots> execution_audio_backends{};
@@ -1346,7 +1357,7 @@ int main(int argc, char** argv) {
                 request.allow_format_conversion = (conversion_flags & 4U) != 0;
                 audio_inputs[slot].source.store(static_cast<std::uint8_t>(source_index), std::memory_order_release);
                 try {
-                    auto owner = std::make_unique<NativeOwner>([&audio_inputs, slot] {
+                    auto owner = std::make_unique<NativeInputOwner>([&audio_inputs, slot] {
                         return std::make_unique<stageforge::NativeCaptureService>(capture_native_audio, &audio_inputs[slot]);
                     });
                     const std::string token = device->backend_address.data();
@@ -1517,6 +1528,9 @@ int main(int argc, char** argv) {
             if(!stageforge::canonical_audio_sample_format_from_name(sample_format,requested_output_format)){error("argument","invalid audio output sample format");continue;}
             if(sample_format!="FLOAT_LE"&&(conversion_flags&4U)==0){error("argument","integer audio output requires sample-format conversion permission");continue;}
             if(channels!=2&&(conversion_flags&2U)==0){error("argument","audio output channel conversion permission is required");continue;}
+#if defined(_WIN32) || defined(__APPLE__)
+            native_outputs[slot].reset();
+#endif
             alsa_outputs[slot].close();
             execution_audio_backends[slot] = slot == 0 ? "null-audio" : "none";
             audio_render_contexts[slot].output.store(static_cast<std::uint8_t>(output_index), std::memory_order_release);
@@ -1542,6 +1556,46 @@ int main(int argc, char** argv) {
                 continue;
             }
             const auto* device = audio_devices.find(selected_audio_outputs[slot]);
+#if defined(_WIN32) || defined(__APPLE__)
+            if (device && device->output && device->connected &&
+                (std::string_view(device->backend.data()) == "wasapi" || std::string_view(device->backend.data()) == "coreaudio")) {
+                if (sample_rate != static_cast<unsigned>(sample_rate) || sample_format != "FLOAT_LE") {
+                    for (auto& input : audio_inputs) input.ring.set_reader_active(slot, false);
+                    error("unsupported", "native playback requires integral rate and float32 client format"); continue;
+                }
+                stageforge::AudioRequest request;
+                request.direction = stageforge::AudioDirection::Playback;
+                request.sample_rate_hz = static_cast<unsigned>(sample_rate);
+                request.period_frames = buffer_frames; request.channels = channels;
+                request.allow_rate_conversion = (conversion_flags & 1U) != 0;
+                request.allow_period_adaptation = false;
+                request.allow_channel_conversion = (conversion_flags & 2U) != 0;
+                request.allow_format_conversion = (conversion_flags & 4U) != 0;
+                try {
+                    auto owner = std::make_unique<NativeOutputOwner>([&audio_render_contexts, slot] {
+                        return std::make_unique<stageforge::NativePlaybackService>(render_native_audio, &audio_render_contexts[slot]);
+                    });
+                    const std::string token = device->backend_address.data();
+                    if (!owner->execute([request, token](auto& service) { return service.activate_endpoint(request, token); })) {
+                        for (auto& input : audio_inputs) input.ring.set_reader_active(slot, false);
+                        error("audio", "selected native output could not be armed"); continue;
+                    }
+                    const auto verified = owner->execute([](auto& service) { return service.stats(); }).last_verified_configuration;
+                    audio_render_contexts[slot].expected_sample_rate.store(verified.configured_sample_rate_hz, std::memory_order_relaxed);
+                    native_outputs[slot] = std::move(owner);
+                    execution_audio_backends[slot] = device->backend.data();
+                    ok("slot=" + std::to_string(slot) + " execution=" + execution_audio_backends[slot] +
+                       " running=1 device=" + selected_audio_outputs[slot] + " output=" + std::to_string(output_index) +
+                       " actualRate=" + std::to_string(verified.configured_sample_rate_hz) +
+                       " actualPeriodFrames=" + std::to_string(verified.configured_period_frames) +
+                       " actualChannels=" + std::to_string(verified.configured_channels) + " actualFormat=FLOAT_LE");
+                } catch (const std::exception&) {
+                    for (auto& input : audio_inputs) input.ring.set_reader_active(slot, false);
+                    error("audio", "native playback owner activation failed");
+                }
+                continue;
+            }
+#endif
             if (!device || std::string_view(device->backend.data()) != "alsa" || !device->output || !device->connected) {
                 for (auto& input : audio_inputs) input.ring.set_reader_active(slot, false);
                 error("unsupported", "selected device has no installed playback adapter"); continue;
@@ -1568,6 +1622,9 @@ int main(int argc, char** argv) {
         if (command == "AUDIO_DEACTIVATE" && (parts.size() == 1 || parts.size() == 2)) {
             std::size_t slot = 0;
             if (parts.size() == 2 && (!parse_number(parts[1], slot) || slot >= kAudioOutputSlots)) { error("argument", "invalid audio output slot"); continue; }
+#if defined(_WIN32) || defined(__APPLE__)
+            native_outputs[slot].reset();
+#endif
             alsa_outputs[slot].close();
             execution_audio_backends[slot] = slot == 0 ? "null-audio" : "none";
             for (auto& input : audio_inputs) input.ring.set_reader_active(slot, false);
@@ -1577,6 +1634,48 @@ int main(int argc, char** argv) {
         if (command == "AUDIO_STREAM_STATUS" && (parts.size() == 1 || parts.size() == 2)) {
             std::size_t slot = 0;
             if (parts.size() == 2 && (!parse_number(parts[1], slot) || slot >= kAudioOutputSlots)) { error("argument", "invalid audio output slot"); continue; }
+#if defined(_WIN32) || defined(__APPLE__)
+            if (native_outputs[slot]) {
+                const auto stats = native_outputs[slot]->execute([](auto& service) { return service.stats(); });
+                std::uint64_t fanout_dropped = 0, fanout_underruns = 0, fanout_queued = 0;
+                for (const auto& input : audio_inputs) {
+                    fanout_dropped += input.ring.dropped(slot);
+                    fanout_underruns += input.ring.underruns(slot);
+                    fanout_queued += input.ring.queued(slot);
+                }
+                std::cout << "OK slot=" << slot
+                          << " execution=" << execution_audio_backends[slot]
+                          << " selected=" << selected_audio_outputs[slot]
+                          << " running=" << (stats.native_running ? 1 : 0)
+                          << " state=" << static_cast<int>(stats.lifecycle.state)
+                          << " callbacks=" << stats.callbacks
+                          << " xruns=0"
+                          << " requestedRate=" << audio_render_contexts[slot].expected_sample_rate.load(std::memory_order_relaxed)
+                          << " configuredRate=" << stats.last_verified_configuration.configured_sample_rate_hz
+                          << " periodFrames=" << stats.last_verified_configuration.configured_period_frames
+                          << " channels=" << stats.last_verified_configuration.configured_channels
+                          << " requestedPeriodFrames=" << stats.last_verified_configuration.configured_period_frames
+                          << " requestedChannels=" << stats.last_verified_configuration.configured_channels
+                          << " sampleFormat=FLOAT_LE"
+                          << " output=" << static_cast<unsigned int>(audio_render_contexts[slot].output.load(std::memory_order_acquire))
+                          << " queued=" << fanout_queued
+                          << " dropped=" << fanout_dropped
+                          << " underruns=" << fanout_underruns
+                          << " rateMeasured=0 ratePpm=0.00"
+                          << " driftEnabled=" << (audio_render_contexts[slot].drift_enabled.load(std::memory_order_relaxed) ? 1 : 0)
+                          << " maxCorrectionPpm=" << audio_render_contexts[slot].max_correction_ppm.load(std::memory_order_relaxed)
+                          << " queueGainPpm=" << audio_render_contexts[slot].queue_gain_ppm.load(std::memory_order_relaxed)
+                          << " correctionPpm=" << audio_render_contexts[slot].correction_ppm.load(std::memory_order_relaxed)
+                          << " sourceFrames=" << audio_render_contexts[slot].source_frames_last.load(std::memory_order_relaxed)
+                          << " compensatedBlocks=" << audio_render_contexts[slot].compensated_blocks.load(std::memory_order_relaxed)
+                          << " firstWriteNs=0 lastWriteNs=0 maxExcessGapNs=0 framesWritten=" << stats.frames
+                          << " firstRenderShowNs=" << audio_render_contexts[slot].first_render_show_ns.load(std::memory_order_relaxed)
+                          << " lastRenderShowNs=" << audio_render_contexts[slot].last_render_show_ns.load(std::memory_order_relaxed)
+                          << " lastBlockEndShowNs=" << audio_render_contexts[slot].last_block_end_show_ns.load(std::memory_order_relaxed)
+                          << " error=none\n" << std::flush;
+                continue;
+            }
+#endif
             const auto stream = alsa_outputs[slot].status();
             const auto requested = alsa_outputs[slot].requested_config();
             const bool alsa = execution_audio_backends[slot] == "alsa";
@@ -2566,7 +2665,8 @@ int main(int argc, char** argv) {
             for (std::size_t slot = 0; slot < kAudioOutputSlots; ++slot) {
                 const auto output_status = alsa_outputs[slot].status();
                 output_callbacks += output_status.callback_count; output_xruns += output_status.xruns;
-                if (execution_audio_backends[slot] == "alsa" || (slot == 0 && execution_audio_backends[slot] == "null-audio")) ++active_outputs;
+                if (execution_audio_backends[slot] == "alsa" || execution_audio_backends[slot] == "wasapi" ||
+                    execution_audio_backends[slot] == "coreaudio" || (slot == 0 && execution_audio_backends[slot] == "null-audio")) ++active_outputs;
             }
             std::uint64_t input_callbacks = 0, input_xruns = 0, input_queued = 0;
             std::size_t active_inputs = 0;
@@ -2630,6 +2730,7 @@ int main(int argc, char** argv) {
     sacn_output.close();
 #if defined(_WIN32) || defined(__APPLE__)
     for (auto& owner : native_inputs) owner.reset();
+    for (auto& owner : native_outputs) owner.reset();
 #endif
     for (auto& input : alsa_inputs) input.close();
     for (auto& output : alsa_outputs) output.close();
