@@ -1,9 +1,12 @@
 #include "native_playback_service.h"
 
+#include <stdexcept>
+#include <thread>
+
 namespace stageforge {
 
 NativePlaybackService::NativePlaybackService(PlaybackRender render, void* context)
-    : render_(render), context_(context) {
+    : render_(render), context_(context), owner_thread_(std::this_thread::get_id()) {
     monitor_.start();
 }
 
@@ -13,6 +16,7 @@ NativePlaybackService::~NativePlaybackService() {
 }
 
 bool NativePlaybackService::activate(const AudioRequest& request, DeviceSelection selection) {
+    require_owner();
     deactivate();
     if (selection.kind != DeviceKind::Audio || !selection.require_output) return false;
 
@@ -41,6 +45,7 @@ bool NativePlaybackService::activate(const AudioRequest& request, DeviceSelectio
 }
 
 bool NativePlaybackService::activate_endpoint(const AudioRequest& request, const std::string& token) {
+    require_owner();
     deactivate();
     const auto snapshot = monitor_.snapshot();
     DeviceSelection selection;
@@ -57,6 +62,7 @@ bool NativePlaybackService::activate_endpoint(const AudioRequest& request, const
 }
 
 void NativePlaybackService::service(std::uint32_t wait_ms) {
+    require_owner();
     if (!active_) return;
     try {
         const auto observation = fence_->reconcile(monitor_.snapshot().devices);
@@ -90,11 +96,19 @@ void NativePlaybackService::deactivate() noexcept {
 }
 
 FenceObservation NativePlaybackService::fence() const noexcept {
+    if (std::this_thread::get_id() != owner_thread_) return last_fence_;
     return fence_ ? fence_->observation() : last_fence_;
 }
 
 EndpointStreamStats NativePlaybackService::stats() const {
+    require_owner();
     return stream_ ? stream_->stats() : last_stats_;
+}
+
+void NativePlaybackService::require_owner() const {
+    if (std::this_thread::get_id() != owner_thread_) {
+        throw std::logic_error("NativePlaybackService control thread changed");
+    }
 }
 
 } // namespace stageforge
