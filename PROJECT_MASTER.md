@@ -7,12 +7,12 @@
 - Repository: `colinatwood/stagemesh`
 - Canonical branch: `main`
 - Baseline milestone: **Checkpoint 86 — persistent templates and target-OS audio lifecycle integration**
-- Latest main baseline: `b600e307` — PR #50 added the refreshed StageMesh-named backlog workbook after PR #48 integrated the target-OS native playback service and PR #47 added persistent stage-template editor/storage behavior. Fresh hosted checks passed Platform Modules, Native Device Lifecycle, Linux RT release, macOS Apple Silicon, and Windows x64. This remains hosted software evidence, not physical device qualification. See `docs/backlog-status-2026-10-03.md`.
+- Latest main baseline: `96b17e4a` — PR #52 added explicit native playback evidence requirements to the Windows/macOS qualification contract after PR #50 added the refreshed StageMesh-named backlog workbook, PR #48 integrated target-OS native playback, and PR #47 added persistent stage-template editor/storage behavior. Fresh hosted checks passed Platform Modules, Native Device Lifecycle, Linux RT release, macOS Apple Silicon, and Windows x64. This remains hosted software evidence, not physical device qualification. See `docs/backlog-status-2026-10-03.md`.
 - Repository README states that recovered Checkpoint 69 engine/backend/frontend/schemas/packaging/tests are consolidated with Checkpoint 70–83 platform work, with Checkpoint 84 documenting recovery provenance/integration limits.
 
 ## Latest completed work
 
-PR #47 added persistent stage-template editor/storage behavior and its validation path. PR #48 added `NativePlaybackService`, exact hashed endpoint activation for Windows WASAPI and macOS CoreAudio, fail-closed fence/service handling, full-engine output status/shutdown wiring, and a missing-endpoint plus owner-thread smoke test. PR #50 added `docs/backlog/StageMesh-Master-Backlog-Refresh-2026-10-03.xlsx`, preserving the original Checkpoint 83 workbook as a historical snapshot.
+PR #47 added persistent stage-template editor/storage behavior and its validation path. PR #48 added `NativePlaybackService`, exact hashed endpoint activation for Windows WASAPI and macOS CoreAudio, fail-closed fence/service handling, full-engine output status/shutdown wiring, and a missing-endpoint plus owner-thread smoke test. PR #50 added `docs/backlog/StageMesh-Master-Backlog-Refresh-2026-10-03.xlsx`, preserving the original Checkpoint 83 workbook as a historical snapshot. PR #52 added `playbackLifecycleQualified` and `playback-evidence` requirements to the Windows/macOS external qualification tasks.
 
 The full engine now has software-level native capture, MIDI, and playback ownership paths. Target hardware, audible output quality, recording quality, and physical device qualification remain open.
 
@@ -51,7 +51,7 @@ Use this file to prevent progress loss when a ChatGPT/project session reaches it
 
 ## Next-session handoff
 
-- **Latest main:** `b600e307` (PR #50, following PR #48). Platform Modules run [37151827147](https://github.com/colinatwood/stagemesh/actions/runs/37151827147), Native Device Lifecycle run [37151827154](https://github.com/colinatwood/stagemesh/actions/runs/37151827154), and full CI run [37151827197](https://github.com/colinatwood/stagemesh/actions/runs/37151827197) passed. The hosted artifacts do not qualify physical target hardware.
+- **Latest main:** `96b17e4a` (PR #52, following PR #50 and PR #48). Platform Modules run [37151827147](https://github.com/colinatwood/stagemesh/actions/runs/37151827147), Native Device Lifecycle run [37151827154](https://github.com/colinatwood/stagemesh/actions/runs/37151827154), and full CI run [37151827197](https://github.com/colinatwood/stagemesh/actions/runs/37151827197) passed. The hosted artifacts do not qualify physical target hardware.
 - **Native capture/playback services:** `NativeCaptureService` and `NativePlaybackService` own their monitor, execution fence, callback/render context, activation, service, and close ordering on an owner thread. Exact hashed identity selection and fail-closed topology-loss behavior are integrated. Physical target execution remains unqualified.
 - **Native MIDI ingress:** A fixed-capacity MPMC queue handles concurrent callbacks, and `MidiInputOwner` owns discovery, polling, attach/detach commands, periodic identity reconciliation, and shutdown on a dedicated worker. Target callback delivery and topology-loss execution still require target hardware.
 - **Template persistence:** The stage-template editor and persistent API path are present, with publication kept separate from physical output arming. Continue edge-case coverage and lifecycle integration as needed.
