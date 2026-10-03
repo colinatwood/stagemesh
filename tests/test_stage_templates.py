@@ -57,6 +57,17 @@ class StageTemplateStoreTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.store.create({"objects": [{}] * 5001})
 
+    def test_failed_create_and_publish_roll_back_memory(self):
+        with patch.object(self.store, "_save", side_effect=OSError("disk full")):
+            with self.assertRaises(OSError):
+                self.store.create(self.document())
+        self.assertEqual(self.store.list(), [])
+        created = self.store.create(self.document())
+        with patch.object(self.store, "_save", side_effect=OSError("disk full")):
+            with self.assertRaises(OSError):
+                self.store.publish(created["templateId"])
+        self.assertEqual(self.store.get(created["templateId"]), created)
+
     def test_failed_persistence_rolls_back_update_and_delete(self):
         created = self.store.create(self.document())
         with patch.object(self.store, "_save", side_effect=OSError("disk full")):
