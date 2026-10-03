@@ -206,6 +206,29 @@ class ApiTests(unittest.TestCase):
         conn.close()
         return result
 
+    def test_stage_template_update_delete_enforce_expected_revision(self):
+        status, _, created = self.request("POST", "/api/v1/templates", {
+            "name": "Tour", "objects": [{"label": "Lead vocal", "x": 50, "y": 42}],
+        })
+        self.assertEqual(status, 201)
+        template_id = created["templateId"]
+        stale = self.request("PATCH", f"/api/v1/templates/{template_id}", {
+            "expectedRevision": 99, "name": "Stale",
+            "objects": [{"label": "Lead vocal", "x": 50, "y": 42}],
+        })
+        self.assertEqual(stale[0], 409)
+        self.assertEqual(self.request("GET", f"/api/v1/templates/{template_id}")[2]["revision"], 1)
+        status, _, updated = self.request("PATCH", f"/api/v1/templates/{template_id}", {
+            "expectedRevision": 1, "name": "Updated",
+            "objects": [{"label": "Lead vocal", "x": 50, "y": 42}],
+        })
+        self.assertEqual(status, 200)
+        self.assertEqual(updated["revision"], 2)
+        deleted = self.request("DELETE", f"/api/v1/templates/{template_id}", {"expectedRevision": 2})
+        self.assertEqual(deleted[0], 200)
+        self.assertTrue(deleted[2]["deleted"])
+        self.assertEqual(self.request("GET", f"/api/v1/templates/{template_id}")[0], 404)
+
     def test_user_profile_customization_is_layered_portable_and_unarmed(self):
         profile = {
             "documentType": "org.upp.user-profile", "schemaVersion": 1,
