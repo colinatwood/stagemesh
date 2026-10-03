@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <thread>
 
 namespace stageforge {
 
@@ -31,11 +32,14 @@ public:
     [[nodiscard]] EndpointStreamStats stats() const;
 
 private:
+    void require_owner() const;
+
     DeviceMonitor monitor_;
     std::unique_ptr<DeviceExecutionFence> fence_;
     std::unique_ptr<NativePlaybackStream> stream_;
     PlaybackRender render_;
     void* context_;
+    std::thread::id owner_thread_;
     bool active_{false};
     EndpointStreamStats last_stats_{};
     FenceObservation last_fence_{};
