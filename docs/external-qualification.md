@@ -18,6 +18,8 @@ A result is accepted only for the exact `planId`, source fingerprint and native-
 
 The envelope never arms physical output and does not automatically mutate the product backlog. Qualification/release review must still decide whether the attached evidence is sufficient and authentic for the target claim.
 
+The `windows-platform` and `macos-platform` tasks require a separate `playbackLifecycleQualified` claim and `playback-evidence` artifact. Those fields cover the native playback service's activation, render/callback lifecycle, identity revalidation and fail-closed shutdown alongside the existing audio negotiation and hotplug claims. They are prerequisites for target-platform review, not hosted or simulated hardware qualification.
+
 Current task IDs are:
 
 - `independent-witness`

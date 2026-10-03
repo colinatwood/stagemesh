@@ -29,6 +29,14 @@ class QualificationBundleTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,"exact build"):
                 validate_result(plan,{**result,"planId":"sha256:"+"2"*64})
 
+    def test_target_platform_tasks_require_native_playback_evidence(self):
+        with tempfile.TemporaryDirectory() as raw:
+            plan=create_plan(root=ROOT,engine_path=self.engine(raw))
+            tasks={item["taskId"]:item for item in plan["tasks"]}
+            for task_id in ("windows-platform","macos-platform"):
+                self.assertIn("playbackLifecycleQualified", tasks[task_id]["requiredClaims"])
+                self.assertIn("playback-evidence", tasks[task_id]["requiredArtifacts"])
+
     def test_passing_result_requires_each_task_artifact_class(self):
         with tempfile.TemporaryDirectory() as raw:
             plan=create_plan(root=ROOT,engine_path=self.engine(raw));result=result_template(plan,"independent-witness")
