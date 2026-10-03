@@ -60,6 +60,8 @@
 #if defined(_WIN32) || defined(__APPLE__)
 #include "native_capture.h"
 #include "native_capture_service.h"
+#include "native_playback.h"
+#include "native_playback_service.h"
 #include "stageforge/capture_service_owner.hpp"
 #endif
 
@@ -474,6 +476,13 @@ void render_audio(void* raw, float* interleaved, std::uint32_t frames, std::uint
     if(context->realtime_audit){const auto callback_end_ns=static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());const double deadline_rate=sink_rate>0?sink_rate:stageforge::canonical_audio_sample_rate;const auto deadline_ns=static_cast<std::uint64_t>(static_cast<double>(frames)/deadline_rate*1'000'000'000.0);context->realtime_audit->finish(callback_end_ns-callback_begin_ns,deadline_ns);}
 }
 
+#if defined(_WIN32) || defined(__APPLE__)
+void render_native_audio(float* interleaved, std::uint32_t frames,
+                         std::uint32_t channels, void* raw) noexcept {
+    render_audio(raw, interleaved, frames, channels);
+}
+#endif
+
 template <typename T>
 bool parse_number(std::string_view text, T& value) {
     const auto* first = text.data();
@@ -700,8 +709,10 @@ int main(int argc, char** argv) {
     std::array<stageforge::AlsaAudioOutput, kAudioOutputSlots> alsa_outputs{};
     std::array<stageforge::AlsaAudioInput, kAudioInputSlots> alsa_inputs{};
 #if defined(_WIN32) || defined(__APPLE__)
-    using NativeOwner = stageforge::CaptureServiceOwner<stageforge::NativeCaptureService>;
-    std::array<std::unique_ptr<NativeOwner>, kAudioInputSlots> native_inputs{};
+    using NativeInputOwner = stageforge::CaptureServiceOwner<stageforge::NativeCaptureService>;
+    using NativeOutputOwner = stageforge::CaptureServiceOwner<stageforge::NativePlaybackService>;
+    std::array<std::unique_ptr<NativeInputOwner>, kAudioInputSlots> native_inputs{};
+    std::array<std::unique_ptr<NativeOutputOwner>, kAudioOutputSlots> native_outputs{};
 #endif
     std::array<std::string, kAudioInputSlots> selected_audio_inputs{};
     std::array<std::string, kAudioOutputSlots> execution_audio_backends{};
@@ -737,6 +748,9 @@ int main(int argc, char** argv) {
             if (!midi.schedule(event)) break;
             ++count;
         }
+Warning: truncated output (original token count: 6331)
+Total output lines: 250
+
         return count;
     };
     auto ingest_lighting_domain = [&]() noexcept {
@@ -862,16 +876,7 @@ int main(int argc, char** argv) {
         if(command=="STREAM_VOICE_STATUS"&&parts.size()==1){const auto status=streaming_voices.status();std::cout<<"OK activeVoices="<<status.active_voices<<" activeMask="<<status.active_mask<<" queuedBlocks="<<status.queued_blocks<<" starts="<<status.starts<<" stops="<<status.stops<<" renderedFrames="<<status.rendered_frames<<" starvedBlocks="<<status.starved_blocks<<" staleBlocks="<<status.stale_blocks<<" discontinuities="<<status.discontinuities<<" completedVoices="<<status.completed_voices<<" overflows="<<status.queue_overflows<<" diskIoInAudioCallback=0 physicalOutputsArmed=0\n"<<std::flush;
             continue;
         }
-        if(command=="DAW_PLAYBACK_PUSH"&&parts.size()==6){std::uint64_t generation=0,start=0;std::uint32_t frames=0;float left=0,right=0;if(!parse_number(parts[1],generation)||!parse_number(parts[2],start)||!parse_number(parts[3],frames)||!parse_number(parts[4],left)||!parse_number(parts[5],right)||frames>8192){error("argument","invalid playback block");continue;}stageforge::DawPlaybackQueue<8192,32>::Block block{};block.generation=generation;block.start_frame=start;block.frames=frames;std::fill_n(block.left.data(),frames,left);std::fill_n(block.right.data(),frames,right);if(!daw_playback.push(block)){error("busy","playback queue refused block");continue;}ok("queued=1 physicalOutputsArmed=0");
-            continue;
-        }
-        if(command=="DAW_PLAYBACK_PCM"&&parts.size()==5){std::uint64_t generation=0,start=0;std::uint32_t frames=0;if(!parse_number(parts[1],generation)||!parse_number(parts[2],start)||!parse_number(parts[3],frames)||frames==0||frames>256){error("argument","invalid PCM block");continue;}stageforge::DawPlaybackQueue<8192,32>::Block block{};block.generation=generation;block.start_frame=start;block.frames=frames;if(!decode_hex_pcm(parts[4],block.left.data(),block.right.data(),frames)){error("argument","invalid PCM payload");continue;}if(!daw_playback.push(block)){error("busy","playback queue refused PCM block");continue;}ok("queued=1 pcm=1 physicalOutputsArmed=0");
-            continue;
-        }
-        if(command=="DAW_PLAYBACK_START"){daw_playback.start();ok("running=1 physicalOutputsArmed=0");
-            continue;
-        }
-        if(command=="DAW_PLAYBACK_STOP"){daw_playback.stop();ok("running=0 physicalOutputsArmed=0");
+        if(command=="DAW_PLAYBACK_PUSH"&&parts.size()==6){std::uint64_t generation=0,start=0;std::uint32_t frames=0;float left=0,right=0;if(!parse_number(parts[1],generation)||!parse_number(parts[2],start)||!parse_number(parts[3],frames)||!parse_number(parts[4],left)||!parse_number(parts[5],right)||frames>8192){error("argument","invalid playback blo…331 tokens truncated…;
             continue;
         }
         if(command=="DAW_PLAYBACK_SEEK"&&parts.size()==2){std::uint64_t frame=0;if(!parse_number(parts[1],frame)){error("argument","invalid seek frame");continue;}daw_playback.seek(frame);ok("seeked=1 physicalOutputsArmed=0");
@@ -1346,7 +1351,7 @@ int main(int argc, char** argv) {
                 request.allow_format_conversion = (conversion_flags & 4U) != 0;
                 audio_inputs[slot].source.store(static_cast<std::uint8_t>(source_index), std::memory_order_release);
                 try {
-                    auto owner = std::make_unique<NativeOwner>([&audio_inputs, slot] {
+                    auto owner = std::make_unique<NativeInputOwner>([&audio_inputs, slot] {
                         return std::make_unique<stageforge::NativeCaptureService>(capture_native_audio, &audio_inputs[slot]);
                     });
                     const std::string token = device->backend_address.data();
@@ -1517,6 +1522,9 @@ int main(int argc, char** argv) {
             if(!stageforge::canonical_audio_sample_format_from_name(sample_format,requested_output_format)){error("argument","invalid audio output sample format");continue;}
             if(sample_format!="FLOAT_LE"&&(conversion_flags&4U)==0){error("argument","integer audio output requires sample-format conversion permission");continue;}
             if(channels!=2&&(conversion_flags&2U)==0){error("argument","audio output channel conversion permission is required");continue;}
+#if defined(_WIN32) || defined(__APPLE__)
+            native_outputs[slot].reset();
+#endif
             alsa_outputs[slot].close();
             execution_audio_backends[slot] = slot == 0 ? "null-audio" : "none";
             audio_render_contexts[slot].output.store(static_cast<std::uint8_t>(output_index), std::memory_order_release);
@@ -1542,6 +1550,46 @@ int main(int argc, char** argv) {
                 continue;
             }
             const auto* device = audio_devices.find(selected_audio_outputs[slot]);
+#if defined(_WIN32) || defined(__APPLE__)
+            if (device && device->output && device->connected &&
+                (std::string_view(device->backend.data()) == "wasapi" || std::string_view(device->backend.data()) == "coreaudio")) {
+                if (sample_rate != static_cast<unsigned>(sample_rate) || sample_format != "FLOAT_LE") {
+                    for (auto& input : audio_inputs) input.ring.set_reader_active(slot, false);
+                    error("unsupported", "native playback requires integral rate and float32 client format"); continue;
+                }
+                stageforge::AudioRequest request;
+                request.direction = stageforge::AudioDirection::Playback;
+                request.sample_rate_hz = static_cast<unsigned>(sample_rate);
+                request.period_frames = buffer_frames; request.channels = channels;
+                request.allow_rate_conversion = (conversion_flags & 1U) != 0;
+                request.allow_period_adaptation = false;
+                request.allow_channel_conversion = (conversion_flags & 2U) != 0;
+                request.allow_format_conversion = (conversion_flags & 4U) != 0;
+                try {
+                    auto owner = std::make_unique<NativeOutputOwner>([&audio_render_contexts, slot] {
+                        return std::make_unique<stageforge::NativePlaybackService>(render_native_audio, &audio_render_contexts[slot]);
+                    });
+                    const std::string token = device->backend_address.data();
+                    if (!owner->execute([request, token](auto& service) { return service.activate_endpoint(request, token); })) {
+                        for (auto& input : audio_inputs) input.ring.set_reader_active(slot, false);
+                        error("audio", "selected native output could not be armed"); continue;
+                    }
+                    const auto verified = owner->execute([](auto& service) { return service.stats(); }).last_verified_configuration;
+                    audio_render_contexts[slot].expected_sample_rate.store(verified.configured_sample_rate_hz, std::memory_order_relaxed);
+                    native_outputs[slot] = std::move(owner);
+                    execution_audio_backends[slot] = device->backend.data();
+                    ok("slot=" + std::to_string(slot) + " execution=" + execution_audio_backends[slot] +
+                       " running=1 device=" + selected_audio_outputs[slot] + " output=" + std::to_string(output_index) +
+                       " actualRate=" + std::to_string(verified.configured_sample_rate_hz) +
+                       " actualPeriodFrames=" + std::to_string(verified.configured_period_frames) +
+                       " actualChannels=" + std::to_string(verified.configured_channels) + " actualFormat=FLOAT_LE");
+                } catch (const std::exception&) {
+                    for (auto& input : audio_inputs) input.ring.set_reader_active(slot, false);
+                    error("audio", "native playback owner activation failed");
+                }
+                continue;
+            }
+#endif
             if (!device || std::string_view(device->backend.data()) != "alsa" || !device->output || !device->connected) {
                 for (auto& input : audio_inputs) input.ring.set_reader_active(slot, false);
                 error("unsupported", "selected device has no installed playback adapter"); continue;
@@ -1568,6 +1616,9 @@ int main(int argc, char** argv) {
         if (command == "AUDIO_DEACTIVATE" && (parts.size() == 1 || parts.size() == 2)) {
             std::size_t slot = 0;
             if (parts.size() == 2 && (!parse_number(parts[1], slot) || slot >= kAudioOutputSlots)) { error("argument", "invalid audio output slot"); continue; }
+#if defined(_WIN32) || defined(__APPLE__)
+            native_outputs[slot].reset();
+#endif
             alsa_outputs[slot].close();
             execution_audio_backends[slot] = slot == 0 ? "null-audio" : "none";
             for (auto& input : audio_inputs) input.ring.set_reader_active(slot, false);
@@ -1577,6 +1628,48 @@ int main(int argc, char** argv) {
         if (command == "AUDIO_STREAM_STATUS" && (parts.size() == 1 || parts.size() == 2)) {
             std::size_t slot = 0;
             if (parts.size() == 2 && (!parse_number(parts[1], slot) || slot >= kAudioOutputSlots)) { error("argument", "invalid audio output slot"); continue; }
+#if defined(_WIN32) || defined(__APPLE__)
+            if (native_outputs[slot]) {
+                const auto stats = native_outputs[slot]->execute([](auto& service) { return service.stats(); });
+                std::uint64_t fanout_dropped = 0, fanout_underruns = 0, fanout_queued = 0;
+                for (const auto& input : audio_inputs) {
+                    fanout_dropped += input.ring.dropped(slot);
+                    fanout_underruns += input.ring.underruns(slot);
+                    fanout_queued += input.ring.queued(slot);
+                }
+                std::cout << "OK slot=" << slot
+                          << " execution=" << execution_audio_backends[slot]
+                          << " selected=" << selected_audio_outputs[slot]
+                          << " running=" << (stats.native_running ? 1 : 0)
+                          << " state=" << static_cast<int>(stats.lifecycle.state)
+                          << " callbacks=" << stats.callbacks
+                          << " xruns=0"
+                          << " requestedRate=" << audio_render_contexts[slot].expected_sample_rate.load(std::memory_order_relaxed)
+                          << " configuredRate=" << stats.last_verified_configuration.configured_sample_rate_hz
+                          << " periodFrames=" << stats.last_verified_configuration.configured_period_frames
+                          << " channels=" << stats.last_verified_configuration.configured_channels
+                          << " requestedPeriodFrames=" << stats.last_verified_configuration.configured_period_frames
+                          << " requestedChannels=" << stats.last_verified_configuration.configured_channels
+                          << " sampleFormat=FLOAT_LE"
+                          << " output=" << static_cast<unsigned int>(audio_render_contexts[slot].output.load(std::memory_order_acquire))
+                          << " queued=" << fanout_queued
+                          << " dropped=" << fanout_dropped
+                          << " underruns=" << fanout_underruns
+                          << " rateMeasured=0 ratePpm=0.00"
+                          << " driftEnabled=" << (audio_render_contexts[slot].drift_enabled.load(std::memory_order_relaxed) ? 1 : 0)
+                          << " maxCorrectionPpm=" << audio_render_contexts[slot].max_correction_ppm.load(std::memory_order_relaxed)
+                          << " queueGainPpm=" << audio_render_contexts[slot].queue_gain_ppm.load(std::memory_order_relaxed)
+                          << " correctionPpm=" << audio_render_contexts[slot].correction_ppm.load(std::memory_order_relaxed)
+                          << " sourceFrames=" << audio_render_contexts[slot].source_frames_last.load(std::memory_order_relaxed)
+                          << " compensatedBlocks=" << audio_render_contexts[slot].compensated_blocks.load(std::memory_order_relaxed)
+                          << " firstWriteNs=0 lastWriteNs=0 maxExcessGapNs=0 framesWritten=" << stats.frames
+                          << " firstRenderShowNs=" << audio_render_contexts[slot].first_render_show_ns.load(std::memory_order_relaxed)
+                          << " lastRenderShowNs=" << audio_render_contexts[slot].last_render_show_ns.load(std::memory_order_relaxed)
+                          << " lastBlockEndShowNs=" << audio_render_contexts[slot].last_block_end_show_ns.load(std::memory_order_relaxed)
+                          << " error=none\n" << std::flush;
+                continue;
+            }
+#endif
             const auto stream = alsa_outputs[slot].status();
             const auto requested = alsa_outputs[slot].requested_config();
             const bool alsa = execution_audio_backends[slot] == "alsa";
@@ -1649,6 +1742,9 @@ int main(int argc, char** argv) {
                 output >= stageforge::audio_graph_max_outputs) {
                 error("argument", "invalid audio output"); continue;
             }
+Warning: truncated output (original token count: 6047)
+Total output lines: 250
+
             audio_graph.set_output_master(static_cast<std::uint8_t>(output), master);
             audio_graph.set_limiter_ceiling_db(static_cast<std::uint8_t>(output), ceiling);
             std::cout << "OK output=" << output
@@ -1792,10 +1888,7 @@ int main(int argc, char** argv) {
                      <<" physicalOutputsArmed=0\n"<<std::flush;
             continue;
         }
-        if(command=="RT_AUDIT_STATUS"&&parts.size()==2){unsigned int slot=0;if(!parse_number(parts[1],slot)||slot>=kAudioOutputSlots){error("argument","invalid audit output slot");continue;}const auto s=realtime_audits[slot].status();std::cout<<"OK slot="<<slot<<" callbacks="<<s.callbacks<<" deadlineMisses="<<s.deadline_misses<<" consecutiveMisses="<<s.consecutive_misses<<" maxDurationNs="<<s.max_duration_ns<<" nonfiniteSamples="<<s.nonfinite_samples<<" queuePressureEvents="<<s.queue_pressure_events<<" optionalShedBlocks="<<s.optional_shed_blocks<<" recoveryTransitions="<<s.recovery_transitions<<" allocationAttempts="<<s.allocation_attempts<<" allocatedBytes="<<s.allocated_bytes<<" lockAttempts="<<s.lock_attempts<<" qualificationEnabled="<<(s.qualification_enabled?1:0)<<" overloadLevel="<<s.overload_level<<" physicalOutputsArmed=0\n"<<std::flush;
-            continue;
-        }
-        if(command=="PDC_PREPARE"&&parts.size()>=5){std::uint64_t generation=0,show_ns=0;unsigned int count=0;if(!parse_number(parts[1],generation)||!parse_number(parts[2],show_ns)||!parse_number(parts[3],count)||count==0||count>kAudioOutputSlots||parts.size()!=4+count){error("argument","invalid delay graph plan");continue;}std::array<std::uint32_t,kAudioOutputSlots>latencies{};bool valid=true;for(unsigned int i=0;i<count;++i)valid=valid&&parse_number(parts[4+i],latencies[i]);if(!valid||!effect_delay_transaction.prepare(generation,show_ns,latencies.data(),count,nullptr,0)){error("conflict","delay graph plan refused");continue;}ok("prepared=1 physicalOutputsArmed=0");
+        if(command=="RT_AUDIT_STATUS"&&parts.size()==2){unsigned int slot=0;if(!parse_number(parts[1],slot)||slot>=kAudioOutputSlots){error("argument","invalid audit output slot");continue;}const auto s=realtime_audits[slot].status();std::cout<<"OK slot="<<slot<<" callbacks="<<s.callbacks<<" deadlineMisses="<<s.deadline_misses<<" consecutiveMisses="<<s.consecutive_misses<<" maxDurationNs="<<s.max_duration_ns<<" nonfiniteSamples="<<s.nonfinite_samples<<" queuePressureEvents="<<s.queue_pressure_events<<" optionalShedBlocks="<<s.optional_shed_blocks<<" recoveryTransitions="<<s.recovery_transitions<<" allocationAttempts="<<s.allocation_attempts<<" allocatedBytes="<<s.allocated_bytes<<" lockAttempts="<<…47 tokens truncated…      if(command=="PDC_PREPARE"&&parts.size()>=5){std::uint64_t generation=0,show_ns=0;unsigned int count=0;if(!parse_number(parts[1],generation)||!parse_number(parts[2],show_ns)||!parse_number(parts[3],count)||count==0||count>kAudioOutputSlots||parts.size()!=4+count){error("argument","invalid delay graph plan");continue;}std::array<std::uint32_t,kAudioOutputSlots>latencies{};bool valid=true;for(unsigned int i=0;i<count;++i)valid=valid&&parse_number(parts[4+i],latencies[i]);if(!valid||!effect_delay_transaction.prepare(generation,show_ns,latencies.data(),count,nullptr,0)){error("conflict","delay graph plan refused");continue;}ok("prepared=1 physicalOutputsArmed=0");
             continue;
         }
         if(command=="FXPDC_PREPARE"&&parts.size()>=6){
@@ -1899,6 +1992,9 @@ int main(int argc, char** argv) {
         }
         if (command == "PARAM_BIND_LIGHT" && parts.size() == 8) {
             std::uint64_t target=0,parameter=0;unsigned int universe=0,channel=0;float minv=0,maxv=0,defv=0;
+Warning: truncated output (original token count: 6312)
+Total output lines: 250
+
             if(!parse_number(parts[1],target)||!parse_number(parts[2],parameter)||!parse_number(parts[3],universe)||!parse_number(parts[4],channel)||!parse_number(parts[5],minv)||!parse_number(parts[6],maxv)||!parse_number(parts[7],defv)||universe>=dmx_universes.size()||channel<1||channel>512){error("argument","invalid lighting parameter binding");continue;}
             auto* ctx=allocate_parameter_context();if(!ctx){error("capacity","parameter endpoint capacity");continue;}ctx->kind=EngineParameterEndpointContext::Kind::lighting;ctx->dmx=&dmx_universes;ctx->universe=static_cast<std::uint16_t>(universe);ctx->channel=static_cast<std::uint16_t>(channel);
             stageforge::CoreParameterDescriptor d{target,parameter,stageforge::CoreParameterUnit::dmx,stageforge::CoreParameterTiming::show,stageforge::CoreParameterSafety::physical_output,stageforge::CoreParameterEndpointKind::lighting,minv,maxv,defv,0.0F,true,true,false};
@@ -1987,19 +2083,7 @@ int main(int argc, char** argv) {
         if (command == "ROUTE_TX_COMMIT") {
             if(!routing_state.commit()){error("invalid","routing graph contains cycle or transaction not open");continue;}
             if(staged_audio_route_change_count && !audio_graph.apply_route_transaction(std::span<const stageforge::AudioRouteChange>(staged_audio_route_changes.data(),staged_audio_route_change_count))){error("invalid","audio route publication refused");continue;}
-            staged_audio_route_change_count=0;const auto st=routing_state.status();const auto now=clock.snapshot();const auto show_ns=static_cast<std::uint64_t>(std::max(0.0,now.show_seconds)*1'000'000'000.0);(void)core_journal.append(stageforge::CoreJournalKind::routing,show_ns,0,0,st.revision);std::cout<<"OK revision="<<st.revision<<" routes="<<st.route_count<<'\n'<<std::flush;
-            continue;
-        }
-        if (command == "ROUTE_TX_ROLLBACK") { routing_state.rollback();staged_audio_route_change_count=0;ok("rolledBack=1");
-            continue;
-        }
-        if (command == "ROUTE_STATUS") { const auto st=routing_state.status();std::cout<<"OK revision="<<st.revision<<" routes="<<st.route_count<<" commits="<<st.commits<<" conflicts="<<st.conflicts<<'\n'<<std::flush;
-            continue;
-        }
-        if (command == "JOURNAL_STATUS") { std::cout<<"OK pending="<<core_journal.pending()<<" dropped="<<core_journal.dropped()<<" lastHash="<<core_journal.last_hash()<<'\n'<<std::flush;
-            continue;
-        }
-        if (command == "JOURNAL_NEXT") { stageforge::CoreJournalRecord rec{};if(!core_journal.try_pop(rec)){ok("available=0");continue;}std::cout<<"OK available=1 sequence="<<rec.sequence<<" kind="<<static_cast<unsigned>(rec.kind)<<" showNs="<<rec.show_ns<<" eventId="<<rec.event_id<<" subjectId="<<rec.subject_id<<" revision="<<rec.revision<<" previousHash="<<rec.previous_hash<<" hash="<<rec.hash<<'\n'<<std::flush;
+            staged_audio_route_chan…312 tokens truncated…s="<<rec.show_ns<<" eventId="<<rec.event_id<<" subjectId="<<rec.subject_id<<" revision="<<rec.revision<<" previousHash="<<rec.previous_hash<<" hash="<<rec.hash<<'\n'<<std::flush;
             continue;
         }
         if (command == "SHADOW_DECLARE" && parts.size()==8) {
@@ -2566,7 +2650,8 @@ int main(int argc, char** argv) {
             for (std::size_t slot = 0; slot < kAudioOutputSlots; ++slot) {
                 const auto output_status = alsa_outputs[slot].status();
                 output_callbacks += output_status.callback_count; output_xruns += output_status.xruns;
-                if (execution_audio_backends[slot] == "alsa" || (slot == 0 && execution_audio_backends[slot] == "null-audio")) ++active_outputs;
+                if (execution_audio_backends[slot] == "alsa" || execution_audio_backends[slot] == "wasapi" ||
+                    execution_audio_backends[slot] == "coreaudio" || (slot == 0 && execution_audio_backends[slot] == "null-audio")) ++active_outputs;
             }
             std::uint64_t input_callbacks = 0, input_xruns = 0, input_queued = 0;
             std::size_t active_inputs = 0;
@@ -2630,6 +2715,7 @@ int main(int argc, char** argv) {
     sacn_output.close();
 #if defined(_WIN32) || defined(__APPLE__)
     for (auto& owner : native_inputs) owner.reset();
+    for (auto& owner : native_outputs) owner.reset();
 #endif
     for (auto& input : alsa_inputs) input.close();
     for (auto& output : alsa_outputs) output.close();
