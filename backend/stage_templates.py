@@ -56,7 +56,11 @@ class StageTemplateStore:
         normalized = self.validate(document); template_id = str(uuid4())
         with self._lock:
             self._templates[template_id] = {**normalized, "revision": 1, "state": "draft", "updatedAt": time()}
-            self._save()
+            try:
+                self._save()
+            except OSError:
+                self._templates.pop(template_id, None)
+                raise
             return self.get(template_id)
 
     def update(self, template_id, expected_revision, document):
@@ -105,5 +109,13 @@ class StageTemplateStore:
     def publish(self, template_id):
         result = self.validate_saved(template_id)
         with self._lock:
-            self._templates[template_id]["state"] = "published"; self._templates[template_id]["revision"] += 1; self._templates[template_id]["updatedAt"] = time(); self._save()
+            previous = deepcopy(self._templates[template_id])
+            self._templates[template_id]["state"] = "published"
+            self._templates[template_id]["revision"] += 1
+            self._templates[template_id]["updatedAt"] = time()
+            try:
+                self._save()
+            except OSError:
+                self._templates[template_id] = previous
+                raise
             return {**result, "state": "published", "revision": self._templates[template_id]["revision"], "physicalOutputsArmed": False}
