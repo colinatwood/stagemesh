@@ -1,6 +1,6 @@
 # StageMesh backlog status refresh
 
-As of 2026-10-03, based on `main` at `e71329262f8072c50018ef7bfc2b250316608fb7`.
+As of 2026-10-03, based on `main` at `b731c8186e9c14a6b1ebf673fe1861f5b97b4d9d`.
 
 ## Work now on main
 
@@ -12,6 +12,7 @@ As of 2026-10-03, based on `main` at `e71329262f8072c50018ef7bfc2b250316608fb7`.
 - PR [#50](https://github.com/colinatwood/stagemesh/pull/50) added `docs/backlog/StageMesh-Master-Backlog-Refresh-2026-10-03.xlsx`. It maps current PR #47/#48 evidence to AUD-035, AUD-036, DEV-033, and DEV-034 without changing their In Progress status or the historical 25 open / 22 P0 snapshot counts.
 - PR [#52](https://github.com/colinatwood/stagemesh/pull/52) added explicit `playbackLifecycleQualified` and `playback-evidence` requirements to the Windows/macOS external qualification contract. This prepares target review but does not qualify hardware.
 - PR [#56](https://github.com/colinatwood/stagemesh/pull/56) added the dedicated `audio-conversion-quality` task for AUD-034, requiring numeric error, SNR, THD+N, continuity, and measurement-summary evidence.
+- PR [#58](https://github.com/colinatwood/stagemesh/pull/58) added the named macOS `midi_hardware_smoke` target for FL Mini CoreMIDI callback evidence.
 - The 25-row execution record at `docs/backlog-execution-2026-10-03.md` records the earlier open-row pass. The complete ledger at `docs/backlog-execution-2026-10-03-all-50.md` reconciles 49 workbook items plus the inventory-control record, preserving 24 Done rows and all 25 non-Done statuses without unsupported completion.
 - Existing capture, MIDI and playback work remains software integration evidence. The complete execution ledger confirms the workbook count and preserves the external qualification gates. Target-hardware behavior, recording quality, audible output, and physical qualification stay open.
 
