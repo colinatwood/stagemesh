@@ -14,7 +14,7 @@ class QualificationBundleTests(unittest.TestCase):
             self.assertEqual(plan["documentType"],"org.upp.external-qualification-plan")
             self.assertTrue(plan["planId"].startswith("sha256:"));self.assertTrue(plan["build"]["sourceFingerprint"].startswith("sha256:"))
             ids={item["taskId"] for item in plan["tasks"]}
-            self.assertTrue({"independent-witness","lan-security","windows-platform","macos-platform","assistive-technology","stage-hardware"}.issubset(ids))
+            self.assertTrue({"independent-witness","lan-security","windows-platform","macos-platform","assistive-technology","audio-conversion-quality","stage-hardware"}.issubset(ids))
             self.assertFalse(plan["physicalOutputsArmed"]);self.assertTrue(all(item["requiredArtifacts"] for item in plan["tasks"]))
 
     def test_passing_result_requires_exact_plan_build_and_all_required_claims(self):
@@ -36,6 +36,14 @@ class QualificationBundleTests(unittest.TestCase):
             for task_id in ("windows-platform","macos-platform"):
                 self.assertIn("playbackLifecycleQualified", tasks[task_id]["requiredClaims"])
                 self.assertIn("playback-evidence", tasks[task_id]["requiredArtifacts"])
+
+    def test_conversion_quality_task_requires_numeric_and_continuity_evidence(self):
+        with tempfile.TemporaryDirectory() as raw:
+            plan=create_plan(root=ROOT,engine_path=self.engine(raw))
+            task=next(item for item in plan["tasks"] if item["taskId"] == "audio-conversion-quality")
+            self.assertEqual(task["backlogIds"],["AUD-034"])
+            self.assertEqual(task["requiredClaims"],["conversionNumericErrorQualified","conversionSnrQualified","conversionThdPlusNQualified","conversionContinuityQualified"])
+            self.assertEqual(task["requiredArtifacts"],["qualification-report","conversion-evidence","measurement-summary"])
 
     def test_passing_result_requires_each_task_artifact_class(self):
         with tempfile.TemporaryDirectory() as raw:
