@@ -748,9 +748,6 @@ int main(int argc, char** argv) {
             if (!midi.schedule(event)) break;
             ++count;
         }
-Warning: truncated output (original token count: 6331)
-Total output lines: 250
-
         return count;
     };
     auto ingest_lighting_domain = [&]() noexcept {
@@ -876,7 +873,16 @@ Total output lines: 250
         if(command=="STREAM_VOICE_STATUS"&&parts.size()==1){const auto status=streaming_voices.status();std::cout<<"OK activeVoices="<<status.active_voices<<" activeMask="<<status.active_mask<<" queuedBlocks="<<status.queued_blocks<<" starts="<<status.starts<<" stops="<<status.stops<<" renderedFrames="<<status.rendered_frames<<" starvedBlocks="<<status.starved_blocks<<" staleBlocks="<<status.stale_blocks<<" discontinuities="<<status.discontinuities<<" completedVoices="<<status.completed_voices<<" overflows="<<status.queue_overflows<<" diskIoInAudioCallback=0 physicalOutputsArmed=0\n"<<std::flush;
             continue;
         }
-        if(command=="DAW_PLAYBACK_PUSH"&&parts.size()==6){std::uint64_t generation=0,start=0;std::uint32_t frames=0;float left=0,right=0;if(!parse_number(parts[1],generation)||!parse_number(parts[2],start)||!parse_number(parts[3],frames)||!parse_number(parts[4],left)||!parse_number(parts[5],right)||frames>8192){error("argument","invalid playback blo…331 tokens truncated…;
+        if(command=="DAW_PLAYBACK_PUSH"&&parts.size()==6){std::uint64_t generation=0,start=0;std::uint32_t frames=0;float left=0,right=0;if(!parse_number(parts[1],generation)||!parse_number(parts[2],start)||!parse_number(parts[3],frames)||!parse_number(parts[4],left)||!parse_number(parts[5],right)||frames>8192){error("argument","invalid playback block");continue;}stageforge::DawPlaybackQueue<8192,32>::Block block{};block.generation=generation;block.start_frame=start;block.frames=frames;std::fill_n(block.left.data(),frames,left);std::fill_n(block.right.data(),frames,right);if(!daw_playback.push(block)){error("busy","playback queue refused block");continue;}ok("queued=1 physicalOutputsArmed=0");
+            continue;
+        }
+        if(command=="DAW_PLAYBACK_PCM"&&parts.size()==5){std::uint64_t generation=0,start=0;std::uint32_t frames=0;if(!parse_number(parts[1],generation)||!parse_number(parts[2],start)||!parse_number(parts[3],frames)||frames==0||frames>256){error("argument","invalid PCM block");continue;}stageforge::DawPlaybackQueue<8192,32>::Block block{};block.generation=generation;block.start_frame=start;block.frames=frames;if(!decode_hex_pcm(parts[4],block.left.data(),block.right.data(),frames)){error("argument","invalid PCM payload");continue;}if(!daw_playback.push(block)){error("busy","playback queue refused PCM block");continue;}ok("queued=1 pcm=1 physicalOutputsArmed=0");
+            continue;
+        }
+        if(command=="DAW_PLAYBACK_START"){daw_playback.start();ok("running=1 physicalOutputsArmed=0");
+            continue;
+        }
+        if(command=="DAW_PLAYBACK_STOP"){daw_playback.stop();ok("running=0 physicalOutputsArmed=0");
             continue;
         }
         if(command=="DAW_PLAYBACK_SEEK"&&parts.size()==2){std::uint64_t frame=0;if(!parse_number(parts[1],frame)){error("argument","invalid seek frame");continue;}daw_playback.seek(frame);ok("seeked=1 physicalOutputsArmed=0");
@@ -1742,9 +1748,6 @@ Total output lines: 250
                 output >= stageforge::audio_graph_max_outputs) {
                 error("argument", "invalid audio output"); continue;
             }
-Warning: truncated output (original token count: 6047)
-Total output lines: 250
-
             audio_graph.set_output_master(static_cast<std::uint8_t>(output), master);
             audio_graph.set_limiter_ceiling_db(static_cast<std::uint8_t>(output), ceiling);
             std::cout << "OK output=" << output
@@ -1888,7 +1891,10 @@ Total output lines: 250
                      <<" physicalOutputsArmed=0\n"<<std::flush;
             continue;
         }
-        if(command=="RT_AUDIT_STATUS"&&parts.size()==2){unsigned int slot=0;if(!parse_number(parts[1],slot)||slot>=kAudioOutputSlots){error("argument","invalid audit output slot");continue;}const auto s=realtime_audits[slot].status();std::cout<<"OK slot="<<slot<<" callbacks="<<s.callbacks<<" deadlineMisses="<<s.deadline_misses<<" consecutiveMisses="<<s.consecutive_misses<<" maxDurationNs="<<s.max_duration_ns<<" nonfiniteSamples="<<s.nonfinite_samples<<" queuePressureEvents="<<s.queue_pressure_events<<" optionalShedBlocks="<<s.optional_shed_blocks<<" recoveryTransitions="<<s.recovery_transitions<<" allocationAttempts="<<s.allocation_attempts<<" allocatedBytes="<<s.allocated_bytes<<" lockAttempts="<<…47 tokens truncated…      if(command=="PDC_PREPARE"&&parts.size()>=5){std::uint64_t generation=0,show_ns=0;unsigned int count=0;if(!parse_number(parts[1],generation)||!parse_number(parts[2],show_ns)||!parse_number(parts[3],count)||count==0||count>kAudioOutputSlots||parts.size()!=4+count){error("argument","invalid delay graph plan");continue;}std::array<std::uint32_t,kAudioOutputSlots>latencies{};bool valid=true;for(unsigned int i=0;i<count;++i)valid=valid&&parse_number(parts[4+i],latencies[i]);if(!valid||!effect_delay_transaction.prepare(generation,show_ns,latencies.data(),count,nullptr,0)){error("conflict","delay graph plan refused");continue;}ok("prepared=1 physicalOutputsArmed=0");
+        if(command=="RT_AUDIT_STATUS"&&parts.size()==2){unsigned int slot=0;if(!parse_number(parts[1],slot)||slot>=kAudioOutputSlots){error("argument","invalid audit output slot");continue;}const auto s=realtime_audits[slot].status();std::cout<<"OK slot="<<slot<<" callbacks="<<s.callbacks<<" deadlineMisses="<<s.deadline_misses<<" consecutiveMisses="<<s.consecutive_misses<<" maxDurationNs="<<s.max_duration_ns<<" nonfiniteSamples="<<s.nonfinite_samples<<" queuePressureEvents="<<s.queue_pressure_events<<" optionalShedBlocks="<<s.optional_shed_blocks<<" recoveryTransitions="<<s.recovery_transitions<<" allocationAttempts="<<s.allocation_attempts<<" allocatedBytes="<<s.allocated_bytes<<" lockAttempts="<<s.lock_attempts<<" qualificationEnabled="<<(s.qualification_enabled?1:0)<<" overloadLevel="<<s.overload_level<<" physicalOutputsArmed=0\n"<<std::flush;
+            continue;
+        }
+        if(command=="PDC_PREPARE"&&parts.size()>=5){std::uint64_t generation=0,show_ns=0;unsigned int count=0;if(!parse_number(parts[1],generation)||!parse_number(parts[2],show_ns)||!parse_number(parts[3],count)||count==0||count>kAudioOutputSlots||parts.size()!=4+count){error("argument","invalid delay graph plan");continue;}std::array<std::uint32_t,kAudioOutputSlots>latencies{};bool valid=true;for(unsigned int i=0;i<count;++i)valid=valid&&parse_number(parts[4+i],latencies[i]);if(!valid||!effect_delay_transaction.prepare(generation,show_ns,latencies.data(),count,nullptr,0)){error("conflict","delay graph plan refused");continue;}ok("prepared=1 physicalOutputsArmed=0");
             continue;
         }
         if(command=="FXPDC_PREPARE"&&parts.size()>=6){
@@ -1992,9 +1998,6 @@ Total output lines: 250
         }
         if (command == "PARAM_BIND_LIGHT" && parts.size() == 8) {
             std::uint64_t target=0,parameter=0;unsigned int universe=0,channel=0;float minv=0,maxv=0,defv=0;
-Warning: truncated output (original token count: 6312)
-Total output lines: 250
-
             if(!parse_number(parts[1],target)||!parse_number(parts[2],parameter)||!parse_number(parts[3],universe)||!parse_number(parts[4],channel)||!parse_number(parts[5],minv)||!parse_number(parts[6],maxv)||!parse_number(parts[7],defv)||universe>=dmx_universes.size()||channel<1||channel>512){error("argument","invalid lighting parameter binding");continue;}
             auto* ctx=allocate_parameter_context();if(!ctx){error("capacity","parameter endpoint capacity");continue;}ctx->kind=EngineParameterEndpointContext::Kind::lighting;ctx->dmx=&dmx_universes;ctx->universe=static_cast<std::uint16_t>(universe);ctx->channel=static_cast<std::uint16_t>(channel);
             stageforge::CoreParameterDescriptor d{target,parameter,stageforge::CoreParameterUnit::dmx,stageforge::CoreParameterTiming::show,stageforge::CoreParameterSafety::physical_output,stageforge::CoreParameterEndpointKind::lighting,minv,maxv,defv,0.0F,true,true,false};
@@ -2083,7 +2086,19 @@ Total output lines: 250
         if (command == "ROUTE_TX_COMMIT") {
             if(!routing_state.commit()){error("invalid","routing graph contains cycle or transaction not open");continue;}
             if(staged_audio_route_change_count && !audio_graph.apply_route_transaction(std::span<const stageforge::AudioRouteChange>(staged_audio_route_changes.data(),staged_audio_route_change_count))){error("invalid","audio route publication refused");continue;}
-            staged_audio_route_chan…312 tokens truncated…s="<<rec.show_ns<<" eventId="<<rec.event_id<<" subjectId="<<rec.subject_id<<" revision="<<rec.revision<<" previousHash="<<rec.previous_hash<<" hash="<<rec.hash<<'\n'<<std::flush;
+            staged_audio_route_change_count=0;const auto st=routing_state.status();const auto now=clock.snapshot();const auto show_ns=static_cast<std::uint64_t>(std::max(0.0,now.show_seconds)*1'000'000'000.0);(void)core_journal.append(stageforge::CoreJournalKind::routing,show_ns,0,0,st.revision);std::cout<<"OK revision="<<st.revision<<" routes="<<st.route_count<<'\n'<<std::flush;
+            continue;
+        }
+        if (command == "ROUTE_TX_ROLLBACK") { routing_state.rollback();staged_audio_route_change_count=0;ok("rolledBack=1");
+            continue;
+        }
+        if (command == "ROUTE_STATUS") { const auto st=routing_state.status();std::cout<<"OK revision="<<st.revision<<" routes="<<st.route_count<<" commits="<<st.commits<<" conflicts="<<st.conflicts<<'\n'<<std::flush;
+            continue;
+        }
+        if (command == "JOURNAL_STATUS") { std::cout<<"OK pending="<<core_journal.pending()<<" dropped="<<core_journal.dropped()<<" lastHash="<<core_journal.last_hash()<<'\n'<<std::flush;
+            continue;
+        }
+        if (command == "JOURNAL_NEXT") { stageforge::CoreJournalRecord rec{};if(!core_journal.try_pop(rec)){ok("available=0");continue;}std::cout<<"OK available=1 sequence="<<rec.sequence<<" kind="<<static_cast<unsigned>(rec.kind)<<" showNs="<<rec.show_ns<<" eventId="<<rec.event_id<<" subjectId="<<rec.subject_id<<" revision="<<rec.revision<<" previousHash="<<rec.previous_hash<<" hash="<<rec.hash<<'\n'<<std::flush;
             continue;
         }
         if (command == "SHADOW_DECLARE" && parts.size()==8) {
