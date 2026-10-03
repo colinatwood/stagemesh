@@ -27,8 +27,11 @@
     if (serverTemplateId) serverDirty = true;
   };
   const load = () => {
-    try { const parsed = JSON.parse(localStorage.getItem(storageKey) || "null"); objects = Array.isArray(parsed?.objects) ? parsed.objects : []; }
-    catch (_) { objects = []; }
+    try {
+      const parsed = JSON.parse(localStorage.getItem(storageKey) || "null");
+      objects = Array.isArray(parsed?.objects) ? parsed.objects : [];
+      if (typeof parsed?.name === "string" && parsed.name) q("#templateName").value = parsed.name;
+    } catch (_) { objects = []; }
   };
   const selected = () => objects.find((item) => item.id === selectedId);
   const api = async (method, path, body) => {
@@ -79,7 +82,7 @@
     canvas.querySelectorAll(".templateObject").forEach((node) => node.remove());
     q("#templateDelete").disabled = !selected();
     q("#templateLoadSaved").disabled = !q("#templateSaved").value;
-    q("#templateDeleteServer").disabled = !serverTemplateId;
+    q("#templateDeleteServer").disabled = !serverTemplateId || q("#templateSaved").value !== serverTemplateId;
     const stateLabel = serverTemplateId ? "SERVER r" + serverRevision + (serverDirty ? " · UNSAVED" : "") : "LOCAL DRAFT";
     q("#templateStatus").textContent = objects.length + " OBJECT" + (objects.length === 1 ? "" : "S") + " · " + stateLabel;
     const empty = q(".templateEmpty");
@@ -118,6 +121,7 @@
   };
   q("#templateSaved").addEventListener("change", () => {
     q("#templateLoadSaved").disabled = !q("#templateSaved").value;
+    q("#templateDeleteServer").disabled = !serverTemplateId || q("#templateSaved").value !== serverTemplateId;
   });
   q("#templateLoadSaved").addEventListener("click", async () => {
     try { await loadSaved(q("#templateSaved").value); }
