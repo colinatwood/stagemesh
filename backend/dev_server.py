@@ -1368,6 +1368,8 @@ class StageForgeHandler(BaseHTTPRequestHandler):
             self._json(403, {"error": str(exc)})
         except AdaptationRevisionConflict as exc:
             self._json(409, {"error": str(exc), "expected": exc.expected, "current": exc.actual})
+        except OSError as exc:
+            self._json(503, {"error": str(exc)})
         except RuntimeError as exc:
             self._json(503, {"error": str(exc)})
         except (ValueError, KeyError) as exc:
@@ -1396,6 +1398,8 @@ class StageForgeHandler(BaseHTTPRequestHandler):
             self._json(409, {"error": str(exc)})
         except PermissionError as exc:
             self._json(403, {"error": str(exc)})
+        except OSError as exc:
+            self._json(503, {"error": str(exc)})
         except RuntimeError as exc:
             self._json(503, {"error": str(exc)})
         except ValueError as exc:
@@ -1486,6 +1490,8 @@ class StageForgeHandler(BaseHTTPRequestHandler):
             self._json(403, {"error": str(exc)})
         except AdaptationRevisionConflict as exc:
             self._json(409, {"error": str(exc), "expected": exc.expected, "current": exc.actual})
+        except OSError as exc:
+            self._json(503, {"error": str(exc)})
         except RuntimeError as exc:
             self._json(503, {"error": str(exc)})
         except ValueError as exc:
