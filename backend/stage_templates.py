@@ -9,6 +9,10 @@ from time import time
 from uuid import uuid4
 
 
+class StageTemplateConflict(RuntimeError):
+    """A template changed since the caller last read it."""
+
+
 class StageTemplateStore:
     def __init__(self, path: Path):
         self.path, self._lock = path, RLock()
@@ -54,6 +58,45 @@ class StageTemplateStore:
             self._templates[template_id] = {**normalized, "revision": 1, "state": "draft", "updatedAt": time()}
             self._save()
             return self.get(template_id)
+
+    def update(self, template_id, expected_revision, document):
+        normalized = self.validate(document)
+        with self._lock:
+            current = self._templates.get(template_id)
+            if current is None:
+                raise KeyError(template_id)
+            if expected_revision != current["revision"]:
+                raise StageTemplateConflict(
+                    f"template revision conflict: expected {expected_revision}, current {current['revision']}"
+                )
+            previous = deepcopy(current)
+            self._templates[template_id] = {
+                **normalized, "revision": current["revision"] + 1,
+                "state": "draft", "updatedAt": time(),
+            }
+            try:
+                self._save()
+            except OSError:
+                self._templates[template_id] = previous
+                raise
+            return self.get(template_id)
+
+    def delete(self, template_id, expected_revision):
+        with self._lock:
+            current = self._templates.get(template_id)
+            if current is None:
+                raise KeyError(template_id)
+            if expected_revision != current["revision"]:
+                raise StageTemplateConflict(
+                    f"template revision conflict: expected {expected_revision}, current {current['revision']}"
+                )
+            previous = self._templates.pop(template_id)
+            try:
+                self._save()
+            except OSError:
+                self._templates[template_id] = previous
+                raise
+            return {"deleted": True, "templateId": template_id, "physicalOutputsArmed": False}
 
     def validate_saved(self, template_id):
         item = self.get(template_id); self.validate(item)
