@@ -20,6 +20,8 @@ The envelope never arms physical output and does not automatically mutate the pr
 
 The `windows-platform` and `macos-platform` tasks require a separate `playbackLifecycleQualified` claim and `playback-evidence` artifact. Those fields cover the native playback service's activation, render/callback lifecycle, identity revalidation and fail-closed shutdown alongside the existing audio negotiation and hotplug claims. They are prerequisites for target-platform review, not hosted or simulated hardware qualification.
 
+The `audio-conversion-quality` task binds AUD-034 to explicit numeric conversion-error, SNR, THD+N and continuity claims plus a `conversion-evidence` artifact and measurement summary. A passing result must publish the measured envelope for every supported conversion path; adapter unit tests or hosted loopback checks alone do not satisfy this external qualification gate.
+
 Current task IDs are:
 
 - `independent-witness`
