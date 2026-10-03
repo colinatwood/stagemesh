@@ -134,8 +134,8 @@ private:
 // Small platform-facing input registry. Registry/open/close operations belong
 // on the control thread. poll() is non-blocking. Linux uses raw /dev/snd MIDI
 // character devices. Windows/macOS enumerate hash-only native input identities;
-// attach/poll on those targets remains fail-closed until their event backend is
-// integrated, so enumeration can never masquerade as working MIDI I/O.
+// attach/poll use the native callback backend and remain fail-closed when an
+// endpoint identity cannot be resolved.
 class MidiInputManager {
 public:
     MidiInputManager() noexcept;
