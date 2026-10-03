@@ -17,6 +17,7 @@ from urllib.parse import parse_qs, urlparse
 
 from runtime import StageForgeRuntime
 from state import RevisionConflict
+from stage_templates import StageTemplateConflict
 from adaptation import AdaptationRevisionConflict
 from http_credentials import credential_environment
 from http_authorization import authorization_policy, authorize_control_request, specialized_authorization_route, classify_control_action
@@ -1372,6 +1373,34 @@ class StageForgeHandler(BaseHTTPRequestHandler):
         except (ValueError, KeyError) as exc:
             self._json(400, {"error": str(exc)})
 
+    def do_DELETE(self) -> None:
+        path = urlparse(self.path).path
+        if not self._guard_request(path): return
+        try:
+            body = self._read_json()
+            template_prefix = "/api/v1/templates/"
+            if not path.startswith(template_prefix) or path.count("/") != 4:
+                self._json(404, {"error": "route not found"})
+                return
+            template_id = path[len(template_prefix):].strip("/")
+            expected_revision = body.get("expectedRevision")
+            if not template_id:
+                raise ValueError("template id is required")
+            if type(expected_revision) is not int:
+                raise ValueError("expectedRevision must be an integer")
+            try:
+                self._json(200, RUNTIME.stage_template_delete(template_id, expected_revision))
+            except KeyError:
+                self._json(404, {"error": "template not found"})
+        except StageTemplateConflict as exc:
+            self._json(409, {"error": str(exc)})
+        except PermissionError as exc:
+            self._json(403, {"error": str(exc)})
+        except RuntimeError as exc:
+            self._json(503, {"error": str(exc)})
+        except ValueError as exc:
+            self._json(400, {"error": str(exc)})
+
     def do_PATCH(self) -> None:
         path = urlparse(self.path).path
         if not self._guard_request(path):return
@@ -1389,6 +1418,22 @@ class StageForgeHandler(BaseHTTPRequestHandler):
                 if proposal_id:
                     self._json(200, RUNTIME.community_update_proposal(proposal_id, body))
                     return
+            template_prefix = "/api/v1/templates/"
+            if path.startswith(template_prefix) and path.count("/") == 4:
+                template_id = path[len(template_prefix):].strip("/")
+                if not template_id:
+                    raise ValueError("template id is required")
+                expected_template_revision = body.get("expectedRevision")
+                if type(expected_template_revision) is not int:
+                    raise ValueError("expectedRevision must be an integer")
+                document = body.get("document")
+                if document is None:
+                    document = {key: value for key, value in body.items() if key != "expectedRevision"}
+                try:
+                    self._json(200, RUNTIME.stage_template_update(template_id, expected_template_revision, document))
+                except KeyError:
+                    self._json(404, {"error": "template not found"})
+                return
             if path == "/api/v1/show":
                 resource = "show"
                 resource_revision = self._expected_resource_revision(resource)
@@ -1432,6 +1477,8 @@ class StageForgeHandler(BaseHTTPRequestHandler):
             self._json(404, {"error": "route not found"})
         except KeyError as exc:
             self._json(404, {"error": f"unknown player: {exc.args[0]}"})
+        except StageTemplateConflict as exc:
+            self._json(409, {"error": str(exc)})
         except RevisionConflict as exc:
             current = RUNTIME.state.snapshot()
             self._json(409, {"error": str(exc), "current": current}, self._state_headers(current))
