@@ -1,6 +1,6 @@
 # StageMesh backlog status refresh
 
-As of 2026-10-03, based on `main` at `2444b4d187c014422ef83f30312e543362d64b76`.
+As of 2026-10-03, based on `main` at `aeabd9f4be3255b2aaeaa5304bea78341f64211e`.
 
 ## Work now on main
 
@@ -14,6 +14,7 @@ As of 2026-10-03, based on `main` at `2444b4d187c014422ef83f30312e543362d64b76`.
 - PR [#56](https://github.com/colinatwood/stagemesh/pull/56) added the dedicated `audio-conversion-quality` task for AUD-034, requiring numeric error, SNR, THD+N, continuity, and measurement-summary evidence.
 - PR [#58](https://github.com/colinatwood/stagemesh/pull/58) added the named macOS `midi_hardware_smoke` target for FL Mini CoreMIDI callback evidence.
 - PR [#60](https://github.com/colinatwood/stagemesh/pull/60) fixed the CoreMIDI callback refcon routing. Mac evidence then recorded `attached:true`, `eventsObserved:1`, `callbackMessages:1`, and `hardwareQualified:true` for `MIDI Out FLkey Mini`; this remains MIDI callback evidence only.
+- PR [#61](https://github.com/colinatwood/stagemesh/pull/61) recorded clean-worktree BOOM endpoint lifecycle evidence at `aeabd9f`: playback delivered 25 callbacks/12,800 frames over a 4-channel 48 kHz endpoint, and capture delivered 26 callbacks/13,312 frames over a 2-channel 48 kHz endpoint. Both were silent/discarding checks; physical audio and quality gates remain open.
 - The 25-row execution record at `docs/backlog-execution-2026-10-03.md` records the earlier open-row pass. The complete ledger at `docs/backlog-execution-2026-10-03-all-50.md` reconciles 49 workbook items plus the inventory-control record, preserving 24 Done rows and all 25 non-Done statuses without unsupported completion.
 - The FLkey Mini now has target-Mac callback evidence through the production CoreMIDI path. Native capture/playback remains external evidence, and the complete execution ledger preserves the qualification gates. Target audio behavior, recording quality, audible output, hotplug behavior, and full physical qualification stay open.
 
@@ -32,7 +33,7 @@ As of 2026-10-03, based on `main` at `2444b4d187c014422ef83f30312e543362d64b76`.
 
 ## Ordered next work
 
-1. Set Apogee BOOM as the Mac default input/output and exercise native audio/playback/capture lifecycle, capturing endpoint identity, callback/render behavior, recording quality, and audible-output evidence. Keep the FLkey callback result separate from audio qualification.
+1. Continue AUD-034 reference-signal measurement and capture numeric conversion error, SNR, THD+N, continuity, and measurement-summary artifacts. Keep the BOOM silent lifecycle result separate from audible-output and recording-quality qualification.
 2. Continue external qualification in the established order: deployed LAN/TLS/IdP; licensed-plugin fixtures and platform binders; clean-host package/service operation; assistive-technology exercise; owner license decisions and independent-host witness evidence.
 
 ## Status rules
