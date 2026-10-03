@@ -3548,6 +3548,8 @@ class StageForgeRuntime:
     def stage_template_list(self): return {"templates": self.stage_templates.list(), "physicalOutputsArmed": False}
     def stage_template_get(self, template_id): return self.stage_templates.get(template_id)
     def stage_template_create(self, body): return self.stage_templates.create(body)
+    def stage_template_update(self, template_id, expected_revision, body): return self.stage_templates.update(template_id, expected_revision, body)
+    def stage_template_delete(self, template_id, expected_revision): return self.stage_templates.delete(template_id, expected_revision)
     def stage_template_validate(self, template_id): return self.stage_templates.validate_saved(template_id)
     def stage_template_publish(self, template_id): return self.stage_templates.publish(template_id)
 

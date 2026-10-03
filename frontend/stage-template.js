@@ -7,6 +7,9 @@
   let objects = [];
   let selectedId = null;
   let drag = null;
+  let serverTemplateId = null;
+  let serverRevision = null;
+  let serverDirty = false;
   const presets = {
     club: {name: "Small club", description: "Compact vocal, guitar, drum, and monitor layout", objects: [
       ["performer", "Lead vocal", 50, 42], ["microphone", "Vocal mic", 50, 53], ["monitor", "Wedge L", 35, 62], ["monitor", "Wedge R", 65, 62], ["speaker", "Main L", 16, 30], ["speaker", "Main R", 84, 30]
@@ -19,16 +22,69 @@
     ]}
   };
   const esc = (value) => String(value).replace(/[&<>\"]/g, (char) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[char]));
-  const save = () => localStorage.setItem(storageKey, JSON.stringify({version: 1, objects}));
+  const save = () => {
+    localStorage.setItem(storageKey, JSON.stringify({version: 1, name: q("#templateName").value, objects}));
+    if (serverTemplateId) serverDirty = true;
+  };
   const load = () => {
-    try { const parsed = JSON.parse(localStorage.getItem(storageKey) || "null"); objects = Array.isArray(parsed?.objects) ? parsed.objects : []; }
-    catch (_) { objects = []; }
+    try {
+      const parsed = JSON.parse(localStorage.getItem(storageKey) || "null");
+      objects = Array.isArray(parsed?.objects) ? parsed.objects : [];
+      if (typeof parsed?.name === "string" && parsed.name) q("#templateName").value = parsed.name;
+    } catch (_) { objects = []; }
   };
   const selected = () => objects.find((item) => item.id === selectedId);
+  const api = async (method, path, body) => {
+    const response = await fetch(path, {
+      method: method, headers: body ? {"Content-Type": "application/json"} : {},
+      body: body ? JSON.stringify(body) : undefined
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Request failed (" + response.status + ")");
+    return result;
+  };
+  const refreshSaved = async (selectId) => {
+    const select = q("#templateSaved");
+    const data = await api("GET", "/api/v1/templates");
+    select.replaceChildren(new Option("Select a saved template", ""));
+    (data.templates || []).forEach((item) => {
+      select.add(new Option(item.name + " · r" + item.revision + " · " + item.state, item.templateId));
+    });
+    if (selectId && Array.from(select.options).some((option) => option.value === selectId)) select.value = selectId;
+    q("#templateLoadSaved").disabled = !select.value;
+    return data.templates || [];
+  };
+  const loadSaved = async (templateId) => {
+    const item = await api("GET", "/api/v1/templates/" + encodeURIComponent(templateId));
+    serverTemplateId = item.templateId; serverRevision = item.revision; serverDirty = false;
+    objects = item.objects; selectedId = null; q("#templateName").value = item.name;
+    save(); serverDirty = false; render();
+    q("#templateDeleteServer").disabled = false;
+    q("#templateHint").textContent = "Loaded server revision " + serverRevision + ". Local edits must be saved as a new revision.";
+  };
+  const saveServer = async () => {
+    const document = {name: q("#templateName").value.trim() || "Untitled stage template", objects: objects};
+    const item = serverTemplateId
+      ? await api("PATCH", "/api/v1/templates/" + encodeURIComponent(serverTemplateId), {expectedRevision: serverRevision, document: document})
+      : await api("POST", "/api/v1/templates", document);
+    serverTemplateId = item.templateId; serverRevision = item.revision; serverDirty = false;
+    await refreshSaved(serverTemplateId); render();
+    q("#templateHint").textContent = "Saved revision " + serverRevision + " to the StageMesh server. Physical outputs remain disarmed.";
+  };
+  const deleteServer = async () => {
+    if (!serverTemplateId) return;
+    await api("DELETE", "/api/v1/templates/" + encodeURIComponent(serverTemplateId), {expectedRevision: serverRevision});
+    serverTemplateId = null; serverRevision = null; serverDirty = false;
+    await refreshSaved(""); render();
+    q("#templateHint").textContent = "Saved template deleted. The local draft remains available.";
+  };
   const render = () => {
     canvas.querySelectorAll(".templateObject").forEach((node) => node.remove());
     q("#templateDelete").disabled = !selected();
-    q("#templateStatus").textContent = `${objects.length} OBJECT${objects.length === 1 ? "" : "S"} · LOCAL DRAFT`;
+    q("#templateLoadSaved").disabled = !q("#templateSaved").value;
+    q("#templateDeleteServer").disabled = !serverTemplateId || q("#templateSaved").value !== serverTemplateId;
+    const stateLabel = serverTemplateId ? "SERVER r" + serverRevision + (serverDirty ? " · UNSAVED" : "") : "LOCAL DRAFT";
+    q("#templateStatus").textContent = objects.length + " OBJECT" + (objects.length === 1 ? "" : "S") + " · " + stateLabel;
     const empty = q(".templateEmpty");
     if (empty) empty.hidden = objects.length > 0;
     objects.forEach((item) => {
@@ -63,6 +119,22 @@
       host.appendChild(card);
     });
   };
+  q("#templateSaved").addEventListener("change", () => {
+    q("#templateLoadSaved").disabled = !q("#templateSaved").value;
+    q("#templateDeleteServer").disabled = !serverTemplateId || q("#templateSaved").value !== serverTemplateId;
+  });
+  q("#templateLoadSaved").addEventListener("click", async () => {
+    try { await loadSaved(q("#templateSaved").value); }
+    catch (error) { q("#templateHint").textContent = "Load failed: " + error.message; }
+  });
+  q("#templateSaveServer").addEventListener("click", async () => {
+    try { await saveServer(); }
+    catch (error) { q("#templateHint").textContent = "Save failed: " + error.message + ". Reload before overwriting if another editor changed the template."; }
+  });
+  q("#templateDeleteServer").addEventListener("click", async () => {
+    try { await deleteServer(); }
+    catch (error) { q("#templateHint").textContent = "Delete failed: " + error.message; }
+  });
   q("#templateAdd").addEventListener("click", () => {
     const type = q("#templateObjectType").value;
     const label = q("#templateObjectLabel").value.trim() || "New object";
@@ -86,4 +158,7 @@
   canvas.addEventListener("drop", (event) => { const key = event.dataTransfer.getData("application/x-stagemesh-template"); if (!key) return; event.preventDefault(); canvas.classList.remove("dropTarget"); applyPreset(key); });
   load(); render();
   renderPresets();
+  refreshSaved("").catch((error) => {
+    q("#templateHint").textContent = "Server template library unavailable: " + error.message + ". Local editing remains available.";
+  });
 }());
