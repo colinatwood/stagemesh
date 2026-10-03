@@ -1380,6 +1380,8 @@ class StageForgeHandler(BaseHTTPRequestHandler):
         if not self._guard_request(path): return
         try:
             body = self._read_json()
+            if not isinstance(body, dict):
+                raise ValueError("template request must be an object")
             template_prefix = "/api/v1/templates/"
             if not path.startswith(template_prefix) or path.count("/") != 4:
                 self._json(404, {"error": "route not found"})
@@ -1427,6 +1429,8 @@ class StageForgeHandler(BaseHTTPRequestHandler):
                 template_id = path[len(template_prefix):].strip("/")
                 if not template_id:
                     raise ValueError("template id is required")
+                if not isinstance(body, dict):
+                    raise ValueError("template request must be an object")
                 expected_template_revision = body.get("expectedRevision")
                 if type(expected_template_revision) is not int:
                     raise ValueError("expectedRevision must be an integer")
