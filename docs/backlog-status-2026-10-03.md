@@ -10,7 +10,7 @@ As of 2026-10-03, based on `main` at `96b17e4aefdc8bdd30d5afe4c5618d451d71fbea`.
 - PR [#47](https://github.com/colinatwood/stagemesh/pull/47) added persistent stage-template editor/storage behavior and its validation path.
 - PR [#48](https://github.com/colinatwood/stagemesh/pull/48) integrated target-OS native playback into the full engine through `NativePlaybackService`, with exact hashed endpoint selection, fail-closed lifecycle handling, status/shutdown wiring, and owner-thread smoke coverage.
 - PR [#50](https://github.com/colinatwood/stagemesh/pull/50) added `docs/backlog/StageMesh-Master-Backlog-Refresh-2026-10-03.xlsx`. It maps current PR #47/#48 evidence to AUD-035, AUD-036, DEV-033, and DEV-034 without changing their In Progress status or the historical 25 open / 22 P0 snapshot counts.
-- PR [#52](https://github.com/colinatwood/stagemesh/pull/52) added explicit `playbackLifecycleQualified` and `playback-evidence` requirements to the Windows/macOS external qualification contract. This prepares target review but does not qualify hardware.
+- PR [#52](https://github.com/colinatwood/stagemesh/pull/52) added explicit `playbackLifecycleQualified` and `playback-evidence` requirements to the Windows/macOS external qualification contract. This prepares target review but does not qualify hardware.\n- The 25-row execution record at `docs/backlog-execution-2026-10-03.md` runs the repository-supported checks and records the remaining external gates without changing unsupported statuses.
 - Existing capture, MIDI and playback work remains software integration evidence. Target-hardware behavior, recording quality, audible output, and physical qualification stay open.
 
 ## Validation status
