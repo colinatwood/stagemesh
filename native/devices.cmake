@@ -12,7 +12,8 @@ add_library(stageforge_devices
   audio_conversion.cpp
   software_audio_render.cpp
   native_endpoint_stream.cpp
-  native_capture_service.cpp)
+  native_capture_service.cpp
+  native_playback_service.cpp)
 target_include_directories(stageforge_devices PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -55,6 +56,8 @@ add_executable(audio_stream_lifecycle_smoke audio_stream_lifecycle_smoke.cpp)
 target_link_libraries(audio_stream_lifecycle_smoke PRIVATE stageforge_devices)
 add_executable(native_playback_smoke native_playback_smoke.cpp)
 target_link_libraries(native_playback_smoke PRIVATE stageforge_devices)
+add_executable(native_playback_service_smoke native_playback_service_smoke.cpp)
+target_link_libraries(native_playback_service_smoke PRIVATE stageforge_devices)
 add_executable(native_capture_smoke native_capture_smoke.cpp)
 target_link_libraries(native_capture_smoke PRIVATE stageforge_devices)
 add_executable(native_selected_loss_smoke native_selected_loss_smoke.cpp)
@@ -62,7 +65,7 @@ target_link_libraries(native_selected_loss_smoke PRIVATE stageforge_devices)
 add_executable(audio_conversion_smoke audio_conversion_smoke.cpp)
 target_link_libraries(audio_conversion_smoke PRIVATE stageforge_devices)
 if(APPLE AND STAGEFORGE_DEVICE_ASAN)
-  foreach(target device_lifecycle_smoke device_execution_fence_smoke audio_preflight_smoke audio_stream_lifecycle_smoke native_playback_smoke native_capture_smoke native_selected_loss_smoke audio_conversion_smoke)
+  foreach(target device_lifecycle_smoke device_execution_fence_smoke audio_preflight_smoke audio_stream_lifecycle_smoke native_playback_smoke native_playback_service_smoke native_capture_smoke native_selected_loss_smoke audio_conversion_smoke)
     target_compile_options(${target} PRIVATE -fsanitize=address -fno-omit-frame-pointer)
     target_link_options(${target} PRIVATE -fsanitize=address)
   endforeach()
@@ -80,6 +83,8 @@ set_tests_properties(audio_stream_lifecycle PROPERTIES TIMEOUT 30)
 
 add_test(NAME native_playback COMMAND native_playback_smoke)
 set_tests_properties(native_playback PROPERTIES TIMEOUT 30)
+add_test(NAME native_playback_service COMMAND native_playback_service_smoke)
+set_tests_properties(native_playback_service PROPERTIES TIMEOUT 30)
 
 add_test(NAME native_capture COMMAND native_capture_smoke)
 set_tests_properties(native_capture PROPERTIES TIMEOUT 30)
