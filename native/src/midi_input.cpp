@@ -69,8 +69,11 @@ std::string target_midi_identity(const DeviceRecord& record, std::string_view ba
 #endif
 
 #if defined(__APPLE__)
-void coremidi_read(const MIDIPacketList* packets, void* refcon, void*) {
-    auto* slot = static_cast<MidiInputManager::DeviceSlot*>(refcon);
+void coremidi_read(const MIDIPacketList* packets, void*, void* source_refcon) {
+    // The slot is supplied as the connection refcon by MIDIPortConnectSource.
+    // The port-level refcon is intentionally unused because one shared input
+    // port may service multiple CoreMIDI sources.
+    auto* slot = static_cast<MidiInputManager::DeviceSlot*>(source_refcon);
     if (!slot || !slot->owner) return;
     auto timestamp = static_cast<std::uint64_t>(mach_absolute_time());
     const MIDIPacket* packet = &packets->packet[0];
