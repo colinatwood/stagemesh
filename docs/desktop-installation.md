@@ -26,6 +26,12 @@ source commit, platform, byte count, and SHA-256 digest for every packaged file;
 it also preserves the explicit unsigned, clean-host, and physical-hardware
 qualification boundaries.
 
+The Node and Rust desktop dependency graphs are pinned by committed lockfiles.
+CI verifies `Cargo.toml` against `Cargo.lock` with Cargo's locked mode before
+building on each operating system. This improves repeatability but is not a
+claim of bit-for-bit reproducible installers or a substitute for dependency
+license review.
+
 ## Windows
 
 The installer uses the WebView2 download bootstrapper. The installer needs
