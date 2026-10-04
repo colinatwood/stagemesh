@@ -64,6 +64,19 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
+      - name: Resolve desktop Rust dependency lock
+        if: runner.os == 'Linux'
+        run: cargo generate-lockfile --manifest-path desktop/src-tauri/Cargo.toml
+
+      - name: Capture desktop Rust dependency lock
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: stagemesh-desktop-cargo-lock
+          path: desktop/src-tauri/Cargo.lock
+          if-no-files-found: error
+          retention-days: 7
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
