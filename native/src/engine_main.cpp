@@ -602,7 +602,7 @@ void write_monitor(std::string_view player_id, const stageforge::MonitorBus& bus
 
 int main(int argc, char** argv) {
     if (argc > 1 && std::string_view(argv[1]) != "--stdio") {
-        std::cerr << "usage: stageforge_engine [--stdio]\n";
+        std::cerr << "usage: stagemesh_engine [--stdio]\n";
         return 2;
     }
 

@@ -11,7 +11,7 @@ import tempfile
 root = Path(__file__).resolve().parents[1]
 engine = Path(
     os.environ.get('STAGEFORGE_NATIVE_ENGINE')
-    or root / 'build' / 'native' / ('Release/stageforge_engine.exe' if os.name == 'nt' else 'stageforge_engine')
+    or root / 'build' / 'native' / ('Release/stagemesh_engine.exe' if os.name == 'nt' else 'stagemesh_engine')
 ).resolve()
 token = 'stageforge-ci-stdio-dispatch-fixture'
 system = platform.system()

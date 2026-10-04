@@ -77,7 +77,7 @@ impl RuntimeSupervisor {
             );
             return Err(inner.status.error.clone().unwrap_or_default());
         };
-        let native_engine = resolve_bundled_executable(app, "stageforge_engine").ok_or_else(|| {
+        let native_engine = resolve_bundled_executable(app, "stagemesh_engine").ok_or_else(|| {
             "StageMesh native engine is not installed; install a complete StageMesh package".to_string()
         })?;
 

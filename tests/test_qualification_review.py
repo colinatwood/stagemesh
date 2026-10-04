@@ -7,7 +7,7 @@ from qualification_review import create_review,validate_review,verify_artifacts,
 
 class QualificationReviewTests(unittest.TestCase):
     def engine(self,root):
-        path=Path(root)/'stageforge_engine';path.write_bytes(b'engine');path.chmod(0o755);return path
+        path=Path(root)/'stagemesh_engine';path.write_bytes(b'engine');path.chmod(0o755);return path
     def key(self,root):
         path=Path(root)/'review-key.json'
         path.write_text(json.dumps({'version':1,'keyId':'release-reviewer-1','reviewerIdHash':'sha256:'+'7'*64,'secret':'s'*48}))

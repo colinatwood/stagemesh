@@ -8,7 +8,7 @@ from qualification_status import summarize_submissions
 
 class QualificationStatusTests(unittest.TestCase):
     def engine(self,root):
-        path=Path(root)/'stageforge_engine';path.write_bytes(b'engine');path.chmod(0o755);return path
+        path=Path(root)/'stagemesh_engine';path.write_bytes(b'engine');path.chmod(0o755);return path
     def key(self,root):
         path=Path(root)/'review-key.json';path.write_text(json.dumps({'version':1,'keyId':'reviewer-1','reviewerIdHash':'sha256:'+'9'*64,'secret':'k'*48}));path.chmod(0o600);return path
     def submission(self,plan,root,task,decision='approve'):

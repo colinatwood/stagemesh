@@ -6,7 +6,7 @@ from qualification_bundle import create_plan,result_template,source_fingerprint,
 
 class QualificationBundleTests(unittest.TestCase):
     def engine(self,root):
-        path=Path(root)/"stageforge_engine";path.write_bytes(b"engine");path.chmod(0o755);return path
+        path=Path(root)/"stagemesh_engine";path.write_bytes(b"engine");path.chmod(0o755);return path
 
     def test_plan_is_exact_build_bound_and_contains_external_gates(self):
         with tempfile.TemporaryDirectory() as raw:

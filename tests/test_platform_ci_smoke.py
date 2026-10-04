@@ -23,7 +23,7 @@ class PlatformCiSmokeTests(unittest.TestCase):
 
     def test_linux_report_is_non_physical_and_hashes_exact_engine(self):
         with tempfile.TemporaryDirectory() as td:
-            engine=Path(td)/"stageforge_engine";engine.write_bytes(b"engine")
+            engine=Path(td)/"stagemesh_engine";engine.write_bytes(b"engine")
             expected=module.hashlib.sha256(b"engine").hexdigest()
             with mock.patch.object(module,"_find_engine",return_value=engine), \
                  mock.patch.object(module.platform,"system",return_value="Linux"):

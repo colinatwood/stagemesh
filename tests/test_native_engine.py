@@ -34,7 +34,7 @@ class NativeProtocolTests(unittest.TestCase):
         self.assertEqual(values["message"], "bad value")
 
     def test_stdio_ipc_requires_spawn_token_when_configured(self):
-        executable = Path(os.environ.get("STAGEFORGE_NATIVE_ENGINE") or ROOT / "build" / "native" / ("stageforge_engine.exe" if os.name == "nt" else "stageforge_engine"))
+        executable = Path(os.environ.get("STAGEFORGE_NATIVE_ENGINE") or ROOT / "build" / "native" / ("stagemesh_engine.exe" if os.name == "nt" else "stagemesh_engine"))
         if not executable.is_file():
             self.skipTest("native engine not built")
         env = os.environ.copy()

@@ -21,7 +21,7 @@ class PackageQualificationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as raw:
             build = Path(raw) / "build"
             (build / "native").mkdir(parents=True)
-            engine = build / "native/stageforge_engine"
+            engine = build / "native/stagemesh_engine"
             engine.write_text("#!/bin/sh\nexit 0\n")
             engine.chmod(0o755)
             command = [sys.executable, str(ROOT / "scripts/stageforge-package-qualify.py"), "--build-dir", str(build)]

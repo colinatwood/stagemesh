@@ -16,7 +16,7 @@ MONITOR_FIELDS = ("master", "self", "vocals", "band", "click", "talkback", "ambi
 
 
 def _candidate_paths() -> list[Path]:
-    executable = "stageforge_engine.exe" if os.name == "nt" else "stageforge_engine"
+    executable = "stagemesh_engine.exe" if os.name == "nt" else "stagemesh_engine"
     paths: list[Path] = []
     configured = os.environ.get("STAGEFORGE_NATIVE_ENGINE", "").strip()
     if configured.lower() in {"off", "disabled", "none", "0"}:

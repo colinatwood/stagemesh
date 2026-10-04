@@ -10,7 +10,7 @@ def main()->int:
     parser.add_argument("--build-dir",default=os.environ.get("STAGEFORGE_BUILD_DIR",str(script.parents[1]/"build")))
     parser.add_argument("--output",type=Path)
     parser.add_argument("--template",help="emit a result template for one task instead of the full plan")
-    args=parser.parse_args();root=script.parents[1] if source.is_dir() else script.parents[2]/"share/stageforge";engine=Path(args.build_dir)/"native/stageforge_engine"
+    args=parser.parse_args();root=script.parents[1] if source.is_dir() else script.parents[2]/"share/stageforge";engine=Path(args.build_dir)/"native/stagemesh_engine"
     try:
         plan=create_plan(root=root,engine_path=engine);value=result_template(plan,args.template) if args.template else plan
     except Exception as exc:

@@ -13,7 +13,8 @@ engine remains the authority for audio, MIDI, device identity, lifecycle, and
 qualification boundaries.
 
 The desktop shell prepares a portable per-user data directory and supervises
-the bundled `stagemesh-runtime` sidecar and native engine. It waits for an
+the bundled `stagemesh-runtime` sidecar and `stagemesh_engine` native engine.
+It waits for an
 authenticated loopback readiness check before opening the console and shuts the
 runtime down with the desktop window. See `docs/desktop-runtime.md` for the
 runtime contract and its qualification boundaries.

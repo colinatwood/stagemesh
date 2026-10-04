@@ -17,7 +17,7 @@
     "active": true,
     "externalBin": [
       "binaries/stagemesh-runtime",
-      "binaries/stageforge_engine"
+      "binaries/stagemesh_engine"
     ],
     "resources": {
       "../../frontend": "frontend"
