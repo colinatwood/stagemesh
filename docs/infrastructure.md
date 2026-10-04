@@ -103,10 +103,10 @@ On ordinary crash recovery the current show state is recovered with transport he
 
 ## Native execution follower
 
-When `build/native/stageforge_engine` exists, the bridge starts it automatically. Override the path with:
+When `build/native/stagemesh_engine` exists, the bridge starts it automatically. Override the path with:
 
 ```bash
-STAGEFORGE_NATIVE_ENGINE=/path/to/stageforge_engine ./scripts/run.sh
+STAGEFORGE_NATIVE_ENGINE=/path/to/stagemesh_engine ./scripts/run.sh
 ```
 
 Disable native integration explicitly with:
