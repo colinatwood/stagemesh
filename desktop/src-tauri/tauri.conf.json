@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "identifier": "org.stagemesh.desktop",
   "build": {
-    "frontendDist": "../../frontend"
+    "frontendDist": "../../frontend",
+    "beforeBuildCommand": "npm run tauri icon src-tauri/icons/stagemesh.svg"
   },
   "app": {
     "withGlobalTauri": false,
