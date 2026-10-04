@@ -120,6 +120,8 @@ def build_owner_manifest(resource_path: Path, *, resource_class: str, purpose: s
 
 
 def _fsync_directory(path: Path) -> None:
+    if os.name == "nt":
+        return
     flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
     fd = os.open(path, flags)
     try:
@@ -136,13 +138,16 @@ def write_owner_manifest(owner_path: Path, owner: dict[str, Any]) -> None:
     fd, raw_tmp = tempfile.mkstemp(prefix=f".{owner_path.name}.", suffix=".tmp", dir=owner_path.parent)
     tmp = Path(raw_tmp)
     try:
-        os.fchmod(fd, 0o600)
-        with os.fdopen(fd, "wb", closefd=True) as stream:
-            fd = -1
+        if hasattr(os, "fchmod"):
+            os.fchmod(fd, 0o600)
+        stream = os.fdopen(fd, "wb", closefd=True)
+        fd = -1
+        with stream:
             stream.write(payload)
             stream.flush()
             os.fsync(stream.fileno())
         os.replace(tmp, owner_path)
+        os.chmod(owner_path, 0o600)
         _fsync_directory(owner_path.parent)
     except BaseException:
         if fd >= 0:
