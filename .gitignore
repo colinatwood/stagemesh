@@ -1,7 +1,9 @@
 __pycache__/
+node_modules/
 *.pyc
 .runtime/
 build/
+desktop/src-tauri/binaries/
 .DS_Store
 
 .stageforge-witness/

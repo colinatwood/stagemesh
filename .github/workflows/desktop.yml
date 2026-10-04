@@ -3,18 +3,30 @@ name: StageMesh Desktop
 on:
   pull_request:
     paths:
+      - "backend/**"
+      - "CMakeLists.txt"
       - "desktop/**"
       - "frontend/**"
       - "native/**"
       - "docs/desktop-installation.md"
+      - "docs/desktop-runtime.md"
+      - "requirements-desktop.txt"
+      - "scripts/build-desktop-runtime.py"
+      - "scripts/desktop-runtime-smoke.py"
       - ".github/workflows/desktop.yml"
   push:
     branches: [main]
     paths:
+      - "backend/**"
+      - "CMakeLists.txt"
       - "desktop/**"
       - "frontend/**"
       - "native/**"
       - "docs/desktop-installation.md"
+      - "docs/desktop-runtime.md"
+      - "requirements-desktop.txt"
+      - "scripts/build-desktop-runtime.py"
+      - "scripts/desktop-runtime-smoke.py"
       - ".github/workflows/desktop.yml"
   workflow_dispatch:
 
@@ -28,7 +40,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, macos-14, windows-2022]
+        include:
+          - os: ubuntu-22.04
+            native_engine: build-desktop-native/native/stageforge_engine
+            binary_suffix: ""
+          - os: macos-14
+            native_engine: build-desktop-native/native/stageforge_engine
+            binary_suffix: ""
+          - os: windows-2022
+            native_engine: build-desktop-native/native/Release/stageforge_engine.exe
+            binary_suffix: .exe
 
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +59,15 @@ jobs:
           node-version: 20
 
       - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Resolve Rust host target
+        shell: bash
+        run: |
+          echo "TAURI_TARGET=$(rustc -vV | sed -n 's/^host: //p')" >> "$GITHUB_ENV"
 
       - name: Install Linux webview dependencies
         if: runner.os == 'Linux'
@@ -51,7 +81,24 @@ jobs:
 
       - name: Install desktop dependencies
         working-directory: desktop
-        run: npm install
+        run: npm ci
+
+      - name: Build native engine
+        run: |
+          cmake -S . -B build-desktop-native -DCMAKE_BUILD_TYPE=Release -DSTAGEFORGE_BUILD_TESTS=OFF
+          cmake --build build-desktop-native --config Release --parallel 2
+
+      - name: Build bundled runtime sidecars
+        run: |
+          python -m pip install -r requirements-desktop.txt
+          python scripts/build-desktop-runtime.py --target "${{ env.TAURI_TARGET }}" --native-engine "${{ matrix.native_engine }}"
+
+      - name: Verify bundled runtime handshake
+        run: >-
+          python scripts/desktop-runtime-smoke.py
+          --runtime "desktop/src-tauri/binaries/stagemesh-runtime-${{ env.TAURI_TARGET }}${{ matrix.binary_suffix }}"
+          --native-engine "desktop/src-tauri/binaries/stageforge_engine-${{ env.TAURI_TARGET }}${{ matrix.binary_suffix }}"
+          --frontend frontend
 
       - name: Generate platform icons
         working-directory: desktop

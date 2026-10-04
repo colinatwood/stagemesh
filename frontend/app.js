@@ -74,7 +74,25 @@
     return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   }
 
+  function bootstrapDesktopSession() {
+    const fragment = new URLSearchParams(globalThis.location.hash.replace(/^#/, ""));
+    const token = fragment.get("stagemesh-session") || "";
+    if (!token) return Promise.resolve();
+    globalThis.history.replaceState(null, "", globalThis.location.pathname + globalThis.location.search);
+    return fetch("/desktop/session", {
+      method: "POST",
+      headers: {"X-StageForge-Desktop-Token": token}
+    }).then(async (response) => {
+      if (response.ok) return;
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result.error || `Desktop session failed (${response.status})`);
+    });
+  }
+
+  const desktopReady = bootstrapDesktopSession();
+
   async function api(path, options = {}) {
+    await desktopReady;
     const response = await fetch(path, {
       ...options,
       headers: {"Content-Type": "application/json", ...(options.headers || {})}
@@ -935,16 +953,21 @@
     requestAnimationFrame(clockFrame);
   }
 
-  refresh().then(() => { refreshPlan(); refreshNative(); refreshNodeStatus(); refreshClockStatus(); refreshTechnologyOpenness(); refreshCommunityGovernance(); refreshCompatibility(); refreshVenueAdaptations(); refreshVenueReconciliation(false); refreshAudioDevices(); refreshAudioStream(); refreshAudioInput(); refreshLightingNetwork(); refreshMidiDevices(); refreshMidiMappings(); refreshProfile(); refreshDaw(); refreshLauncher(); });
-  connectEvents();
-  setInterval(refreshClockStatus, 1000);
-  setInterval(refreshNodeStatus, 2000);
-  setInterval(refreshTechnologyOpenness, 5000);
-  setInterval(refreshCommunityGovernance, 5000);
-  setInterval(()=>{if(midiMappingState?.learning)refreshMidiMappings();},250);
-  setInterval(refreshLauncher,750);
-  setInterval(refreshCompatibility, 5000);
-  setInterval(refreshVenueAdaptations, 3000);
-  setInterval(() => refreshVenueReconciliation(false), 3000);
+  desktopReady.then(() => {
+    refresh().then(() => { refreshPlan(); refreshNative(); refreshNodeStatus(); refreshClockStatus(); refreshTechnologyOpenness(); refreshCommunityGovernance(); refreshCompatibility(); refreshVenueAdaptations(); refreshVenueReconciliation(false); refreshAudioDevices(); refreshAudioStream(); refreshAudioInput(); refreshLightingNetwork(); refreshMidiDevices(); refreshMidiMappings(); refreshProfile(); refreshDaw(); refreshLauncher(); });
+    connectEvents();
+    setInterval(refreshClockStatus, 1000);
+    setInterval(refreshNodeStatus, 2000);
+    setInterval(refreshTechnologyOpenness, 5000);
+    setInterval(refreshCommunityGovernance, 5000);
+    setInterval(()=>{if(midiMappingState?.learning)refreshMidiMappings();},250);
+    setInterval(refreshLauncher,750);
+    setInterval(refreshCompatibility, 5000);
+    setInterval(refreshVenueAdaptations, 3000);
+    setInterval(() => refreshVenueReconciliation(false), 3000);
+  }).catch((error) => {
+    q("#connection").textContent = "OFFLINE";
+    q("#launcherStatus").textContent = error.message;
+  });
   requestAnimationFrame(clockFrame);
 })();

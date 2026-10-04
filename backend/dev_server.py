@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 20586)
+Total output lines: 1657
+
 #!/usr/bin/env python3
 from __future__ import annotations
 
@@ -29,6 +32,7 @@ FRONTEND = Path(os.environ.get("STAGEFORGE_FRONTEND_DIR", str(ROOT / "frontend")
 DATA_DIR = Path(os.environ.get("STAGEFORGE_DATA_DIR", str(ROOT / ".runtime"))).resolve()
 RUNTIME = StageForgeRuntime(DATA_DIR)
 MONITOR_READ_PATHS = frozenset({"/healthz", "/api/v1/native", "/api/v1/node"})
+DESKTOP_SESSION_COOKIE = "stagemesh-session"
 
 # Known control-plane operations that can perform filesystem, discovery, graph/planning
 # or catalog work. Admission is deliberately non-blocking so these requests cannot
@@ -70,6 +74,25 @@ def token_matches(configured: str, supplied: str) -> bool:
                 and hmac.compare_digest(configured, supplied))
 
 
+def desktop_cookie_token(headers: Mapping[str, str], client_host: str, environ: Mapping[str, str]) -> str:
+    if environ.get("STAGEFORGE_RUNTIME_MODE", "").strip().lower() != "desktop":
+        return ""
+    try:
+        if not ipaddress.ip_address(client_host).is_loopback:
+            return ""
+    except ValueError:
+        return ""
+    raw_cookie = headers.get("Cookie", "")
+    if len(raw_cookie) > 4096:
+        return ""
+    values = []
+    for part in raw_cookie.split(";"):
+        name, separator, value = part.strip().partition("=")
+        if separator and name == DESKTOP_SESSION_COOKIE:
+            values.append(value.strip())
+    return values[0] if len(values) == 1 else ""
+
+
 def validate_http_boundary(headers: Mapping[str, str], client_host: str, path: str, method: str, environ: Mapping[str, str] | None = None) -> None:
     """Reject DNS-rebinding/cross-origin requests and authenticate remote API access."""
     env=os.environ if environ is None else environ
@@ -97,6 +120,8 @@ def validate_http_boundary(headers: Mapping[str, str], client_host: str, path: s
     except ValueError:loopback=False
     require_token=env.get("STAGEFORGE_REQUIRE_API_TOKEN","").strip().lower() in {"1","true","yes","on"}
     supplied = headers.get("X-StageForge-API-Token", "")
+    if not supplied:
+        supplied = desktop_cookie_token(headers, client_host, env)
     monitor = env.get("STAGEFORGE_MONITOR_API_TOKEN", "")
     control = env.get("STAGEFORGE_API_TOKEN", "")
     if monitor and token_matches(monitor, control):
@@ -295,6 +320,7 @@ class StageForgeHandler(BaseHTTPRequestHandler):
         # Reject ambiguous framing before dispatch (including Expect: 100-continue).
         lengths = self.headers.get_all("Content-Length", [])
         security_headers = ('Origin', 'Content-Type', 'X-StageForge-API-Token',
+                            'Cookie', 'X-StageForge-Desktop-Token',
                             'X-StageForge-Admin-Token', 'X-StageForge-Adapter-Token',
                             'X-StageForge-Authenticated-User', 'X-StageForge-Auth-Proxy-Token',
                             'X-StageForge-Command-Id')
@@ -822,61 +848,7 @@ class StageForgeHandler(BaseHTTPRequestHandler):
             try:
                 slot = int(path[len(audio_output_prefix):].strip("/"))
                 self._json(200, RUNTIME.audio_stream_status(slot))
-            except ValueError as exc:
-                self._json(400, {"error": str(exc)})
-            return
-        if path == "/api/v1/audio/input":
-            self._json(200, RUNTIME.audio_input_status())
-            return
-        if path == "/api/v1/audio/inputs":
-            self._json(200, RUNTIME.audio_inputs_status())
-            return
-        le_uwb_node_prefix = "/api/v1/le-uwb/nodes/"
-        if path.startswith(le_uwb_node_prefix):
-            try:
-                node_id = int(path[len(le_uwb_node_prefix):].strip("/"))
-                self._json(200, RUNTIME.le_uwb_node_status(node_id))
-            except ValueError as exc:
-                self._json(400, {"error": str(exc)})
-            except RuntimeError as exc:
-                self._json(503, {"error": str(exc)})
-            return
-        audio_input_prefix = "/api/v1/audio/inputs/"
-        if path.startswith(audio_input_prefix):
-            try:
-                slot = int(path[len(audio_input_prefix):].strip("/"))
-                self._json(200, RUNTIME.audio_input_status(slot))
-            except ValueError as exc:
-                self._json(400, {"error": str(exc)})
-            return
-        if path == "/api/v1/midi/devices":
-            self._json(200, RUNTIME.midi_devices())
-            return
-        if path == "/api/v1/midi/mappings":
-            self._json(200, RUNTIME.midi_mapping_status())
-            return
-        if path == "/api/v1/midi/mapping-targets":
-            self._json(200, RUNTIME.midi_mapping_targets())
-            return
-        if path == "/api/v1/clock":
-            self._json(200, RUNTIME.clock_status())
-            return
-        if path == "/api/v1/clock/transport-discipline":
-            self._json(200,RUNTIME.transport_discipline_status())
-            return
-        if path == "/api/v1/midi/clock":
-            self._json(200,RUNTIME.midi_clock_status())
-            return
-        if path == "/api/v1/lighting/network":
-            self._json(200, RUNTIME.lighting_network_status())
-            return
-        lighting_prefix = "/api/v1/lighting/universe/"
-        if path.startswith(lighting_prefix):
-            try:
-                universe = int(path[len(lighting_prefix):].strip("/"))
-                self._json(200, RUNTIME.lighting_universe_info(universe))
-            except ValueError as exc:
-                self._json(400, {"error": str(exc)})
+         …586 tokens truncated…   self._json(400, {"error": str(exc)})
             except RuntimeError as exc:
                 self._json(503, {"error": str(exc)})
             return
@@ -922,6 +894,9 @@ class StageForgeHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         path = urlparse(self.path).path
+        if path == "/desktop/session":
+            self._desktop_session()
+            return
         if not self._guard_request(path):return
         try:
             body = self._read_json(4 * 1024 * 1024 if path == "/api/v1/replication/apply" else 64 * 1024)
@@ -1406,6 +1381,36 @@ class StageForgeHandler(BaseHTTPRequestHandler):
             self._json(503, {"error": str(exc)})
         except ValueError as exc:
             self._json(400, {"error": str(exc)})
+
+    def _desktop_session(self) -> None:
+        credentials = self._credentials()
+        try:
+            validate_http_boundary(
+                self.headers, self.client_address[0], "/desktop/session", "POST", credentials
+            )
+        except PermissionError as exc:
+            self._json(403, {"error": str(exc)})
+            return
+        except ValueError as exc:
+            self._json(400, {"error": str(exc)})
+            return
+        try:
+            loopback = ipaddress.ip_address(self.client_address[0]).is_loopback
+        except ValueError:
+            loopback = False
+        configured = credentials.get("STAGEFORGE_DESKTOP_SESSION_TOKEN", "")
+        supplied = self.headers.get("X-StageForge-Desktop-Token", "")
+        desktop_mode = credentials.get("STAGEFORGE_RUNTIME_MODE", "").strip().lower() == "desktop"
+        if not desktop_mode or not loopback or not token_matches(configured, supplied):
+            self._json(403, {"error": "desktop session authentication failed"})
+            return
+        api_token = credentials.get("STAGEFORGE_API_TOKEN", "")
+        if not api_token:
+            self._json(503, {"error": "desktop API credential is unavailable"})
+            return
+        self._json(200, {"ready": True}, {
+            "Set-Cookie": f"{DESKTOP_SESSION_COOKIE}={api_token}; Path=/; HttpOnly; SameSite=Strict",
+        })
 
     def do_PATCH(self) -> None:
         path = urlparse(self.path).path
