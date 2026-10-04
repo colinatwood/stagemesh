@@ -27,7 +27,7 @@ def main() -> int:
     extension = ".exe" if engine.suffix.lower() == ".exe" else ""
     BINARY_DIR.mkdir(parents=True, exist_ok=True)
     runtime_target = BINARY_DIR / f"stagemesh-runtime-{args.target}{extension}"
-    engine_target = BINARY_DIR / f"stageforge_engine-{args.target}{extension}"
+    engine_target = BINARY_DIR / f"stagemesh_engine-{args.target}{extension}"
 
     with tempfile.TemporaryDirectory(prefix="stagemesh-desktop-runtime-") as temporary:
         scratch = Path(temporary)
