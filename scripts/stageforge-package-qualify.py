@@ -44,9 +44,9 @@ def qualify(*, build_dir: Path) -> dict[str, Any]:
     missing = [name for name in REQUIRED_TOOLS if shutil.which(name) is None]
     if missing:
         raise RuntimeError("missing packaging qualification tools: " + ", ".join(missing))
-    engine = build_dir / "native/stageforge_engine"
+    engine = build_dir / "native/stagemesh_engine"
     if not engine.is_file() or not os.access(engine, os.X_OK):
-        raise RuntimeError("package qualification requires a built native stageforge_engine")
+        raise RuntimeError("package qualification requires a built native stagemesh_engine")
 
     with tempfile.TemporaryDirectory(prefix="stageforge-package-qual-") as raw:
         stage = Path(raw) / "rootfs"
@@ -66,7 +66,7 @@ def qualify(*, build_dir: Path) -> dict[str, Any]:
             raise RuntimeError("staged state directory ownership does not match the stageforge account")
 
         required = [
-            stage / "usr/libexec/stageforge/stageforge_engine",
+            stage / "usr/libexec/stageforge/stagemesh_engine",
             stage / "usr/libexec/stageforge/stageforge-qualify.py",
             stage / "usr/libexec/stageforge/stageforge-package-qualify.py",
             stage / "usr/libexec/stageforge/stageforge-qualification-plan.py",
