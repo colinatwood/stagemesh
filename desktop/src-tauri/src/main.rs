@@ -2,7 +2,7 @@
 
 mod runtime;
 
-use runtime::{RuntimeSupervisor, runtime_status};
+use runtime::{runtime_status, RuntimeSupervisor};
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 
 fn main() {
@@ -13,23 +13,18 @@ fn main() {
             supervisor
                 .start(app.handle())
                 .map_err(|error| std::io::Error::new(std::io::ErrorKind::Other, error))?;
-            let url = match supervisor
-                .status()
-                .map_err(|error| std::io::Error::new(std::io::ErrorKind::Other, error))?
-                .endpoint
-            {
-                Some(endpoint) => WebviewUrl::External(
-                    endpoint
-                        .parse()
-                        .map_err(|_| {
-                            std::io::Error::new(
-                                std::io::ErrorKind::InvalidData,
-                                "runtime endpoint is not a valid URL",
-                            )
-                        })?,
-                ),
-                None => WebviewUrl::App("app.html".into()),
-            };
+            let url = WebviewUrl::External(
+                supervisor
+                    .launch_url()
+                    .map_err(|error| std::io::Error::new(std::io::ErrorKind::Other, error))?
+                    .parse()
+                    .map_err(|_| {
+                        std::io::Error::new(
+                            std::io::ErrorKind::InvalidData,
+                            "runtime endpoint is not a valid URL",
+                        )
+                    })?,
+            );
             WebviewWindowBuilder::new(
                 app,
                 "main",

@@ -1,0 +1,144 @@
+#!/usr/bin/env python3
+"""Verify the frozen desktop runtime, native engine, and authenticated UI handshake."""
+from __future__ import annotations
+
+import argparse
+import http.client
+import json
+import os
+from pathlib import Path
+import secrets
+import socket
+import subprocess
+import tempfile
+import time
+
+
+def request(port: int, method: str, path: str, headers: dict[str, str] | None = None):
+    connection = http.client.HTTPConnection("127.0.0.1", port, timeout=2)
+    connection.request(method, path, headers=headers or {})
+    response = connection.getresponse()
+    body = response.read()
+    result = response.status, dict(response.getheaders()), body
+    connection.close()
+    return result
+
+
+def stop_process_tree(process: subprocess.Popen) -> None:
+    if process.poll() is not None:
+        return
+    if os.name == "nt":
+        subprocess.run(
+            ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    else:
+        process.terminate()
+    try:
+        process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait(timeout=5)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--runtime", required=True, type=Path)
+    parser.add_argument("--native-engine", required=True, type=Path)
+    parser.add_argument("--frontend", required=True, type=Path)
+    args = parser.parse_args()
+
+    runtime = args.runtime.resolve()
+    native_engine = args.native_engine.resolve()
+    frontend = args.frontend.resolve()
+    for name, path in (("runtime", runtime), ("native engine", native_engine)):
+        if not path.is_file():
+            parser.error(f"{name} does not exist: {path}")
+    if not (frontend / "app.html").is_file():
+        parser.error(f"frontend app is missing: {frontend}")
+
+    with socket.socket() as reservation:
+        reservation.bind(("127.0.0.1", 0))
+        port = reservation.getsockname()[1]
+    api_token = secrets.token_hex(32)
+    bootstrap_token = secrets.token_hex(32)
+
+    with tempfile.TemporaryDirectory(prefix="stagemesh-desktop-smoke-") as temporary:
+        root = Path(temporary)
+        log_path = root / "runtime.log"
+        environment = os.environ.copy()
+        environment.update({
+            "STAGEFORGE_DATA_DIR": str(root / "data"),
+            "STAGEFORGE_FRONTEND_DIR": str(frontend),
+            "STAGEFORGE_RUNTIME_MODE": "desktop",
+            "STAGEFORGE_NATIVE_ENGINE": str(native_engine),
+            "STAGEFORGE_REQUIRE_API_TOKEN": "1",
+            "STAGEFORGE_API_TOKEN": api_token,
+            "STAGEFORGE_DESKTOP_SESSION_TOKEN": bootstrap_token,
+        })
+        with log_path.open("wb") as log:
+            process = subprocess.Popen(
+                [str(runtime), "--host", "127.0.0.1", "--port", str(port)],
+                env=environment,
+                stdin=subprocess.DEVNULL,
+                stdout=log,
+                stderr=subprocess.STDOUT,
+            )
+            try:
+                deadline = time.monotonic() + 15
+                health = None
+                while time.monotonic() < deadline:
+                    if process.poll() is not None:
+                        raise RuntimeError(f"runtime exited before readiness with {process.returncode}")
+                    try:
+                        health = request(port, "GET", "/healthz", {
+                            "X-StageForge-API-Token": api_token,
+                        })
+                        if health[0] == 200:
+                            break
+                    except OSError:
+                        pass
+                    time.sleep(0.1)
+                if health is None or health[0] != 200:
+                    raise RuntimeError("runtime did not become ready within 15 seconds")
+                health_payload = json.loads(health[2])
+                if not health_payload.get("ok"):
+                    raise RuntimeError("runtime health payload is not healthy")
+
+                native_status, _, native_body = request(port, "GET", "/api/v1/native", {
+                    "X-StageForge-API-Token": api_token,
+                })
+                native_payload = json.loads(native_body)
+                if native_status != 200 or not native_payload.get("available"):
+                    raise RuntimeError(f"native engine is unavailable: {native_payload}")
+
+                session_status, session_headers, _ = request(port, "POST", "/desktop/session", {
+                    "X-StageForge-Desktop-Token": bootstrap_token,
+                })
+                cookie = session_headers.get("Set-Cookie", "")
+                if session_status != 200 or "HttpOnly" not in cookie or "SameSite=Strict" not in cookie:
+                    raise RuntimeError("desktop session cookie was not established securely")
+                cookie_value = cookie.split(";", 1)[0]
+                cookie_status, _, _ = request(port, "GET", "/healthz", {"Cookie": cookie_value})
+                if cookie_status != 200:
+                    raise RuntimeError("desktop session cookie did not authorize the API")
+
+                app_status, app_headers, app_body = request(port, "GET", "/app.html")
+                if app_status != 200 or not app_headers.get("Content-Type", "").startswith("text/html"):
+                    raise RuntimeError("packaged frontend was not served")
+                if b"StageMesh" not in app_body:
+                    raise RuntimeError("packaged frontend content is invalid")
+            except Exception as exc:
+                log.flush()
+                details = log_path.read_text(encoding="utf-8", errors="replace")[-4000:]
+                raise RuntimeError(f"{exc}\nRuntime log:\n{details}") from exc
+            finally:
+                stop_process_tree(process)
+    print("Desktop runtime smoke passed; physical hardware was not activated or qualified.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

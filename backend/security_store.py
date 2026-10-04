@@ -55,13 +55,18 @@ class SecurityStateStore:
         payload = {**state, "hmacSha256": self._tag(state)}
         fd, name = tempfile.mkstemp(prefix=self.path.name + ".", dir=self.path.parent)
         try:
-            os.fchmod(fd, 0o600)
-            with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            if hasattr(os, "fchmod"):
+                os.fchmod(fd, 0o600)
+            stream = os.fdopen(fd, "w", encoding="utf-8")
+            fd = -1
+            with stream:
                 json.dump(payload, stream, sort_keys=True, separators=(",", ":"))
                 stream.flush(); os.fsync(stream.fileno())
             os.replace(name, self.path)
             os.chmod(self.path, 0o600)
         finally:
+            if fd >= 0:
+                os.close(fd)
             if os.path.exists(name): os.unlink(name)
 
     def checkpoint(self, session_id: str, checkpoint: dict[str, Any]) -> None:

@@ -1,7 +1,8 @@
 """Crash-visible staging files for DAW import and render publication."""
 from __future__ import annotations
-import fcntl,hashlib,os,tempfile
+import hashlib,os,tempfile
 from pathlib import Path
+from file_lock import exclusive_file_lock
 from temporary_ownership import (
     classify_owner,create_owner_manifest,process_identity,recheck_reclaimable,owner_live,
 )
@@ -51,12 +52,13 @@ class StagedResourceRegistry:
         for resource_class,root,path in list(self._items()):
             lock_path=root/".stageforge-staging.lock";lock_path.touch(mode=0o600,exist_ok=True)
             with lock_path.open("r+") as lock:
-                fcntl.flock(lock,fcntl.LOCK_EX);owner_path=self._owner_path(path)
-                if recheck_reclaimable(owner_path,path,resource_class=resource_class) is None:continue
-                relative=str(path.relative_to(root));resource_id="stage-"+hashlib.sha256(f"{resource_class}:{relative}".encode()).hexdigest()[:20]
-                # Final lstat identity is inside recheck_reclaimable immediately
-                # before unlink.  Missing/replaced paths fail closed.
-                try:path.unlink()
-                except FileNotFoundError:continue
-                owner_path.unlink(missing_ok=True);reclaimed.append(resource_id)
+                with exclusive_file_lock(lock):
+                    owner_path=self._owner_path(path)
+                    if recheck_reclaimable(owner_path,path,resource_class=resource_class) is None:continue
+                    relative=str(path.relative_to(root));resource_id="stage-"+hashlib.sha256(f"{resource_class}:{relative}".encode()).hexdigest()[:20]
+                    # Final lstat identity is inside recheck_reclaimable immediately
+                    # before unlink.  Missing/replaced paths fail closed.
+                    try:path.unlink()
+                    except FileNotFoundError:continue
+                    owner_path.unlink(missing_ok=True);reclaimed.append(resource_id)
         return {**self.status(),"reclaimedCount":len(reclaimed),"reclaimedResourceIds":reclaimed[:128]}

@@ -1,12 +1,16 @@
 use serde::Serialize;
 use std::fs::{self, File, OpenOptions};
-use std::net::TcpListener;
+use std::io::{Read, Write};
+use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
+use std::thread;
+use std::time::{Duration, Instant};
 use tauri::Manager;
 
 const DATA_DIRECTORIES: &[&str] = &["sessions", "media", "preferences", "logs", "tmp"];
+const READINESS_TIMEOUT: Duration = Duration::from_secs(15);
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -22,6 +26,7 @@ pub struct RuntimeStatus {
 struct RuntimeInner {
     child: Option<Child>,
     status: RuntimeStatus,
+    bootstrap_token: Option<String>,
 }
 
 pub struct RuntimeSupervisor {
@@ -41,6 +46,7 @@ impl Default for RuntimeSupervisor {
                     pid: None,
                     error: None,
                 },
+                bootstrap_token: None,
             }),
         }
     }
@@ -64,13 +70,16 @@ impl RuntimeSupervisor {
             return Ok(());
         }
 
-        let Some(executable) = resolve_runtime_executable(app) else {
+        let Some(executable) = resolve_bundled_executable(app, "stagemesh-runtime") else {
             inner.status.state = "unavailable".into();
             inner.status.error = Some(
-                "StageMesh runtime sidecar is not installed; set STAGEMESH_RUNTIME_EXECUTABLE or ship stagemesh-runtime beside the application".into(),
+                "StageMesh runtime sidecar is not installed; set STAGEMESH_RUNTIME_EXECUTABLE or install a complete StageMesh package".into(),
             );
-            return Ok(());
+            return Err(inner.status.error.clone().unwrap_or_default());
         };
+        let native_engine = resolve_bundled_executable(app, "stageforge_engine").ok_or_else(|| {
+            "StageMesh native engine is not installed; install a complete StageMesh package".to_string()
+        })?;
 
         let listener = TcpListener::bind(("127.0.0.1", 0))
             .map_err(|error| format!("could not reserve local runtime port: {error}"))?;
@@ -91,24 +100,29 @@ impl RuntimeSupervisor {
             .map_err(|error| format!("could not resolve application resources: {error}"))?;
 
         let port_text = port.to_string();
+        let api_token = random_token()?;
+        let bootstrap_token = random_token()?;
         let mut command = Command::new(&executable);
         command
             .args(["--host", "127.0.0.1", "--port", port_text.as_str()])
             .env("STAGEFORGE_DATA_DIR", &data_dir)
             .env("STAGEFORGE_FRONTEND_DIR", resource_dir.join("frontend"))
             .env("STAGEFORGE_RUNTIME_MODE", "desktop")
+            .env("STAGEFORGE_NATIVE_ENGINE", &native_engine)
+            .env("STAGEFORGE_REQUIRE_API_TOKEN", "1")
+            .env("STAGEFORGE_API_TOKEN", &api_token)
+            .env("STAGEFORGE_DESKTOP_SESSION_TOKEN", &bootstrap_token)
             .stdin(Stdio::null())
             .stdout(Stdio::from(stdout))
             .stderr(Stdio::from(stderr));
 
-        let child = command.spawn().map_err(|error| {
+        let mut child = command.spawn().map_err(|error| {
             format!(
                 "could not start StageMesh runtime {}: {error}",
                 executable.display()
             )
         })?;
         let pid = child.id();
-        inner.child = Some(child);
         inner.status = RuntimeStatus {
             state: "starting".into(),
             endpoint: Some(format!("http://127.0.0.1:{port}")),
@@ -117,7 +131,35 @@ impl RuntimeSupervisor {
             pid: Some(pid),
             error: None,
         };
+        if let Err(error) = wait_until_ready(&mut child, port, &api_token, READINESS_TIMEOUT) {
+            let _ = child.kill();
+            let _ = child.wait();
+            inner.status.state = "failed".into();
+            inner.status.pid = None;
+            inner.status.error = Some(error.clone());
+            return Err(error);
+        }
+        inner.status.state = "running".into();
+        inner.child = Some(child);
+        inner.bootstrap_token = Some(bootstrap_token);
         Ok(())
+    }
+
+    pub fn launch_url(&self) -> Result<String, String> {
+        let inner = self
+            .inner
+            .lock()
+            .map_err(|_| "runtime supervisor lock is poisoned".to_string())?;
+        let endpoint = inner
+            .status
+            .endpoint
+            .as_ref()
+            .ok_or_else(|| "runtime endpoint is unavailable".to_string())?;
+        let token = inner
+            .bootstrap_token
+            .as_ref()
+            .ok_or_else(|| "desktop session is unavailable".to_string())?;
+        Ok(format!("{endpoint}/app.html#stagemesh-session={token}"))
     }
 
     pub fn status(&self) -> Result<RuntimeStatus, String> {
@@ -158,6 +200,7 @@ impl RuntimeSupervisor {
             inner.status.state = "stopped".into();
             inner.status.pid = None;
         }
+        inner.bootstrap_token = None;
     }
 }
 
@@ -185,8 +228,13 @@ fn prepare_data_layout(root: &Path) -> Result<(), String> {
     Ok(())
 }
 
-fn resolve_runtime_executable(app: &tauri::AppHandle) -> Option<PathBuf> {
-    if let Some(configured) = std::env::var_os("STAGEMESH_RUNTIME_EXECUTABLE") {
+fn resolve_bundled_executable(app: &tauri::AppHandle, base_name: &str) -> Option<PathBuf> {
+    let configured_name = if base_name == "stagemesh-runtime" {
+        "STAGEMESH_RUNTIME_EXECUTABLE"
+    } else {
+        "STAGEMESH_NATIVE_ENGINE_EXECUTABLE"
+    };
+    if let Some(configured) = std::env::var_os(configured_name) {
         let path = PathBuf::from(configured);
         if path.is_file() {
             return Some(path);
@@ -194,22 +242,67 @@ fn resolve_runtime_executable(app: &tauri::AppHandle) -> Option<PathBuf> {
     }
 
     let executable_name = if cfg!(windows) {
-        "stagemesh-runtime.exe"
+        format!("{base_name}.exe")
     } else {
-        "stagemesh-runtime"
+        base_name.to_string()
     };
     let resource_candidate = app
         .path()
         .resource_dir()
         .ok()
-        .map(|dir| dir.join(executable_name));
+        .map(|dir| dir.join(&executable_name));
     let application_candidate = std::env::current_exe()
         .ok()
-        .and_then(|path| path.parent().map(|dir| dir.join(executable_name)));
+        .and_then(|path| path.parent().map(|dir| dir.join(&executable_name)));
     resource_candidate
         .into_iter()
         .chain(application_candidate)
         .find(|path| path.is_file())
+}
+
+fn random_token() -> Result<String, String> {
+    let mut bytes = [0_u8; 32];
+    getrandom::getrandom(&mut bytes)
+        .map_err(|error| format!("could not generate desktop session token: {error}"))?;
+    Ok(bytes.iter().map(|byte| format!("{byte:02x}")).collect())
+}
+
+fn wait_until_ready(
+    child: &mut Child,
+    port: u16,
+    api_token: &str,
+    timeout: Duration,
+) -> Result<(), String> {
+    let deadline = Instant::now() + timeout;
+    let address = SocketAddr::from(([127, 0, 0, 1], port));
+    loop {
+        if let Some(exit) = child
+            .try_wait()
+            .map_err(|error| format!("could not inspect StageMesh runtime: {error}"))?
+        {
+            return Err(format!("StageMesh runtime exited before readiness with {exit}"));
+        }
+        if Instant::now() >= deadline {
+            return Err("StageMesh runtime did not become ready within 15 seconds".into());
+        }
+        if let Ok(mut stream) = TcpStream::connect_timeout(&address, Duration::from_millis(250)) {
+            let _ = stream.set_read_timeout(Some(Duration::from_millis(500)));
+            let _ = stream.set_write_timeout(Some(Duration::from_millis(500)));
+            let request = format!(
+                "GET /healthz HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nX-StageForge-API-Token: {api_token}\r\nConnection: close\r\n\r\n"
+            );
+            if stream.write_all(request.as_bytes()).is_ok() {
+                let mut response = [0_u8; 256];
+                if let Ok(count) = stream.read(&mut response) {
+                    let head = String::from_utf8_lossy(&response[..count]);
+                    if head.starts_with("HTTP/1.1 200 ") || head.starts_with("HTTP/1.0 200 ") {
+                        return Ok(());
+                    }
+                }
+            }
+        }
+        thread::sleep(Duration::from_millis(100));
+    }
 }
 
 #[tauri::command]
@@ -219,7 +312,7 @@ pub fn runtime_status(supervisor: tauri::State<'_, RuntimeSupervisor>) -> Result
 
 #[cfg(test)]
 mod tests {
-    use super::{prepare_data_layout, DATA_DIRECTORIES};
+    use super::{prepare_data_layout, random_token, DATA_DIRECTORIES};
     use std::fs;
 
     #[test]
@@ -232,5 +325,14 @@ mod tests {
             assert!(root.join(name).is_dir(), "missing {name}");
         }
         fs::remove_dir_all(root).expect("test data should be removable");
+    }
+
+    #[test]
+    fn desktop_tokens_are_random_hex_credentials() {
+        let first = random_token().expect("first token");
+        let second = random_token().expect("second token");
+        assert_eq!(first.len(), 64);
+        assert!(first.bytes().all(|byte| byte.is_ascii_hexdigit()));
+        assert_ne!(first, second);
     }
 }

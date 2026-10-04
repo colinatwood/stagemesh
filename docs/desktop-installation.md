@@ -11,6 +11,11 @@ The release workflow builds the platform-native bundles:
 - macOS: application bundle and DMG
 - Linux: AppImage and Debian package
 
+Each bundle contains the local StageMesh API runtime and the matching native
+engine. Startup is fail-closed: the desktop window opens only after an
+authenticated loopback health check succeeds. No public network listener is
+created.
+
 The first published installers will be unsigned until the project signing
 secrets and certificates are configured. Unsigned packages are for development
 and controlled testing only.
