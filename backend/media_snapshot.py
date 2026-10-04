@@ -9,7 +9,7 @@ import time
 from threading import Lock
 from pathlib import Path
 import tempfile
-import fcntl
+from file_lock import exclusive_file_lock
 from daw_media import resolve_media_path
 from temporary_ownership import classify_owner,create_owner_manifest,fsync_directory,owner_live,process_identity,recheck_reclaimable
 
@@ -111,7 +111,7 @@ class MediaSnapshot:
         if not store.exists():return {**cls.status(root),"reclaimedCount":0,"reclaimedResourceIds":[]}
         lock_path=store/"quota.lock";lock_path.touch(mode=0o600,exist_ok=True)
         with lock_path.open("r+") as lock:
-            fcntl.flock(lock,fcntl.LOCK_EX);reclaimed=cls.cleanup_stale(store)
+            with exclusive_file_lock(lock):reclaimed=cls.cleanup_stale(store)
         return {**cls.status(root),"reclaimedCount":len(reclaimed),"reclaimedResourceIds":reclaimed[:128]}
 
     def __init__(self, root, plan, *, purpose="unspecified"):
@@ -140,19 +140,19 @@ class MediaSnapshot:
                 sources[key] = (path, info.st_size)
             required = sum(size for _, size in sources.values())
             with lock_path.open("r+") as lock:
-                fcntl.flock(lock, fcntl.LOCK_EX)
-                self.cleanup_stale(self.store)
-                used = self._store_bytes(self.store)
-                if used + required > max_total:
-                    raise RuntimeError("audio snapshots exceed the shared configured budget")
-                if shutil.disk_usage(self.store).free < required + free_reserve:
-                    raise RuntimeError("insufficient temporary disk space for audio snapshot")
-                self.root = Path(tempfile.mkdtemp(prefix="snapshot-", dir=self.store))
-                create_owner_manifest(self.root/"owner.json",self.root,resource_class="media-snapshot",purpose=str(purpose)[:32],extra={"reservedBytes":required})
-                fsync_directory(self.store)
-                with MediaSnapshot._budget_lock:
-                    MediaSnapshot._reserved_bytes += required
-                    self.reserved_bytes = required
+                with exclusive_file_lock(lock):
+                    self.cleanup_stale(self.store)
+                    used = self._store_bytes(self.store)
+                    if used + required > max_total:
+                        raise RuntimeError("audio snapshots exceed the shared configured budget")
+                    if shutil.disk_usage(self.store).free < required + free_reserve:
+                        raise RuntimeError("insufficient temporary disk space for audio snapshot")
+                    self.root = Path(tempfile.mkdtemp(prefix="snapshot-", dir=self.store))
+                    create_owner_manifest(self.root/"owner.json",self.root,resource_class="media-snapshot",purpose=str(purpose)[:32],extra={"reservedBytes":required})
+                    fsync_directory(self.store)
+                    with MediaSnapshot._budget_lock:
+                        MediaSnapshot._reserved_bytes += required
+                        self.reserved_bytes = required
             for region in self.plan["regions"]:
                 source = region["source"]
                 if source.get("type") != "audio-file":
