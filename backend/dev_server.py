@@ -25,7 +25,7 @@ from http_deployment import validate_proxy_https_profile
 
 
 ROOT = Path(__file__).resolve().parents[1]
-FRONTEND = ROOT / "frontend"
+FRONTEND = Path(os.environ.get("STAGEFORGE_FRONTEND_DIR", str(ROOT / "frontend"))).resolve()
 DATA_DIR = Path(os.environ.get("STAGEFORGE_DATA_DIR", str(ROOT / ".runtime"))).resolve()
 RUNTIME = StageForgeRuntime(DATA_DIR)
 MONITOR_READ_PATHS = frozenset({"/healthz", "/api/v1/native", "/api/v1/node"})

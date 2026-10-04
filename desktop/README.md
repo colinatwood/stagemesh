@@ -12,6 +12,12 @@ website root is a download and product overview page. The existing C++ native
 engine remains the authority for audio, MIDI, device identity, lifecycle, and
 qualification boundaries.
 
+The desktop shell now prepares a portable per-user data directory and
+supervises an optional `stagemesh-runtime` sidecar. See
+`docs/desktop-runtime.md` for the runtime contract. The current packages still
+need the sidecar binary bundled before they can be called a complete local
+application.
+
 ## Local development
 
 Install Rust, Node.js, and the platform webview prerequisites, then run:
