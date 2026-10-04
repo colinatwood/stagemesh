@@ -9,8 +9,12 @@ import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
-engine = root / 'build' / 'native' / ('Release/stageforge_engine.exe' if os.name == 'nt' else 'stageforge_engine')
+engine = Path(
+    os.environ.get('STAGEFORGE_NATIVE_ENGINE')
+    or root / 'build' / 'native' / ('Release/stageforge_engine.exe' if os.name == 'nt' else 'stageforge_engine')
+).resolve()
 token = 'stageforge-ci-stdio-dispatch-fixture'
+system = platform.system()
 
 
 def fields(line: str) -> dict[str, str]:
@@ -55,7 +59,17 @@ with tempfile.TemporaryDirectory(prefix='stageforge-stdio-') as temporary:
     require_prefix(transact('PING'), 'ERR code=permission')
     require_prefix(transact('AUTH wrong'), 'ERR code=permission')
     require_prefix(transact('AUTH ' + token), 'OK authenticated=1')
-    require_prefix(transact('HELLO'), 'OK engineVersion=')
+    hello_line = transact('HELLO')
+    require_prefix(hello_line, 'OK engineVersion=')
+    hello = fields(hello_line)
+    if hello.get('captureIngress') != '1':
+        raise RuntimeError('full engine did not advertise shared capture ingress')
+    expected_native_capture_owner = system in {'Darwin', 'Windows'}
+    if (hello.get('nativeCaptureOwner') == '1') != expected_native_capture_owner:
+        raise RuntimeError(
+            'full engine native capture owner capability did not match target OS: '
+            f"host={system!r} capability={hello.get('nativeCaptureOwner')!r}"
+        )
     require_prefix(transact('PING'), 'OK pong=1')
     status_line = transact('STATUS')
     require_prefix(status_line, 'OK ')
@@ -80,7 +94,6 @@ with tempfile.TemporaryDirectory(prefix='stageforge-stdio-') as temporary:
         require_prefix(line, 'OK ')
         midi_devices.append(fields(line))
 
-    system = platform.system()
     target_audio = [item for item in audio_devices if item.get('backend') in {'wasapi', 'coreaudio'}]
     for item in target_audio:
         if not valid_identity_token(item.get('address', '')):
@@ -112,8 +125,12 @@ report = {
     'midiInputDeviceCount':midi_count, 'targetOsMidiInputDeviceCount':len(target_midi),
     'targetOsIdentityTokensHashOnly':all(valid_identity_token(item.get('address','')) for item in target_audio)
         and all(valid_identity_token(item.get('path',''), midi=True) for item in target_midi),
+    'captureIngressIntegrated':hello.get('captureIngress') == '1',
+    'nativeCaptureOwnerIntegrated':hello.get('nativeCaptureOwner') == '1',
+    'targetOsCaptureIntegrationCompiled':expected_native_capture_owner,
     'physicalOutputsArmed':False, 'physicalHardwareQualified':False,
-    'audioStreamingQualified':False, 'midiInputQualified':False,
+    'audioStreamingQualified':False, 'physicalCaptureQualified':False,
+    'recordingQualityQualified':False, 'midiInputQualified':False,
 }
 Path('native-engine-smoke.json').write_text(json.dumps(report, indent=2)+'\n', encoding='utf-8')
 print(json.dumps(report, indent=2))
