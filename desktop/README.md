@@ -26,6 +26,10 @@ Install Rust, Node.js, and the platform webview prerequisites, then run:
     npm install
     npm run tauri dev
 
+Rust dependencies are pinned by `src-tauri/Cargo.lock`. Keep the lockfile in
+source control and use Cargo's `--locked` verification after changing
+`Cargo.toml`; CI rejects a manifest that no longer matches the committed lock.
+
 Build a platform package:
 
     cd desktop

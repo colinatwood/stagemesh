@@ -64,6 +64,14 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
+      - name: Verify pinned desktop Rust dependencies
+        run: >-
+          cargo metadata
+          --manifest-path desktop/src-tauri/Cargo.toml
+          --locked
+          --format-version 1
+          --no-deps
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
