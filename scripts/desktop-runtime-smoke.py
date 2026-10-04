@@ -24,6 +24,25 @@ def request(port: int, method: str, path: str, headers: dict[str, str] | None = 
     return result
 
 
+def stop_process_tree(process: subprocess.Popen) -> None:
+    if process.poll() is not None:
+        return
+    if os.name == "nt":
+        subprocess.run(
+            ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    else:
+        process.terminate()
+    try:
+        process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait(timeout=5)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runtime", required=True, type=Path)
@@ -116,13 +135,7 @@ def main() -> int:
                 details = log_path.read_text(encoding="utf-8", errors="replace")[-4000:]
                 raise RuntimeError(f"{exc}\nRuntime log:\n{details}") from exc
             finally:
-                if process.poll() is None:
-                    process.terminate()
-                    try:
-                        process.wait(timeout=5)
-                    except subprocess.TimeoutExpired:
-                        process.kill()
-                        process.wait(timeout=5)
+                stop_process_tree(process)
     print("Desktop runtime smoke passed; physical hardware was not activated or qualified.")
     return 0
 
