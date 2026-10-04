@@ -12,7 +12,9 @@ on:
       - "docs/desktop-runtime.md"
       - "requirements-desktop.txt"
       - "scripts/build-desktop-runtime.py"
+      - "scripts/desktop-artifact-manifest.py"
       - "scripts/desktop-runtime-smoke.py"
+      - "tests/test_desktop_artifact_manifest.py"
       - ".github/workflows/desktop.yml"
   push:
     branches: [main]
@@ -26,7 +28,9 @@ on:
       - "docs/desktop-runtime.md"
       - "requirements-desktop.txt"
       - "scripts/build-desktop-runtime.py"
+      - "scripts/desktop-artifact-manifest.py"
       - "scripts/desktop-runtime-smoke.py"
+      - "tests/test_desktop_artifact_manifest.py"
       - ".github/workflows/desktop.yml"
   workflow_dispatch:
 
@@ -107,6 +111,14 @@ jobs:
       - name: Build and package desktop application
         working-directory: desktop
         run: npm run tauri build
+
+      - name: Record installer checksums and qualification boundary
+        shell: bash
+        run: >-
+          python scripts/desktop-artifact-manifest.py
+          --directory desktop/src-tauri/target/release/bundle
+          --platform "${{ runner.os }}"
+          --commit "$GITHUB_SHA"
 
       - name: Upload installer artifacts
         uses: actions/upload-artifact@v4

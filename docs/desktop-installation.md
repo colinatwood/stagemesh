@@ -20,6 +20,12 @@ The first published installers will be unsigned until the project signing
 secrets and certificates are configured. Unsigned packages are for development
 and controlled testing only.
 
+Each CI artifact includes `SHA256SUMS` plus `desktop-artifacts.json`. Verify the
+checksum for the installer before running it. The JSON inventory records the
+source commit, platform, byte count, and SHA-256 digest for every packaged file;
+it also preserves the explicit unsigned, clean-host, and physical-hardware
+qualification boundaries.
+
 ## Windows
 
 The installer uses the WebView2 download bootstrapper. The installer needs
