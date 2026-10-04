@@ -12,11 +12,11 @@ website root is a download and product overview page. The existing C++ native
 engine remains the authority for audio, MIDI, device identity, lifecycle, and
 qualification boundaries.
 
-The desktop shell now prepares a portable per-user data directory and
-supervises an optional `stagemesh-runtime` sidecar. See
-`docs/desktop-runtime.md` for the runtime contract. The current packages still
-need the sidecar binary bundled before they can be called a complete local
-application.
+The desktop shell prepares a portable per-user data directory and supervises
+the bundled `stagemesh-runtime` sidecar and native engine. It waits for an
+authenticated loopback readiness check before opening the console and shuts the
+runtime down with the desktop window. See `docs/desktop-runtime.md` for the
+runtime contract and its qualification boundaries.
 
 ## Local development
 
@@ -43,7 +43,10 @@ desktop/src-tauri/target/release/bundle/.
 
 The current CI artifacts are unsigned development packages. Code signing,
 notarization, and release publication require platform certificates and
-repository secrets.
+repository secrets. Every CI artifact includes `SHA256SUMS` and
+`desktop-artifacts.json`; the latter binds the files to the source commit and
+records that signing, clean-host installation, and physical hardware remain
+unqualified.
 
 ## Driver and hardware boundary
 
