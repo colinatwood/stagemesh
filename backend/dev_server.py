@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 20586)
-Total output lines: 1657
-
 #!/usr/bin/env python3
 from __future__ import annotations
 
@@ -848,7 +845,61 @@ class StageForgeHandler(BaseHTTPRequestHandler):
             try:
                 slot = int(path[len(audio_output_prefix):].strip("/"))
                 self._json(200, RUNTIME.audio_stream_status(slot))
-         …586 tokens truncated…   self._json(400, {"error": str(exc)})
+            except ValueError as exc:
+                self._json(400, {"error": str(exc)})
+            return
+        if path == "/api/v1/audio/input":
+            self._json(200, RUNTIME.audio_input_status())
+            return
+        if path == "/api/v1/audio/inputs":
+            self._json(200, RUNTIME.audio_inputs_status())
+            return
+        le_uwb_node_prefix = "/api/v1/le-uwb/nodes/"
+        if path.startswith(le_uwb_node_prefix):
+            try:
+                node_id = int(path[len(le_uwb_node_prefix):].strip("/"))
+                self._json(200, RUNTIME.le_uwb_node_status(node_id))
+            except ValueError as exc:
+                self._json(400, {"error": str(exc)})
+            except RuntimeError as exc:
+                self._json(503, {"error": str(exc)})
+            return
+        audio_input_prefix = "/api/v1/audio/inputs/"
+        if path.startswith(audio_input_prefix):
+            try:
+                slot = int(path[len(audio_input_prefix):].strip("/"))
+                self._json(200, RUNTIME.audio_input_status(slot))
+            except ValueError as exc:
+                self._json(400, {"error": str(exc)})
+            return
+        if path == "/api/v1/midi/devices":
+            self._json(200, RUNTIME.midi_devices())
+            return
+        if path == "/api/v1/midi/mappings":
+            self._json(200, RUNTIME.midi_mapping_status())
+            return
+        if path == "/api/v1/midi/mapping-targets":
+            self._json(200, RUNTIME.midi_mapping_targets())
+            return
+        if path == "/api/v1/clock":
+            self._json(200, RUNTIME.clock_status())
+            return
+        if path == "/api/v1/clock/transport-discipline":
+            self._json(200,RUNTIME.transport_discipline_status())
+            return
+        if path == "/api/v1/midi/clock":
+            self._json(200,RUNTIME.midi_clock_status())
+            return
+        if path == "/api/v1/lighting/network":
+            self._json(200, RUNTIME.lighting_network_status())
+            return
+        lighting_prefix = "/api/v1/lighting/universe/"
+        if path.startswith(lighting_prefix):
+            try:
+                universe = int(path[len(lighting_prefix):].strip("/"))
+                self._json(200, RUNTIME.lighting_universe_info(universe))
+            except ValueError as exc:
+                self._json(400, {"error": str(exc)})
             except RuntimeError as exc:
                 self._json(503, {"error": str(exc)})
             return
