@@ -5,7 +5,7 @@ runtime. On startup it:
 
 1. Creates a per-user data directory with separate `sessions`, `media`,
    `preferences`, `logs`, and `tmp` areas.
-2. Resolves the packaged `stagemesh-runtime` and `stageforge_engine` sidecars.
+2. Resolves the packaged `stagemesh-runtime` and `stagemesh_engine` sidecars.
 3. Reserves a loopback port and starts the local runtime with a random API
    credential, a separate desktop-session bootstrap credential, and explicit
    paths for the data directory, frontend, and native engine.
@@ -18,7 +18,7 @@ runtime. On startup it:
 The sidecar is intentionally fail-closed. Development builds can point to a
 runtime with `STAGEMESH_RUNTIME_EXECUTABLE=/absolute/path/to/stagemesh-runtime`
 and a native engine with
-`STAGEMESH_NATIVE_ENGINE_EXECUTABLE=/absolute/path/to/stageforge_engine`.
+`STAGEMESH_NATIVE_ENGINE_EXECUTABLE=/absolute/path/to/stagemesh_engine`.
 Packaged builds include both target-specific executables. The application does
 not create its main window when either executable is absent, exits early, or
 fails the authenticated readiness check.
