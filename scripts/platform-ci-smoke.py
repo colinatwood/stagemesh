@@ -40,10 +40,10 @@ def _find_engine() -> Path:
     if env:
         candidates.append(Path(env))
     candidates += [
-        ROOT / "build" / "native" / "stageforge_engine",
-        ROOT / "build" / "native" / "stageforge_engine.exe",
-        ROOT / "build" / "native" / "Release" / "stageforge_engine.exe",
-        ROOT / "build" / "native" / "Release" / "stageforge_engine",
+        ROOT / "build" / "native" / "stagemesh_engine",
+        ROOT / "build" / "native" / "stagemesh_engine.exe",
+        ROOT / "build" / "native" / "Release" / "stagemesh_engine.exe",
+        ROOT / "build" / "native" / "Release" / "stagemesh_engine",
     ]
     for path in candidates:
         if path.is_file():
