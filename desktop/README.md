@@ -1,42 +1,47 @@
 # StageMesh Desktop
 
-StageMesh now has a cross-platform desktop application target backed by Tauri 2.
-The desktop executable uses the operating system webview:
+StageMesh is a cross-platform desktop application backed by Tauri 2.
+The executable uses the operating system webview:
 
 - Windows: WebView2
 - macOS: WKWebView
 - Linux: WebKitGTK
 
-The existing `frontend/` is reused as the desktop UI, so the web design and
-desktop design do not drift. The existing C++ native engine remains the
-authority for audio, MIDI, device identity, lifecycle, and qualification
-boundaries.
+The existing frontend/app.html is reused as the local console UI. The public
+website root is a download and product overview page. The existing C++ native
+engine remains the authority for audio, MIDI, device identity, lifecycle, and
+qualification boundaries.
 
 ## Local development
 
 Install Rust, Node.js, and the platform webview prerequisites, then run:
 
-```sh
-cd desktop
-npm install
-npm run tauri dev
-```
+    cd desktop
+    npm install
+    npm run tauri dev
 
-Build the executable:
+Build a platform package:
 
-```sh
-cd desktop
-npm run tauri build
-```
+    cd desktop
+    npm run tauri build
 
-The first milestone intentionally keeps the bundle step disabled while the
-native engine bridge is integrated. The next desktop milestones are:
+The build automatically generates the platform icon set from
+src-tauri/icons/stagemesh.svg. Outputs are written beneath
+desktop/src-tauri/target/release/bundle/.
 
-1. start the local backend/runtime from the executable;
-2. expose native audio and MIDI operations through a typed bridge;
-3. enable signed installers for Windows, macOS, and Linux;
-4. run platform smoke tests against the executable.
+## Platform outputs
 
-Hosted browser checks and physical hardware qualification remain separate
-evidence. A desktop build must not claim physical qualification merely because
-the application launches.
+- Windows: NSIS setup executable and MSI
+- macOS: application bundle and DMG
+- Linux: AppImage and Debian package
+
+The current CI artifacts are unsigned development packages. Code signing,
+notarization, and release publication require platform certificates and
+repository secrets.
+
+## Driver and hardware boundary
+
+Read docs/desktop-installation.md for WebView, audio, MIDI, permissions,
+and driver prerequisites. Installing a driver or seeing a device in a scan is
+not physical qualification; audible loopback, capture, latency, and continuity
+evidence remain separate.

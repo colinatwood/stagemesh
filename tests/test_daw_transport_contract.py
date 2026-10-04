@@ -17,7 +17,7 @@ class DawTransportContractTests(unittest.TestCase):
                 _api_frame({"frame": value}, "frame")
 
     def test_production_controls_are_accessible_and_nested(self):
-        html = (ROOT / "frontend" / "index.html").read_text()
+        html = (ROOT / "frontend" / "app.html").read_text()
         for control in ("dawPlaybackBegin", "dawPlaybackEnd", "dawPlaybackLoop", "dawCaptureAbort", "dawProductionRefresh"):
             self.assertIn(f'id="{control}"', html)
         self.assertIn('id="dawProductionStatus" class="hint" role="status" aria-live="polite"', html)

@@ -6,6 +6,7 @@ on:
       - "desktop/**"
       - "frontend/**"
       - "native/**"
+      - "docs/desktop-installation.md"
       - ".github/workflows/desktop.yml"
   push:
     branches: [main]
@@ -13,6 +14,7 @@ on:
       - "desktop/**"
       - "frontend/**"
       - "native/**"
+      - "docs/desktop-installation.md"
       - ".github/workflows/desktop.yml"
   workflow_dispatch:
 
@@ -21,7 +23,7 @@ permissions:
 
 jobs:
   build:
-    name: Build desktop executable (${{ matrix.os }})
+    name: Build desktop package (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -51,6 +53,18 @@ jobs:
         working-directory: desktop
         run: npm install
 
-      - name: Build desktop executable
+      - name: Generate platform icons
         working-directory: desktop
-        run: npm run tauri build -- --no-bundle
+        run: npm run tauri icon src-tauri/icons/stagemesh.svg
+
+      - name: Build and package desktop application
+        working-directory: desktop
+        run: npm run tauri build
+
+      - name: Upload installer artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: stagemesh-desktop-${{ matrix.os }}
+          path: desktop/src-tauri/target/release/bundle/
+          if-no-files-found: error
+          retention-days: 90

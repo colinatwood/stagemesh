@@ -27,7 +27,7 @@ class MarkupInventory(HTMLParser):
 class UiAccessibilityContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.html = (ROOT / "frontend" / "index.html").read_text()
+        cls.html = (ROOT / "frontend" / "app.html").read_text()
         cls.css = (ROOT / "frontend" / "styles.css").read_text()
         cls.inventory = MarkupInventory()
         cls.inventory.feed(cls.html)
