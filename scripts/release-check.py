@@ -35,7 +35,7 @@ def main():
                  "-DSTAGEFORGE_BUILD_TESTS=ON", "-DSTAGEFORGE_RT_QUALIFICATION=ON"])
             run(["cmake", "--build", str(build), "--parallel", "2"])
             run(["ctest", "--test-dir", str(build), "--output-on-failure"])
-            engine = build / "native" / "stageforge_engine"
+            engine = build / "native" / "stagemesh_engine"
             if not engine.is_file():
                 raise RuntimeError("Fresh native engine missing; refusing Python fallback")
             env = os.environ.copy()
