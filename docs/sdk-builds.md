@@ -30,7 +30,7 @@ link evidence only.
 
 ## Packaging
 
-The root build installs `stageforge_engine`, the core/device libraries, and both
+The root build installs `stagemesh_engine`, the core/device libraries, and both
 public include trees. CPack produces a deterministic package name containing the
 StageMesh version, target OS, and architecture:
 
