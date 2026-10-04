@@ -19,7 +19,7 @@ class InstallerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as raw:
             root=Path(raw);build=root/"build";stage=root/"stage"
             (build/"native").mkdir(parents=True)
-            engine=build/"native/stageforge_engine"
+            engine=build/"native/stagemesh_engine"
             engine.write_text("#!/bin/sh\nexit 0\n");engine.chmod(0o755)
             data=stage/"var/lib/stageforge/user-session.json"
             data.parent.mkdir(parents=True);data.write_text('{"preserve":true}')
