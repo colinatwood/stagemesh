@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>StageMesh</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <a class="skipLink" href="#main-content">Skip to stage controls</a>
+  <main id="main-content" class="shell" tabindex="-1">
+    <header class="master panel">
+      <div class="transport">
+        <button id="play" class="primary" type="button" aria-label="Play or pause">▶</button>
+        <button id="stop" type="button" aria-label="Stop">■</button>
+      </div>
+      <div class="clockBlock"><span>SHOW CLOCK</span><strong id="clock">00:00:00.000</strong></div>
+      <label>BPM <input id="bpm" type="number" min="30" max="300" value="120"></label>
+      <label>Key <select id="key"><option>C</option><option>D</option><option>Eb</option><option>E</option><option>F</option><option>G</option><option>A</option><option>Bb</option></select></label>
+      <div class="health"><span>Show quality</span><strong id="quality">--</strong><div class="meter"><i id="qualityBar"></i></div></div>
+    </header>
+
+    <section class="panel launcherPanel" aria-labelledby="launcherTitle">
+      <div class="sectionHead"><div><span class="eyebrow">Performance view</span><h1 id="launcherTitle">Stage launcher</h1></div><div class="tags"><span id="launcherAuthority" class="tag">CORE</span><span id="launcherFeedback" class="tag" aria-live="polite">READY</span></div></div>
+      <div class="launcherTransport" role="group" aria-label="Stage transport">
+        <button id="launcherPlay" class="launcherControl primary" type="button"><span>Play / Pause</span><kbd>Space</kbd></button>
+        <button id="launcherStop" class="launcherControl" type="button"><span>Stop</span><kbd>Esc</kbd></button>
+      </div>
+      <div id="launcherPads" class="launcherPads" role="group" aria-label="Sample pads"></div>
+      <p id="launcherStatus" class="guard" role="status" aria-live="polite">Loading native sampler, transport, capture, and MIDI feedback…</p>
+    </section>
+
+    <section class="layout">
+      <section class="panel stagePanel">
+        <div class="sectionHead"><div><span class="eyebrow">Shared show state</span><h1>Stage</h1></div><div class="tags"><span id="venue" class="tag">Venue</span><span id="manager" class="tag">Manager</span></div></div>
+        <div class="stage" aria-label="Schematic stage">
+          <div class="stageGrid"></div>
+          <button class="playerNode" style="left:50%;top:27%" data-player="alex" type="button">Drums<small>Alex</small></button>
+          <button class="playerNode" style="left:27%;top:56%" data-player="sam" type="button">Bass<small>Sam</small></button>
+          <button class="playerNode" style="left:72%;top:53%" data-player="maya" type="button">Keys<small>Maya</small></button>
+          <button class="playerNode" style="left:50%;top:72%" data-player="jordan" type="button">Lead Vocal<small>Jordan</small></button>
+        </div>
+        <p class="hint">The UI is a client. It never owns transport, player state, or future audio routing.</p>
+      </section>
+
+      <aside class="panel controls">
+        <span class="eyebrow">Personal control</span>
+        <h2 id="playerTitle">Select a player</h2>
+        <div id="monitorControls" class="hidden">
+          <label class="rangeLine"><span>Monitor <strong id="v-master"></strong></span><input data-monitor="master" type="range" min="0" max="100"></label>
+          <label class="rangeLine"><span>Me <strong id="v-self"></strong></span><input data-monitor="self" type="range" min="0" max="100"></label>
+          <label class="rangeLine"><span>Vocals <strong id="v-vocals"></strong></span><input data-monitor="vocals" type="range" min="0" max="100"></label>
+          <label class="rangeLine"><span>Band <strong id="v-band"></strong></span><input data-monitor="band" type="range" min="0" max="100"></label>
+          <label class="rangeLine"><span>Click <strong id="v-click"></strong></span><input data-monitor="click" type="range" min="0" max="100"></label>
+          <div class="pair"><button id="moreMe" type="button">More me</button><button id="lessClick" type="button">Less click</button></div>
+          <button id="muteMine" type="button">Mute mine</button>
+          <p class="guard">FOH and other player buses remain isolated.</p>
+        </div>
+
+        <section id="notationControls" class="notationBox hidden" aria-labelledby="notationTitle">
+          <div class="sectionHead compact"><div><span class="eyebrow">Derived performance view</span><h3 id="notationTitle">Auto notation</h3></div><span id="notationCount" class="tag">0 NOTES</span></div>
+          <label class="switchLine"><span>Capture notation</span><input id="notationEnabled" type="checkbox" checked></label>
+          <label>Quantize view <select id="notationGrid"><option>1/4</option><option>1/8</option><option selected>1/16</option><option>1/32</option></select></label>
+          <div id="notationPreview" class="notationPreview" aria-live="polite">No completed notes captured yet.</div>
+          <div class="pair"><button id="devNote" type="button">Add dev note</button><button id="clearNotation" type="button">Clear</button></div>
+          <a id="musicXml" class="buttonLink" href="#">Export MusicXML</a>
+          <p class="guard">Raw timing is preserved. Quantization changes only the notation view.</p>
+        </section>
+      </aside>
+    </section>
+
+    <section class="panel templatePanel" aria-labelledby="templateTitle">
+      <div class="sectionHead"><div><span class="eyebrow">Frontend slice 1</span><h2 id="templateTitle">Stage template editor</h2></div><span id="templateStatus" class="tag">LOCAL DRAFT</span></div>
+      <p class="hint">Design-only canvas. Edits auto-save locally. Save to the server to persist a revisioned draft; template operations never arm hardware or change show authority.</p>
+      <div class="templateToolbar" role="toolbar" aria-label="Stage template tools">
+        <label>Object type<select id="templateObjectType"><option value="performer">Performer</option><option value="microphone">Microphone</option><option value="monitor">Monitor</option><option value="speaker">Speaker</option><option value="light">Light</option><option value="marker">Marker</option></select></label>
+        <label>Label<input id="templateObjectLabel" maxlength="48" value="New object"></label>
+        <label>Template name<input id="templateName" maxlength="128" value="Untitled stage template"></label>
+        <button id="templateAdd" type="button" class="primary">Add object</button>
+        <button id="templateDelete" type="button" disabled>Delete selected</button>
+        <button id="templateExport" type="button">Export JSON</button>
+        <label class="buttonLike">Import JSON<input id="templateImport" type="file" accept="application/json" hidden></label>
+        <button id="templateReset" type="button">Reset draft</button>
+        <label>Saved templates<select id="templateSaved"><option value="">Select a saved template</option></select></label>
+        <button id="templateLoadSaved" type="button" disabled>Load saved</button>
+        <button id="templateSaveServer" type="button">Save to server</button>
+        <button id="templateDeleteServer" type="button" disabled>Delete saved</button>
+      </div>
+      <div class="templateLibrary" aria-labelledby="templateLibraryTitle">
+        <div class="sectionHead compact"><h3 id="templateLibraryTitle">Open template library</h3><span class="hint">Drag a preset onto the canvas or apply it</span></div>
+        <div id="templatePresets" class="templatePresets"></div>
+      </div>
+      <div id="templateCanvas" class="templateCanvas" tabindex="0" aria-label="Editable stage template canvas"><span class="templateEmpty">Add an object to begin a local stage layout.</span></div>
+      <p id="templateHint" class="hint" role="status">Select an object to edit or delete it. Drag objects to position them.</p>
+    </section>
+
+    <section class="panel readinessPanel" aria-labelledby="readinessTitle">
+      <div class="sectionHead">
+        <div><span class="eyebrow">Qualification boundary</span><h2 id="readinessTitle">Readiness overview</h2></div>
+        <span class="tag readinessTag">SOFTWARE READY</span>
+      </div>
+      <p class="hint">This view summarizes available evidence. It never arms hardware or turns a software check into a physical qualification claim.</p>
+      <div class="readinessGrid">
+        <article class="readinessCard ready"><strong>Software suite</strong><span>Native ownership, lifecycle, MIDI, conversion</span><b>Validated</b></article>
+        <article class="readinessCard ready"><strong>macOS runtime</strong><span>CoreAudio playback, capture, selected-loss</span><b>Validated</b></article>
+        <article class="readinessCard pending"><strong>Physical loopback</strong><span>Breakbox, audible return, latency/dropout soak</span><b>Hardware required</b></article>
+        <article class="readinessCard pending"><strong>Deployed browser</strong><span>LAN/TLS/IdP and assistive-technology exercise</span><b>Deployment required</b></article>
+      </div>
+    </section>
+
+    <section class="layout lower">
+      <section class="panel systemPanel">
+        <div class="sectionHead"><div><span class="eyebrow">Graceful degradation</span><h2>System capacity</h2></div><span id="modeTag" class="tag">FULL</span></div>
+        <label class="rangeLine"><span>Available capacity <strong id="capacityValue">78%</strong></span><input id="capacity" type="range" min="0" max="100" value="78"></label>
+        <label>Protection mode <select id="systemMode"><option value="full">Full</option><option value="reduced">Reduced</option><option value="safe">Safe Show</option><option value="audio">Audio Only</option></select></label>
+        <div id="protectionSummary" class="status"></div><p id="runtimePlan" class="hint">Loading adapter plan…</p>
+        <details class="midiBox" open>
+          <summary>DAW arrangement</summary>
+          <p id="dawStatus" class="hint">Loading portable session…</p>
+          <div class="pair"><label>Track name<input id="dawTrackName" type="text" maxlength="128" placeholder="Lead vocal"></label><button id="dawAddTrack" type="button">Add track</button></div>
+          <div class="pair"><label>Clip source URI<input id="dawClipUri" type="text" placeholder="media/take.wav"></label><label>Track<select id="dawClipTrack"></select></label></div>
+          <div class="pair"><label>Start seconds<input id="dawClipStart" type="number" min="0" step="0.001" value="0"></label><label>Duration seconds<input id="dawClipDuration" type="number" min="0.001" step="0.001" value="4"></label></div>
+          <button id="dawAddClip" type="button">Add non-destructive clip</button>
+          <label class="rangeLine"><span>Timeline window <strong id="dawZoomValue">60 seconds</strong></span><input id="dawZoom" type="range" min="5" max="300" step="5" value="60"></label><label>Clip snap<select id="dawSnap"><option value="off">Off</option><option value="sixteenth">1/16 note</option><option value="beat" selected>Beat</option><option value="bar">Bar</option></select></label>
+          <div class="pair"><label>Marker name<input id="dawMarkerName" type="text" maxlength="128" placeholder="Chorus"></label><label>Marker seconds<input id="dawMarkerSeconds" type="number" min="0" step="0.001" value="0"></label></div><div class="pair"><label>Marker kind<select id="dawMarkerKind"><option value="section">Section</option><option value="cue">Cue</option><option value="note">Note</option></select></label><button id="dawMarkerAdd" type="button">Add marker</button></div><div id="dawMarkers" class="dawMarkers" aria-label="Timeline markers"></div>
+          <div id="dawTracks" class="dawTimeline" aria-live="polite"></div>
+          <div class="subPanel"><strong>Volume automation</strong><div class="pair"><label>Track<select id="dawAutomationTrack"></select></label><label>Point ID<input id="dawAutomationPoint" type="text" readonly placeholder="New point"></label></div><div class="pair"><label>Seconds<input id="dawAutomationSeconds" type="number" min="0" step="0.001" value="0"></label><label>Gain<input id="dawAutomationValue" type="number" min="0" max="2" step="0.01" value="1"></label></div><div class="pair"><button id="dawAutomationSave" type="button">Add or update point</button><button id="dawAutomationDelete" type="button" disabled>Delete selected point</button></div><div id="dawAutomationLane" class="dawAutomationLane" aria-label="Volume automation lane"></div><p id="dawAutomationStatus" class="hint" role="status" aria-live="polite">Linear gain automation; 1.0 is unity.</p></div>
+          <button id="dawAutomationNew" type="button">New automation point</button>
+          <div class="pair"><label>Selected clip<input id="dawSelectedClip" type="text" readonly placeholder="Click a clip"></label><label>Edit seconds<input id="dawEditSeconds" type="number" min="0.001" step="0.001" value="0.1"></label></div>
+          <div id="dawWaveform" class="dawWaveform" aria-live="polite"><span>Select a WAV clip to inspect its peaks.</span></div>
+          <div class="pair"><button id="dawTrimStart" type="button">Trim start</button><button id="dawSplit" type="button">Split at playhead</button></div>
+          <div class="pair"><button id="dawFade" type="button">Apply fades</button><button id="dawUndo" type="button">Undo</button></div>
+          <button id="dawRedo" type="button">Redo</button>
+          <button id="dawPreviewPlan" type="button">Validate one-minute render plan</button>
+          <div class="subPanel"><strong>Production</strong><div class="pair"><label>Export name<input id="dawExportName" type="text" value="mix.wav"></label><label>Bit depth<select id="dawExportBits"><option>16</option><option selected>24</option><option>32</option></select></label></div><div class="pair"><button id="dawRender" type="button">Render WAV</button><button id="dawAutosave" type="button">Autosave</button></div><div class="pair"><label>Start seconds<input id="dawPlaybackBegin" type="number" min="0" step="0.001" value="0"></label><label>End seconds<input id="dawPlaybackEnd" type="number" min="0.001" step="0.001" value="60"></label></div><div class="transportGrid"><button id="dawPlaybackStart" type="button">Play range</button><button id="dawPlaybackLoop" type="button">Loop range</button><button id="dawPlaybackStop" type="button">Stop</button></div><div class="pair"><label>Beat<input id="dawBeat" type="number" min="0" step="0.25" value="4"></label><button id="dawLocateBeat" type="button">Locate beat</button></div><div class="pair"><button id="dawPrepareTake" type="button">Prepare selected-track take</button><button id="dawScanPlugins" type="button">Scan plugin adapters</button></div><label>Finish capture as (optional)<input id="captureFinishName" type="text" placeholder="new-take.wav"></label><div class="transportGrid"><button id="dawCaptureStart" type="button">Arm + record track 1</button><button id="dawCaptureFinish" type="button">Finish</button><button id="dawCaptureAbort" type="button">Abort</button></div><div class="pair"><button id="dawProductionRefresh" type="button">Refresh production status</button><button id="dawTempCleanup" type="button">Clean abandoned temporary files</button></div><p id="dawProductionStatus" class="hint" role="status" aria-live="polite">No render, take, or plugin scan yet.</p></div>
+          <div class="subPanel">
+            <strong>Interrupted recordings</strong>
+            <p class="hint">Recover a separate copy. Originals are kept; recovered audio may have gaps.</p>
+            <button id="recoveryScan" type="button">Find interrupted recordings</button>
+            <label>Recording<select id="recoveryFile" disabled aria-label="Interrupted recording"></select></label>
+            <button id="recoveryCreate" type="button" disabled>Recover copy</button>
+            <p id="recoveryStatus" class="hint" role="status" aria-live="polite">No scan yet.</p>
+          </div>
+          <p id="dawPlan" class="guard">Edits reference source media; they do not rewrite it or arm playback.</p>
+        </details>
+        <details class="midiBox" open>
+          <summary>Audio output</summary>
+          <div class="sectionHead compact midiHead"><p id="audioBackend" class="hint">Loading native audio discovery…</p><button id="scanAudio" type="button">Scan</button></div>
+          <div id="audioDevices" class="midiDevices" aria-live="polite"></div>
+          <label class="rangeLine"><span>Output limiter ceiling <strong id="limiterValue">-1 dBFS</strong></span><input id="limiterCeiling" type="range" min="-24" max="0" step="0.5" value="-1"></label>
+          <label><input id="allowOutputRateConversion" type="checkbox"> Allow bounded sinc conversion between the 192 kHz graph and this output</label>
+          <div class="pair"><button id="activateAudio" type="button">Activate selected output</button><button id="deactivateAudio" type="button">Deactivate output</button></div>
+          <button id="recoverAudio" type="button">Rescan and recover output</button>
+          <p id="audioStreamStatus" class="hint">Execution stream not queried yet.</p>
+          <div id="audioOutputSlots" class="midiDevices" aria-live="polite"></div>
+          <div class="subPanel">
+            <strong>Audio input</strong>
+            <p id="audioInputStatus" class="hint">No capture stream queried yet.</p>
+            <div id="audioInputSlots" class="midiDevices" aria-live="polite"></div>
+            <label>Player source<select id="audioInputPlayer"><option value="">Unassigned source</option></select></label>
+            <label><input id="allowInputRateConversion" type="checkbox"> Allow bounded sinc conversion from this input into the 192 kHz graph</label>
+            <div class="pair"><label>FOH graph output<input id="audioInputRouteOutput" type="number" min="0" max="15" value="0"></label><label>FOH route gain<input id="audioInputRouteGain" type="number" min="0" max="4" step="0.05" value="0"></label></div>
+            <div class="pair"><button id="saveAudioInputRoute" type="button">Save input route</button><button id="activateAudioInput" type="button">Activate selected input</button></div>
+            <button id="deactivateAudioInput" type="button">Deactivate input</button>
+            <button id="recoverAudioInput" type="button">Rescan and recover input</button>
+          </div>
+          <p class="guard">Output and input selection are persistent desired state. Physical streams are separate explicit actions. A nonzero persisted input route requires a second acknowledgement before capture starts.</p>
+        </details>
+        <details class="midiBox">
+          <summary>MIDI inputs</summary>
+          <div class="sectionHead compact midiHead"><p id="midiBackend" class="hint">Loading native MIDI discovery…</p><button id="scanMidi" type="button">Scan</button></div>
+          <div id="midiDevices" class="midiDevices" aria-live="polite"></div>
+          <div class="subPanel midiLearnPanel"><div class="sectionHead compact"><div><span class="eyebrow">Touch one control</span><h3>MIDI Learn</h3></div><span id="midiLearnState" class="tag">READY</span></div><label>What should it control?<select id="midiLearnTarget"></select></label><div class="pair"><label>Beat sync<select id="midiLearnQuantize"><option value="off">Immediate</option><option>1/4</option><option>1/8</option><option selected>1/16</option><option>1/32</option></select></label><label>Scale<select id="midiLearnScale"><option selected>major</option><option>minor</option><option>chromatic</option></select></label></div><label class="switchLine"><span>Follow master key</span><input id="midiLearnKeySync" type="checkbox" checked></label><div class="pair"><button id="midiLearnStart" class="primary" type="button">Learn next control</button><button id="midiLearnCancel" type="button">Cancel</button></div><p id="midiLearnHint" class="hint">Choose a target, click Learn, then move one knob, slider, or pad.</p><div id="midiMappings" class="midiDevices" aria-live="polite"></div></div>
+          <p class="guard">Bindings are desired state. A mapped device can disappear and reconnect without changing the player role.</p>
+        </details>
+        <details class="midiBox">
+          <summary>Lighting network</summary>
+          <div class="pair"><label>Protocol<select id="lightingProtocol"><option value="artnet">Art-Net</option><option value="sacn">sACN / E1.31</option></select></label><label>Unicast target<input id="lightingTarget" type="text" inputmode="decimal" placeholder="127.0.0.1"></label></div>
+          <div class="pair"><label>UDP port<input id="lightingPort" type="number" min="1" max="65535" value="6454"></label><label>sACN universe base<input id="lightingUniverseBase" type="number" min="1" max="63984" value="1"></label></div>
+          <div class="pair"><button id="saveLightingNetwork" type="button">Save target</button><button id="armLighting" type="button">Arm physical output</button></div>
+          <p id="lightingNetworkStatus" class="hint">Physical lighting output is disarmed.</p>
+          <p class="guard">Art-Net and sACN use explicit unicast targets only. Saving a target never transmits; arming is transient and resets on restart or reconfiguration. Semantic fixture intent resolves through the active venue patch before it reaches DMX.</p>
+        </details>
+        <details class="midiBox">
+          <summary>Technology openness</summary>
+          <p id="technologyOpenStatus" class="hint">Loading technology openness policy…</p>
+          <div class="pair"><label>Ecosystem participants<input id="technologyParticipants" type="number" min="1" max="1000000" value="1"></label><button id="saveTechnologyScale" type="button">Update scale</button></div>
+          <div id="technologyExtensions" class="midiDevices" aria-live="polite"></div>
+          <p class="guard">Experimentation stays permissionless as scale grows. The evidence threshold rises only for promotion to Standard or mandatory Core. Unknown extension fields are preserved, and no vendor, cloud service, or AI provider may become mandatory through normal promotion.</p>
+        </details>
+        <details class="midiBox">
+          <summary>Community governance</summary>
+          <p id="communityGovernanceStatus" class="hint">Loading time-decayed community governance…</p>
+          <div id="communityGovernanceProposals" class="midiDevices" aria-live="polite"></div>
+          <p class="guard">Raw account votes remain one vote each. Hype contributes zero yes/no weight; only the durable fraction matures with proposal age. Ballot windows are fixed when admin email delivery is accepted.</p>
+        </details>
+        <details class="midiBox">
+          <summary>Compatibility</summary>
+          <button id="hardwareRescan" type="button">Scan hardware and find drivers</button>
+          <p id="hardwareDiagnosisStatus" role="status">Scan this server's USB devices for OS driver guidance.</p>
+          <div id="hardwareDiagnosisDevices" class="midiDevices"></div>
+          <details>
+            <summary>Check an ALSA audio configuration</summary>
+            <p class="hint">Checks the server's hardware PCM without starting audio. The check briefly opens the device and may report busy.</p>
+            <label>Hardware address <input id="audioProbeAddress" value="hw:0,0" placeholder="hw:0,0"></label>
+            <label>Direction <select id="audioProbeDirection"><option value="playback">Playback</option><option value="capture">Capture</option></select></label>
+            <label>Sample rate <input id="audioProbeRate" type="number" value="48000" min="8000" max="384000"></label>
+            <label>Channels <input id="audioProbeChannels" type="number" value="2" min="1" max="32"></label>
+            <label>Period frames <input id="audioProbePeriod" type="number" value="256" min="16" max="8192"></label>
+            <label>Device format <select id="audioProbeFormat"><option>FLOAT_LE</option><option>S32_LE</option><option>S24_3LE</option><option>S16_LE</option></select></label>
+            <button id="audioProbeRun" type="button">Check configuration</button>
+            <p id="audioProbeStatus" role="status">No configuration checked.</p>
+          </details>
+          <p id="compatibilityStatus" class="hint">Loading UPP compatibility contract…</p>
+          <div id="compatibilityDetails" class="midiDevices" aria-live="polite"></div>
+          <div class="pair"><button id="venuePreflight" type="button">Venue preflight</button><button id="venueLiveVerify" type="button">Verify discovered hardware</button></div>
+          <p id="venueCompatibilityStatus" class="hint">No venue compatibility plan calculated.</p>
+          <div id="venueCompatibilityDetails" class="midiDevices" aria-live="polite"></div>
+          <div class="pair"><button id="venueAdaptPropose" type="button">Propose adaptation</button><button id="venueAdaptCommitBar" type="button">Commit next bar</button></div>
+          <div class="pair"><button id="venueAdaptCommitNow" type="button">Commit now</button><button id="venueAdaptRollback" type="button">Rollback active</button></div>
+          <p id="venueAdaptationStatus" class="hint">No venue adaptation transaction active.</p>
+          <div id="venueAdaptationDetails" class="midiDevices" aria-live="polite"></div>
+          <div class="pair"><button id="venueReconcileCheck" type="button">Verify realization</button><button id="venueReconcileRepair" type="button">Propose repair</button></div>
+          <p id="venueReconciliationStatus" class="hint">No active Venue Patch Layer to reconcile.</p>
+          <div id="venueReconciliationDetails" class="midiDevices" aria-live="polite"></div>
+          <div class="pair"><label>Authority scope<input id="venueAuthorityScope" type="text" placeholder="audio.foh"></label><label>Temporary holder<input id="venueAuthorityGrantee" type="text" placeholder="production"></label></div>
+          <button id="venueAuthorityGrant" type="button">Lease authority 5 min</button>
+          <div id="venueAuthorityLeases" class="midiDevices" aria-live="polite"></div>
+          <p class="guard">The show and venue remain separate documents. Preflight uses the venue profile's declared capabilities; live verification can replace expectation with discovery evidence. Adaptation commits atomically swap the Venue Patch Layer and never arm physical outputs automatically. Reconciliation then compares the committed mapping with current venue/discovery state and fresh adapter evidence; drift and authority conflicts are reported rather than silently corrected.</p>
+        </details>
+        <details class="midiBox" id="profilePanel">
+          <summary>User profile & interoperability consent</summary>
+          <p id="profileStatus" class="hint">Loading local profile…</p>
+          <div class="pair"><label>Interface density<select id="profileDensity"><option value="comfortable">Comfortable</option><option value="compact">Compact</option></select></label><label>Contrast<select id="profileContrast"><option value="standard">Standard</option><option value="high">High</option></select></label></div>
+          <label class="switchLine"><span>Reduce motion</span><input id="profileReducedMotion" type="checkbox"></label>
+          <label>Control layout token<input id="profileLayout" type="text" maxlength="128" placeholder="performer-default"></label>
+          <button id="saveProfile" type="button">Save durable preferences</button>
+          <div class="subPanel"><strong>Projection preview</strong><p id="projectionStatus" class="hint">No cross-system displacement detected.</p><div id="projectionValues" class="midiDevices"></div></div>
+          <p class="guard">User and accessibility choices are durable. Venue/session displacement is previewed and requires explicit consent; saving preferences never arms hardware.</p>
+        </details>
+        <details class="midiBox">
+          <summary>Node authority</summary>
+          <p id="nodeAuthorityDetail" class="hint">Loading primary/standby authority…</p>
+          <p id="failoverDetail" class="hint">Loading heartbeat/failover state…</p>
+          <p id="witnessDetail" class="hint">Witness quorum not configured.</p>
+          <div class="pair"><button id="toggleNodeRole" type="button">Make standby</button><button id="promoteFailover" type="button" disabled>Promote after failure</button></div>
+          <a class="buttonLink" href="/api/v1/replication/export" target="_blank" rel="noopener">Export replica envelope</a>
+          <p class="guard">With witness quorum configured, authority is leased rather than assumed. Lease loss fences the old primary. Promotion never restores audio or lighting authority.</p>
+        </details>
+      </section>
+
+      <section class="panel eventsPanel">
+        <div class="sectionHead"><div><span class="eyebrow">Authoritative backend</span><h2>Activity</h2></div><div class="tags"><span id="revision" class="tag">REV --</span><span id="nativeStatus" class="tag">NATIVE --</span><span id="nodeStatus" class="tag">NODE --</span><span id="clockStatus" class="tag">CLOCK --</span><span id="streamMode" class="tag">CONNECTING</span><span id="connection" class="tag">CONNECTING</span></div></div>
+        <div id="events" class="events" aria-live="polite"></div>
+      </section>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+  <script src="/arrangement.js"></script>
+  <script src="/markers.js"></script>
+  <script src="/automation.js"></script>
+  <script src="/production.js"></script>
+  <script src="/recovery.js"></script>
+  <script src="/stage-template.js"></script>
+  <script src="/mockup-console.js"></script>
+</body>
+</html>
