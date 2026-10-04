@@ -84,6 +84,8 @@ class NativeProtocolTests(unittest.TestCase):
             self.assertEqual(hello["midiClock24Ppqn"], "1")
             self.assertEqual(hello["effectChain"], "1")
             self.assertEqual(hello["physicalPcmConversion"], "1")
+            self.assertEqual(hello["captureIngress"], "1")
+            self.assertEqual(hello["nativeCaptureOwner"], "1" if os.name == "nt" or sys.platform == "darwin" else "0")
             self.assertEqual(hello["leUwbHub"], "1")
             self.assertEqual(hello["leIsoHardware"], "1")
             self.assertEqual(hello["uwbHardwareBridge"], "1")

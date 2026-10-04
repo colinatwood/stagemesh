@@ -85,6 +85,11 @@
 namespace {
 
 constexpr std::string_view kEngineVersion{"5.0"};
+#if defined(_WIN32) || defined(__APPLE__)
+constexpr std::string_view kNativeCaptureOwnerIntegrated{"1"};
+#else
+constexpr std::string_view kNativeCaptureOwnerIntegrated{"0"};
+#endif
 constexpr std::size_t kAudioInputSlots = 4;
 constexpr std::size_t kAudioOutputSlots = 4;
 using EngineEffectDelayTransaction=stageforge::EffectDelayTransaction<kAudioOutputSlots,16,65536>;
@@ -804,7 +809,7 @@ int main(int argc, char** argv) {
             continue;
         }
         if (command == "HELLO") {
-            ok(std::string("engineVersion=") + std::string(kEngineVersion) + " protocol=1 coreControl=1 showEvents=1 showLoop=1 cueState=1 automationState=1 parameterRegistry=1 cueActions=1 runtimeShow=1 routingTx=1 coreJournal=1 shadowPlanner=1 shadowPrebuffer=1 plannedHandoff=1 effectChain=1 canonicalAudio=1 physicalPcmConversion=1 leUwbHub=1 leIsoHardware=1 uwbHardwareBridge=1 userProfile=1 interoperabilityHandshake=1 authenticatedInteropSession=1 profileProjection=1 hardwareBench=1 sessionChannel=1 localIpc=1 persistentSecurity=1 isolatedPluginHost=1 platformQualification=1 realtimeAudit=1 realtimeQualification=" + std::string(stageforge::RealtimeAudit::qualification_enabled()?"1":"0") + " ingressAudit=1 dawSession=1 dawRenderPlan=1 dawMedia=1 dawEditHistory=1 dawRenderer=1 dawRecording=1 dawTempoMap=1 dawMediaLibrary=1 dawPluginCatalog=1 dawRecovery=1 dawStreamRenderer=1 dawPlaybackPrefetch=1 dawRecordingSpool=1 dawPlaybackQueue=1 dawMultitrackCapture=1 dawArrangementProducer=1 dawPcmBlockTransfer=1 dawCaptureDrain=1 dawPunchLoopCapture=1 pluginDelayCompensation=1 pluginDelayGraph=1 midiLearnMapping=1 masterMusicalSync=1 nativeMidiPerformance=1 samplerVoiceEngine=1 transportDiscipline=1 midiClock24Ppqn=1 engineRate=192000 sampleFormat=float32");
+            ok(std::string("engineVersion=") + std::string(kEngineVersion) + " protocol=1 coreControl=1 showEvents=1 showLoop=1 cueState=1 automationState=1 parameterRegistry=1 cueActions=1 runtimeShow=1 routingTx=1 coreJournal=1 shadowPlanner=1 shadowPrebuffer=1 plannedHandoff=1 effectChain=1 canonicalAudio=1 physicalPcmConversion=1 captureIngress=1 nativeCaptureOwner=" + std::string(kNativeCaptureOwnerIntegrated) + " leUwbHub=1 leIsoHardware=1 uwbHardwareBridge=1 userProfile=1 interoperabilityHandshake=1 authenticatedInteropSession=1 profileProjection=1 hardwareBench=1 sessionChannel=1 localIpc=1 persistentSecurity=1 isolatedPluginHost=1 platformQualification=1 realtimeAudit=1 realtimeQualification=" + std::string(stageforge::RealtimeAudit::qualification_enabled()?"1":"0") + " ingressAudit=1 dawSession=1 dawRenderPlan=1 dawMedia=1 dawEditHistory=1 dawRenderer=1 dawRecording=1 dawTempoMap=1 dawMediaLibrary=1 dawPluginCatalog=1 dawRecovery=1 dawStreamRenderer=1 dawPlaybackPrefetch=1 dawRecordingSpool=1 dawPlaybackQueue=1 dawMultitrackCapture=1 dawArrangementProducer=1 dawPcmBlockTransfer=1 dawCaptureDrain=1 dawPunchLoopCapture=1 pluginDelayCompensation=1 pluginDelayGraph=1 midiLearnMapping=1 masterMusicalSync=1 nativeMidiPerformance=1 samplerVoiceEngine=1 transportDiscipline=1 midiClock24Ppqn=1 engineRate=192000 sampleFormat=float32");
             continue;
         }
         if (command == "PING") {
