@@ -22,7 +22,7 @@ add_subdirectory(native)
 # Keep release artifacts explicit and reproducible. Cross builds may package the
 # linked binaries, but runtime qualification still belongs on matching hosts.
 include(GNUInstallDirs)
-install(TARGETS stageforge_engine stageforge_core
+install(TARGETS stagemesh_engine stageforge_core
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
