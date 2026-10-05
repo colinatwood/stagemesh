@@ -111,7 +111,7 @@ mutex.unlock();
 delete[] values;
 }
 const auto status=audit.status();
-#ifdef STAGEFORGE_RT_QUALIFICATION
+#ifdef STAGEMESH_RT_QUALIFICATION
 SF_CHECK(status.qualification_enabled&&status.allocation_attempts>=1&&status.allocated_bytes>=sizeof(int)*16&&status.lock_attempts>=1);
 #else
 SF_CHECK(!status.qualification_enabled&&status.allocation_attempts==0&&status.lock_attempts==0);
@@ -1719,7 +1719,7 @@ int main() {
             while(!done.load())std::this_thread::yield();
         }
         worker.join();
-#ifdef STAGEFORGE_RT_QUALIFICATION
+#ifdef STAGEMESH_RT_QUALIFICATION
         SF_CHECK(outer.status().allocation_attempts==2&&outer.status().allocated_bytes==40);
         SF_CHECK(inner.status().allocation_attempts==1&&inner.status().allocated_bytes==16);
         SF_CHECK(inner.status().lock_attempts==1&&outer.status().lock_attempts==0);

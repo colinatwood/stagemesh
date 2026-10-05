@@ -4,7 +4,7 @@ Build and run the clean software gate before installation. Stage into a temporar
 root first:
 
 ```sh
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DSTAGEFORGE_BUILD_TESTS=ON
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DSTAGEMESH_BUILD_TESTS=ON
 cmake --build build
 DESTDIR=/tmp/stageforge-stage STAGEFORGE_BUILD_DIR="$PWD/build" sh scripts/install-linux.sh
 ```

@@ -86,7 +86,7 @@ cmake --build build --config Release
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-Hosted macOS CI additionally configures `-DSTAGEFORGE_DEVICE_ASAN=ON`.
+Hosted macOS CI additionally configures `-DSTAGEMESH_DEVICE_ASAN=ON`.
 
 Historical continuation: [Checkpoint 78 guarded lifecycle and manual rendering](backlog-checkpoint-78.md).
 

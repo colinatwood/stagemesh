@@ -76,7 +76,7 @@ show hardware attached; the existing tests are not a production monitoring tool.
 ## Native sanitizer gate
 
 `scripts/sanitizer-check.py` creates a fresh Debug CMake tree with
-`STAGEFORGE_ENABLE_SANITIZERS=ON`, builds all native targets, and runs CTest under
+`STAGEMESH_ENABLE_SANITIZERS=ON`, builds all native targets, and runs CTest under
 AddressSanitizer and UndefinedBehaviorSanitizer with halt-on-error behavior. The
 default disables LeakSanitizer because traced/containerized environments may deny
 the `/proc` task inspection it requires. Run `--detect-leaks` on an untraced Linux

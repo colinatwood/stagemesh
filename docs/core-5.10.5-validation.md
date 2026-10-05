@@ -19,7 +19,7 @@ configured and built its own new temporary tree rather than reusing prior object
 ## Results
 
 `python3 scripts/release-check.py` passed with Release configuration and
-`STAGEFORGE_RT_QUALIFICATION=ON`. The gate now supplies
+`STAGEMESH_RT_QUALIFICATION=ON`. The gate now supplies
 `STAGEFORGE_REQUIRE_RT_QUALIFICATION=1`, requiring the native handshake to advertise
 enabled probes. Outside release mode, protocol tests accept either probe mode
 provided the handshake and audit status agree.

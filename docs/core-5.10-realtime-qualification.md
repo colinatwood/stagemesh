@@ -1,6 +1,6 @@
 # Core 5.10 real-time qualification instrumentation
 
-Core 5.10 makes two important real-time assumptions measurable in qualification builds: the native render callback should not allocate memory and should not acquire mutexes. Configure with `-DSTAGEFORGE_RT_QUALIFICATION=ON`; normal builds leave the probes compiled out. The developer-alpha release gate enables them explicitly.
+Core 5.10 makes two important real-time assumptions measurable in qualification builds: the native render callback should not allocate memory and should not acquire mutexes. Configure with `-DSTAGEMESH_RT_QUALIFICATION=ON`; normal builds leave the probes compiled out. The developer-alpha release gate enables them explicitly.
 
 `RealtimeQualificationScope` marks only the render callback thread and publishes violations into its existing per-output `RealtimeAudit`. C++ `new`/`new[]` requests record an attempt and requested byte count. On Linux, link-time wrapping of `pthread_mutex_lock` records mutex acquisition attempts. Reporting uses relaxed atomics and remains outside the callback.
 

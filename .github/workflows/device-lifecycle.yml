@@ -26,7 +26,7 @@ jobs:
         run: cmake -S native -B build
       - name: Configure macOS native device library with ASan
         if: runner.os == 'macOS'
-        run: cmake -S native -B build -DSTAGEFORGE_DEVICE_ASAN=ON
+        run: cmake -S native -B build -DSTAGEMESH_DEVICE_ASAN=ON
       - name: Build native device library
         run: cmake --build build --config Release
       - name: Record qualification availability without requesting capture access

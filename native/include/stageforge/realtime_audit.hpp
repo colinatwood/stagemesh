@@ -10,7 +10,7 @@ public:
  void note_allocation(std::uint64_t bytes)noexcept{allocation_attempts_.fetch_add(1,std::memory_order_relaxed);allocated_bytes_.fetch_add(bytes,std::memory_order_relaxed);}void note_lock_attempt()noexcept{lock_attempts_.fetch_add(1,std::memory_order_relaxed);}
  Status status()const noexcept{return{callbacks_.load(),deadline_misses_.load(),consecutive_.load(),max_duration_.load(),nonfinite_.load(),queue_pressure_.load(),optional_shed_.load(),recovery_.load(),allocation_attempts_.load(),allocated_bytes_.load(),lock_attempts_.load(),overload_.load(),qualification_enabled(),false};}
  static constexpr bool qualification_enabled()noexcept{
-#ifdef STAGEFORGE_RT_QUALIFICATION
+#ifdef STAGEMESH_RT_QUALIFICATION
  return true;
 #else
  return false;

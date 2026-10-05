@@ -32,7 +32,7 @@ def main():
         with tempfile.TemporaryDirectory(prefix="stageforge-release-") as temporary:
             build = Path(temporary) / "build"
             run(["cmake", "-S", str(ROOT), "-B", str(build), "-DCMAKE_BUILD_TYPE=Release",
-                 "-DSTAGEFORGE_BUILD_TESTS=ON", "-DSTAGEFORGE_RT_QUALIFICATION=ON"])
+                 "-DSTAGEMESH_BUILD_TESTS=ON", "-DSTAGEMESH_RT_QUALIFICATION=ON"])
             run(["cmake", "--build", str(build), "--parallel", "2"])
             run(["ctest", "--test-dir", str(build), "--output-on-failure"])
             engine = build / "native" / "stagemesh_engine"

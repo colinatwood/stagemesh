@@ -24,7 +24,7 @@ This keeps email delivery realistic: an already-sent email is not pretended away
 
 Validated on 2026-09-14:
 
-- fresh Release + `STAGEFORGE_RT_QUALIFICATION=ON` native build;
+- fresh Release + `STAGEMESH_RT_QUALIFICATION=ON` native build;
 - native CTest: **2/2 passed**;
 - full Python suite against that engine: **559 tests passed**;
 - focused community-governance suite: **18 tests passed**;

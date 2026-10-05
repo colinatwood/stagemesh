@@ -32,11 +32,11 @@ target_include_directories(stageforge_core
         ${PROJECT_SOURCE_DIR}/include
 )
 
-if(STAGEFORGE_RT_QUALIFICATION)
+if(STAGEMESH_RT_QUALIFICATION)
     if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        message(FATAL_ERROR "STAGEFORGE_RT_QUALIFICATION currently supports Linux only; disable it for ordinary builds")
+        message(FATAL_ERROR "STAGEMESH_RT_QUALIFICATION currently supports Linux only; disable it for ordinary builds")
     endif()
-    target_compile_definitions(stageforge_core PUBLIC STAGEFORGE_RT_QUALIFICATION=1)
+    target_compile_definitions(stageforge_core PUBLIC STAGEMESH_RT_QUALIFICATION=1)
     if(UNIX AND NOT APPLE)
         target_link_options(stageforge_core INTERFACE -Wl,--wrap=pthread_mutex_lock)
     endif()
@@ -65,7 +65,7 @@ else()
     target_compile_options(stagemesh_engine PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
-if(STAGEFORGE_BUILD_TESTS)
+if(STAGEMESH_BUILD_TESTS)
     enable_testing()
     add_executable(stageforge_native_tests tests/native_tests.cpp)
     target_link_libraries(stageforge_native_tests PRIVATE stageforge_core)

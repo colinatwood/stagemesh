@@ -54,7 +54,7 @@ The machine-readable report says `referenceOnly: true` and `physicalIndependence
 
 Validated on 2026-09-14:
 
-- fresh Release + `STAGEFORGE_RT_QUALIFICATION=ON` native build;
+- fresh Release + `STAGEMESH_RT_QUALIFICATION=ON` native build;
 - native CTest: **2/2 passed**;
 - full Python suite against that engine: **555 tests passed with zero skips**;
 - focused witness/infrastructure/installer group: **71 tests passed**;

@@ -97,7 +97,7 @@ jobs:
 
       - name: Build native engine
         run: |
-          cmake -S . -B build-desktop-native -DCMAKE_BUILD_TYPE=Release -DSTAGEFORGE_BUILD_TESTS=OFF
+          cmake -S . -B build-desktop-native -DCMAKE_BUILD_TYPE=Release -DSTAGEMESH_BUILD_TESTS=OFF
           cmake --build build-desktop-native --config Release --parallel 2
 
       - name: Build bundled runtime sidecars
