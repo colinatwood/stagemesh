@@ -20,11 +20,28 @@ The first published installers will be unsigned until the project signing
 secrets and certificates are configured. Unsigned packages are for development
 and controlled testing only.
 
-Each CI artifact includes `SHA256SUMS` plus `desktop-artifacts.json`. Verify the
-checksum for the installer before running it. The JSON inventory records the
+Each CI artifact includes `SHA256SUMS`, `desktop-artifacts.json`, and a
+self-contained `verify-download.py`. After downloading and extracting one
+platform artifact, verify the complete bundle before running an installer:
+
+```sh
+python verify-download.py --directory .
+```
+
+The verifier rejects missing, changed, or unexpected files; cross-checks the
+manifest and checksum list; and binds `signing-verification.json` to the exact
+manifest when that report is present. The JSON inventory records the
 product version, source commit, platform, byte count, and SHA-256 digest for every packaged file;
 it also preserves the explicit unsigned, clean-host, and physical-hardware
 qualification boundaries.
+
+Because the verifier and checksums arrive in the same download, a pass detects
+corruption and inconsistent contents but does not authenticate the publisher.
+Only execute the bundled script when you already trust the download channel;
+otherwise use trusted system checksum tooling and obtain expected digests over
+a separate trusted channel. Use platform signature verification for publisher
+authenticity. A pass is not signing, notarization, legal, clean-host,
+accessibility, or physical audio/MIDI qualification.
 
 The Node and Rust desktop dependency graphs are pinned by committed lockfiles.
 CI verifies `Cargo.toml` against `Cargo.lock` with Cargo's locked mode before

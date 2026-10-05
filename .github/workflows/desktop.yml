@@ -17,6 +17,7 @@ on:
       - "scripts/desktop-release-readiness.py"
       - "scripts/desktop-signing-readiness.py"
       - "scripts/desktop-signing-verification.py"
+      - "scripts/verify-desktop-download.py"
       - "scripts/desktop-runtime-smoke.py"
       - "docs/desktop-release-readiness.md"
       - "tests/test_desktop_artifact_manifest.py"
@@ -24,6 +25,7 @@ on:
       - "tests/test_desktop_release_readiness.py"
       - "tests/test_desktop_signing_readiness.py"
       - "tests/test_desktop_signing_verification.py"
+      - "tests/test_desktop_download_verifier.py"
       - "tests/test_desktop_version.py"
       - "scripts/verify-desktop-version.py"
       - ".github/workflows/desktop.yml"
@@ -45,6 +47,7 @@ on:
       - "scripts/desktop-release-readiness.py"
       - "scripts/desktop-signing-readiness.py"
       - "scripts/desktop-signing-verification.py"
+      - "scripts/verify-desktop-download.py"
       - "scripts/desktop-runtime-smoke.py"
       - "docs/desktop-release-readiness.md"
       - "tests/test_desktop_artifact_manifest.py"
@@ -52,6 +55,7 @@ on:
       - "tests/test_desktop_release_readiness.py"
       - "tests/test_desktop_signing_readiness.py"
       - "tests/test_desktop_signing_verification.py"
+      - "tests/test_desktop_download_verifier.py"
       - "tests/test_desktop_version.py"
       - "scripts/verify-desktop-version.py"
       - ".github/workflows/desktop.yml"
@@ -189,6 +193,12 @@ jobs:
           --commit "$GITHUB_SHA"
           --version "$(python -c 'import json; print(json.load(open("desktop/package.json"))["version"])')"
 
+      - name: Include offline download verifier
+        shell: bash
+        run: >-
+          cp scripts/verify-desktop-download.py
+          desktop/src-tauri/target/release/bundle/verify-download.py
+
       - name: Record installer checksums and qualification boundary
         shell: bash
         run: >-
@@ -222,6 +232,12 @@ jobs:
             --tag "$release_tag" \
             --manifest desktop/src-tauri/target/release/bundle/desktop-artifacts.json \
             --dependency-inventory desktop/src-tauri/target/release/bundle/desktop-dependencies.json
+
+      - name: Verify complete downloadable bundle
+        shell: bash
+        run: >-
+          python scripts/verify-desktop-download.py
+          --directory desktop/src-tauri/target/release/bundle
 
       - name: Upload installer artifacts
         uses: actions/upload-artifact@v4

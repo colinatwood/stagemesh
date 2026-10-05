@@ -53,6 +53,28 @@ installer, an owner must complete each separate gate and retain its evidence:
 The CI desktop workflow runs this preflight after writing each unsigned
 artifact manifest. Its JSON is a review aid, not a release approval.
 
+## Download integrity verification
+
+Each platform bundle includes `verify-download.py`, and the script itself is
+listed in `desktop-artifacts.json` and `SHA256SUMS`. CI runs the verifier after
+the manifest and signing report are complete. It fails closed for missing,
+changed, unexpected, unsafe, or inconsistently described files and for a
+signing report bound to a different manifest.
+
+Run it from an extracted artifact with Python 3 and no third-party packages:
+
+```sh
+python verify-download.py --directory .
+```
+
+This verifies internal consistency against metadata delivered in the same
+download. It is useful corruption evidence, not publisher authentication or a
+substitute for a trusted release channel, native signature verification,
+notarization, legal review, clean-host testing, accessibility review, or
+physical audio/MIDI qualification. Do not execute a bundled verifier from an
+untrusted source; use trusted system tooling and separately obtained digests
+until the download channel has been authenticated.
+
 ## Locked dependency inventory
 
 Every desktop CI bundle contains `desktop-dependencies.json`. The report binds
