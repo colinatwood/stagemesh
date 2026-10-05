@@ -108,7 +108,7 @@ impl RuntimeSupervisor {
             .env("STAGEFORGE_DATA_DIR", &data_dir)
             .env("STAGEFORGE_FRONTEND_DIR", resource_dir.join("frontend"))
             .env("STAGEFORGE_RUNTIME_MODE", "desktop")
-            .env("STAGEFORGE_NATIVE_ENGINE", &native_engine)
+            .env("STAGEMESH_NATIVE_ENGINE", &native_engine)
             .env("STAGEFORGE_REQUIRE_API_TOKEN", "1")
             .env("STAGEFORGE_API_TOKEN", &api_token)
             .env("STAGEFORGE_DESKTOP_SESSION_TOKEN", &bootstrap_token)

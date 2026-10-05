@@ -36,7 +36,7 @@ def _sha256_file(path: Path) -> str:
 
 def _find_engine() -> Path:
     candidates=[]
-    env = os.environ.get("STAGEFORGE_NATIVE_ENGINE")
+    env = os.environ.get("STAGEMESH_NATIVE_ENGINE")
     if env:
         candidates.append(Path(env))
     candidates += [

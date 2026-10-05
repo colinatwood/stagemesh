@@ -411,7 +411,7 @@ class PeerReplicationTransportTests(unittest.TestCase):
                 "STAGEFORGE_REPLICATION_SECRET": secret.decode(),
                 "STAGEFORGE_REPLICATION_INTERVAL_SECONDS": "0.05",
                 "STAGEFORGE_REPLICATION_HEARTBEAT_SECONDS": "0.10",
-                "STAGEFORGE_NATIVE_ENGINE": "off",
+                "STAGEMESH_NATIVE_ENGINE": "off",
             }
             with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", env, clear=False):
                 runtime = StageForgeRuntime(Path(tmp))
@@ -667,7 +667,7 @@ class WitnessRuntimeFencingTests(unittest.TestCase):
                 "STAGEFORGE_WITNESS_SECRET": secret.decode(),
                 "STAGEFORGE_WITNESS_TTL_MS": "500",
                 "STAGEFORGE_WITNESS_TIMEOUT_SECONDS": "0.1",
-                "STAGEFORGE_NATIVE_ENGINE": "off",
+                "STAGEMESH_NATIVE_ENGINE": "off",
             }
             with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", env, clear=False):
                 runtime = StageForgeRuntime(Path(tmp))
@@ -718,7 +718,7 @@ class AutomaticFailoverTests(unittest.TestCase):
                 "STAGEFORGE_WITNESS_SECRET": secret.decode(), "STAGEFORGE_CLUSTER_ID": "show-auto",
                 "STAGEFORGE_WITNESS_TTL_MS": "500", "STAGEFORGE_AUTO_FAILOVER": "1",
                 "STAGEFORGE_FAILOVER_SUSPECT_MS": "100", "STAGEFORGE_FAILOVER_PROMOTE_MS": "200",
-                "STAGEFORGE_NATIVE_ENGINE": "off",
+                "STAGEMESH_NATIVE_ENGINE": "off",
             }
             with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", env, clear=False):
                 runtime = StageForgeRuntime(Path(tmp))

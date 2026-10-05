@@ -106,13 +106,13 @@ On ordinary crash recovery the current show state is recovered with transport he
 When `build/native/stagemesh_engine` exists, the bridge starts it automatically. Override the path with:
 
 ```bash
-STAGEFORGE_NATIVE_ENGINE=/path/to/stagemesh_engine ./scripts/run.sh
+STAGEMESH_NATIVE_ENGINE=/path/to/stagemesh_engine ./scripts/run.sh
 ```
 
 Disable native integration explicitly with:
 
 ```bash
-STAGEFORGE_NATIVE_ENGINE=off ./scripts/run.sh
+STAGEMESH_NATIVE_ENGINE=off ./scripts/run.sh
 ```
 
 The engine currently accepts a small line protocol over stdin/stdout:

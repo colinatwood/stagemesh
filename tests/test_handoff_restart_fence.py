@@ -42,7 +42,7 @@ class HandoffRestartFenceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "handoff-acquisition-fence.json"
             path.write_text("{incomplete")
-            with patch.dict("os.environ", {"STAGEFORGE_NODE_ROLE": "primary", "STAGEFORGE_WITNESS_URLS": "", "STAGEFORGE_NATIVE_ENGINE": "off"}):
+            with patch.dict("os.environ", {"STAGEFORGE_NODE_ROLE": "primary", "STAGEFORGE_WITNESS_URLS": "", "STAGEMESH_NATIVE_ENGINE": "off"}):
                 runtime = StageForgeRuntime(Path(directory))
                 try:
                     self.assertEqual(runtime.replication.role, "standby")
