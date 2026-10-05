@@ -220,7 +220,8 @@ jobs:
           fi
           python scripts/desktop-release-readiness.py \
             --tag "$release_tag" \
-            --manifest desktop/src-tauri/target/release/bundle/desktop-artifacts.json
+            --manifest desktop/src-tauri/target/release/bundle/desktop-artifacts.json \
+            --dependency-inventory desktop/src-tauri/target/release/bundle/desktop-dependencies.json
 
       - name: Upload installer artifacts
         uses: actions/upload-artifact@v4

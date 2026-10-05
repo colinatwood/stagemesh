@@ -67,6 +67,13 @@ so an entry is not proof that package bytes are present in every installer.
 The report deliberately keeps payload inclusion, dependency-license review,
 and owner/legal approval false until separate evidence is completed.
 
+The release preflight parses that inventory and fails closed on malformed
+components or counts, unsafe input paths, duplicate package identifiers, or any
+claim that its SBOM, payload, license, or legal-review boundaries are complete.
+For built bundles it also requires the inventory version and source commit to
+match the artifact manifest and verifies the manifest's exact byte count and
+SHA-256 entry for `desktop-dependencies.json`.
+
 ## Signing input preflight
 
 `desktop-signing-readiness.py` records whether the expected credential names
