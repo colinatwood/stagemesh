@@ -75,3 +75,31 @@ GitHub Actions **secrets**. It expects non-secret mode, thumbprint, timestamp,
 Azure account/profile, and API-key path configuration in Actions **variables**.
 The preflight sees only the mapped environment for its runner and writes only
 the names of present or missing inputs.
+
+## Exact-artifact signing verification
+
+`desktop-signing-verification.py` is the second, independent signing boundary.
+It reads the generated `desktop-artifacts.json`, discovers the platform package
+files or bundles, re-hashes every manifest entry represented by each selected
+artifact, records the SHA-256 of that exact manifest in the report, and then
+invokes the native verifier for the configured platform:
+
+- Windows: Authenticode `signtool verify /pa /all`.
+- macOS: `codesign`, `spctl`, or `pkgutil` according to the exact bundle type.
+- Linux: remains blocked until the owner selects a package/repository signing
+  policy and its verification adapter.
+
+The workflow runs this report in advisory mode while
+`STAGEMESH_SIGNING_VERIFICATION_MODE` is unset. Set that Actions variable to
+`required` only after the provider, signing step, and verifier tool are all
+configured; a missing verifier, manifest mismatch, or rejected signature then
+fails the desktop job. The report never changes `desktop-artifacts.json`'s
+`signed` or qualification fields, and a verified signature still does not
+establish legal approval, clean-host installation, or physical audio/MIDI
+qualification.
+
+`signing-verification.json` is an evidence sidecar rather than a packaged-file
+entry. It is deliberately excluded from `desktop-artifacts.json` and
+`SHA256SUMS` to avoid a self-referential checksum cycle. CI must not regenerate
+the artifact manifest after verification; the report's `artifactManifest`
+SHA-256 binds it to the immutable manifest it actually checked.

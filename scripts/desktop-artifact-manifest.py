@@ -12,7 +12,11 @@ import sys
 
 MANIFEST_NAME = "desktop-artifacts.json"
 CHECKSUM_NAME = "SHA256SUMS"
-EXCLUDED_NAMES = frozenset({MANIFEST_NAME, CHECKSUM_NAME})
+SIGNING_VERIFICATION_NAME = "signing-verification.json"
+# The verification report binds to this manifest, so including that report in
+# the manifest would create a self-referential checksum cycle. Keep all three
+# release-metadata sidecars outside the packaged-file inventory.
+EXCLUDED_NAMES = frozenset({MANIFEST_NAME, CHECKSUM_NAME, SIGNING_VERIFICATION_NAME})
 VERSION_PATTERN = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$")
 
 

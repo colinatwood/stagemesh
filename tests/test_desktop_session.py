@@ -16,10 +16,10 @@ from dev_server import StageForgeHandler, StageForgeHTTPServer
 class DesktopSessionTests(unittest.TestCase):
     def setUp(self):
         self.environment = patch.dict(os.environ, {
-            "STAGEFORGE_RUNTIME_MODE": "desktop",
-            "STAGEFORGE_REQUIRE_API_TOKEN": "1",
-            "STAGEFORGE_API_TOKEN": "a" * 64,
-            "STAGEFORGE_DESKTOP_SESSION_TOKEN": "b" * 64,
+            "STAGEMESH_RUNTIME_MODE": "desktop",
+            "STAGEMESH_REQUIRE_API_TOKEN": "1",
+            "STAGEMESH_API_TOKEN": "a" * 64,
+            "STAGEMESH_DESKTOP_SESSION_TOKEN": "b" * 64,
         }, clear=False)
         self.environment.start()
         self.server = StageForgeHTTPServer(("127.0.0.1", 0), StageForgeHandler)
@@ -42,7 +42,7 @@ class DesktopSessionTests(unittest.TestCase):
 
     def test_bootstrap_exchanges_one_launch_token_for_http_only_cookie(self):
         status, headers, _ = self.request("POST", "/desktop/session", {
-            "X-StageForge-Desktop-Token": "b" * 64,
+            "X-StageMesh-Desktop-Token": "b" * 64,
         })
         self.assertEqual(status, 200)
         cookie = headers["Set-Cookie"]
@@ -53,9 +53,25 @@ class DesktopSessionTests(unittest.TestCase):
 
     def test_missing_or_wrong_bootstrap_token_is_denied(self):
         for token in (None, "wrong"):
-            headers = {} if token is None else {"X-StageForge-Desktop-Token": token}
+            headers = {} if token is None else {"X-StageMesh-Desktop-Token": token}
             status, _, _ = self.request("POST", "/desktop/session", headers)
             self.assertEqual(status, 403)
+
+    def test_legacy_desktop_contract_is_not_accepted(self):
+        status, _, _ = self.request("POST", "/desktop/session", {
+            "X-StageForge" + "-Desktop-Token": "b" * 64,
+        })
+        self.assertEqual(status, 403)
+        with patch.dict(os.environ, {
+            "STAGEMESH_RUNTIME_MODE": "",
+            "STAGEMESH_DESKTOP_SESSION_TOKEN": "",
+            "STAGEFORGE" + "_RUNTIME_MODE": "desktop",
+            "STAGEFORGE" + "_DESKTOP_SESSION_TOKEN": "b" * 64,
+        }, clear=False):
+            status, _, _ = self.request("POST", "/desktop/session", {
+                "X-StageMesh-Desktop-Token": "b" * 64,
+            })
+        self.assertEqual(status, 403)
 
 
 if __name__ == "__main__":

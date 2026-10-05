@@ -105,13 +105,13 @@ impl RuntimeSupervisor {
         let mut command = Command::new(&executable);
         command
             .args(["--host", "127.0.0.1", "--port", port_text.as_str()])
-            .env("STAGEFORGE_DATA_DIR", &data_dir)
-            .env("STAGEFORGE_FRONTEND_DIR", resource_dir.join("frontend"))
-            .env("STAGEFORGE_RUNTIME_MODE", "desktop")
+            .env("STAGEMESH_DATA_DIR", &data_dir)
+            .env("STAGEMESH_FRONTEND_DIR", resource_dir.join("frontend"))
+            .env("STAGEMESH_RUNTIME_MODE", "desktop")
             .env("STAGEMESH_NATIVE_ENGINE", &native_engine)
-            .env("STAGEFORGE_REQUIRE_API_TOKEN", "1")
-            .env("STAGEFORGE_API_TOKEN", &api_token)
-            .env("STAGEFORGE_DESKTOP_SESSION_TOKEN", &bootstrap_token)
+            .env("STAGEMESH_REQUIRE_API_TOKEN", "1")
+            .env("STAGEMESH_API_TOKEN", &api_token)
+            .env("STAGEMESH_DESKTOP_SESSION_TOKEN", &bootstrap_token)
             .stdin(Stdio::null())
             .stdout(Stdio::from(stdout))
             .stderr(Stdio::from(stderr));

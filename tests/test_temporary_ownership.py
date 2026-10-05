@@ -15,6 +15,8 @@ class TemporaryOwnershipTests(unittest.TestCase):
             with patch("temporary_ownership.os.fsync",side_effect=observed):
                 owner=ownership.create_owner_manifest(owner_path,resource,resource_class="render-output",purpose="test")
             self.assertEqual(owner["schemaVersion"],2);self.assertEqual(owner["resourceIdentity"]["inode"],resource.stat().st_ino)
+            if sys.platform.startswith("linux"):
+                self.assertIsInstance(owner.get("procfsPid"),int)
             self.assertGreaterEqual(len(calls),2);self.assertEqual(ownership.classify_owner(owner_path,resource,resource_class="render-output")[0],"live")
             self.assertFalse(any(path.name.endswith('.tmp') for path in root.iterdir()))
 
@@ -50,6 +52,14 @@ class TemporaryOwnershipTests(unittest.TestCase):
             ownership.create_owner_manifest(owner_path,resource,resource_class="render-output",purpose="test");owner=json.loads(owner_path.read_text());owner["pid"]=99999999;owner_path.write_text(json.dumps(owner))
             self.assertEqual(ownership.classify_owner(owner_path,resource,resource_class="render-output")[0],"reclaimable")
             self.assertIsNotNone(ownership.recheck_reclaimable(owner_path,resource,resource_class="render-output"))
+
+    def test_malformed_procfs_identity_fails_closed(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root=Path(raw);resource=root/"resource";resource.write_bytes(b"x");owner_path=root/"owner.json"
+            ownership.create_owner_manifest(owner_path,resource,resource_class="render-output",purpose="test")
+            owner=json.loads(owner_path.read_text());owner["procfsPid"]="not-an-integer";owner_path.write_text(json.dumps(owner))
+            self.assertEqual(ownership.classify_owner(owner_path,resource,resource_class="render-output")[0],"unknown-owner")
+            self.assertIsNone(ownership.recheck_reclaimable(owner_path,resource,resource_class="render-output"))
 
 
 if __name__=="__main__":unittest.main()

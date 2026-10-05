@@ -21,8 +21,27 @@ MANIFEST_SCHEMA_VERSION = 2
 MANIFEST_DOCUMENT_TYPE = "org.stageforge.temporary-resource-owner"
 
 
-def process_identity(pid: int | None = None) -> dict[str, Any]:
-    pid = os.getpid() if pid is None else int(pid)
+def _proc_start_ticks(raw: str) -> tuple[int, int]:
+    """Return procfs PID and start ticks without splitting a spaced comm field."""
+    close = raw.rfind(")")
+    if close < 0:
+        raise ValueError("malformed proc stat")
+    procfs_pid = int(raw[:raw.find(" ")])
+    fields_after_comm = raw[close + 2:].split()
+    # Field 3 (state) is index zero here; starttime is proc stat field 22.
+    return procfs_pid, int(fields_after_comm[19])
+
+
+def _namespace_pids(raw: str) -> list[int]:
+    for line in raw.splitlines():
+        if line.startswith("NSpid:"):
+            return [int(value) for value in line.split()[1:]]
+    return []
+
+
+def process_identity(pid: int | None = None, *, procfs_pid: int | None = None) -> dict[str, Any]:
+    requested_pid = os.getpid() if pid is None else int(pid)
+    pid = requested_pid
     result: dict[str, Any] = {"pid": pid}
     if platform.system() == "Darwin":
         try:
@@ -45,8 +64,26 @@ def process_identity(pid: int | None = None) -> dict[str, Any]:
         except (OSError, ValueError, subprocess.SubprocessError):
             return result
     try:
-        result["bootId"] = Path("/proc/sys/kernel/random/boot_id").read_text().strip()
-        result["processStartTicks"] = int(Path(f"/proc/{pid}/stat").read_text().split()[21])
+        boot_id = Path("/proc/sys/kernel/random/boot_id").read_text().strip()
+        if procfs_pid is None and requested_pid == os.getpid():
+            stat_path = Path("/proc/self/stat")
+            status_path = Path("/proc/self/status")
+        else:
+            target = requested_pid if procfs_pid is None else int(procfs_pid)
+            stat_path = Path(f"/proc/{target}/stat")
+            status_path = Path(f"/proc/{target}/status")
+        observed_procfs_pid, started = _proc_start_ticks(stat_path.read_text())
+        namespace_pids = _namespace_pids(status_path.read_text())
+        if namespace_pids:
+            if requested_pid not in namespace_pids:
+                return result
+        elif requested_pid != observed_procfs_pid:
+            return result
+        result.update({
+            "bootId": boot_id,
+            "processStartTicks": started,
+            "procfsPid": observed_procfs_pid,
+        })
     except (OSError, ValueError, IndexError):
         pass
     return result
@@ -62,7 +99,10 @@ def owner_live(owner: Any) -> bool | None:
         return None
     if type(owner.get("processStartTicks")) is not int:
         return None
-    current = process_identity(owner["pid"])
+    procfs_pid = owner.get("procfsPid")
+    if procfs_pid is not None and (type(procfs_pid) is not int or procfs_pid <= 0):
+        return None
+    current = process_identity(owner["pid"], procfs_pid=procfs_pid)
     if "bootId" not in current or "processStartTicks" not in current:
         try:
             os.kill(owner["pid"], 0)

@@ -2188,13 +2188,13 @@ class StageForgeRuntime:
         return state, deduplicated
 
     def arm_lighting_network(self, data: dict[str, Any]) -> dict[str, Any]:
-        if bool(data.get("armed", False)) and not self._has_authority():
-            raise RuntimeError("node lacks authoritative lease for physical lighting output")
-        if not self.native.available:
-            raise RuntimeError("native lighting output unavailable")
         armed = bool(data.get("armed", False))
         if armed and data.get("acknowledgePhysicalOutput") is not True:
             raise ValueError("arming lighting output requires acknowledgePhysicalOutput=true")
+        if armed and not self._has_authority():
+            raise RuntimeError("node lacks authoritative lease for physical lighting output")
+        if not self.native.available:
+            raise RuntimeError("native lighting output unavailable")
         network = ((self.state.snapshot().get("lighting") or {}).get("network") or {})
         mapped_network = self._mapped_lighting_execution()
         execution_network = mapped_network or network

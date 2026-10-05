@@ -81,7 +81,7 @@
     globalThis.history.replaceState(null, "", globalThis.location.pathname + globalThis.location.search);
     return fetch("/desktop/session", {
       method: "POST",
-      headers: {"X-StageForge-Desktop-Token": token}
+      headers: {"X-StageMesh-Desktop-Token": token}
     }).then(async (response) => {
       if (response.ok) return;
       const result = await response.json().catch(() => ({}));

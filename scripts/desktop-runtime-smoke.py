@@ -70,13 +70,13 @@ def main() -> int:
         log_path = root / "runtime.log"
         environment = os.environ.copy()
         environment.update({
-            "STAGEFORGE_DATA_DIR": str(root / "data"),
-            "STAGEFORGE_FRONTEND_DIR": str(frontend),
-            "STAGEFORGE_RUNTIME_MODE": "desktop",
+            "STAGEMESH_DATA_DIR": str(root / "data"),
+            "STAGEMESH_FRONTEND_DIR": str(frontend),
+            "STAGEMESH_RUNTIME_MODE": "desktop",
             "STAGEMESH_NATIVE_ENGINE": str(native_engine),
-            "STAGEFORGE_REQUIRE_API_TOKEN": "1",
-            "STAGEFORGE_API_TOKEN": api_token,
-            "STAGEFORGE_DESKTOP_SESSION_TOKEN": bootstrap_token,
+            "STAGEMESH_REQUIRE_API_TOKEN": "1",
+            "STAGEMESH_API_TOKEN": api_token,
+            "STAGEMESH_DESKTOP_SESSION_TOKEN": bootstrap_token,
         })
         with log_path.open("wb") as log:
             process = subprocess.Popen(
@@ -115,7 +115,7 @@ def main() -> int:
                     raise RuntimeError(f"native engine is unavailable: {native_payload}")
 
                 session_status, session_headers, _ = request(port, "POST", "/desktop/session", {
-                    "X-StageForge-Desktop-Token": bootstrap_token,
+                    "X-StageMesh-Desktop-Token": bootstrap_token,
                 })
                 cookie = session_headers.get("Set-Cookie", "")
                 if session_status != 200 or "HttpOnly" not in cookie or "SameSite=Strict" not in cookie:

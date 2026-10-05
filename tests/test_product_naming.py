@@ -46,6 +46,20 @@ class ProductNamingTests(unittest.TestCase):
         legacy_variable = "STAGEFORGE" + "_NATIVE_ENGINE"
         self.assertEqual(self._live_source_offenders(legacy_variable), [])
 
+    def test_desktop_runtime_contract_uses_stagemesh_identity(self):
+        legacy_contracts = (
+            "STAGEFORGE" + "_RUNTIME_MODE",
+            "STAGEFORGE" + "_DESKTOP_SESSION_TOKEN",
+            "X-StageForge" + "-Desktop-Token",
+        )
+        offenders = []
+        for legacy_contract in legacy_contracts:
+            offenders.extend(
+                f"{path}:{legacy_contract}"
+                for path in self._live_source_offenders(legacy_contract)
+            )
+        self.assertEqual(offenders, [])
+
     def test_live_sources_do_not_restore_legacy_build_contracts(self):
         legacy_contracts = (
             "STAGEFORGE" + "_BUILD_TESTS",
