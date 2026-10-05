@@ -31,7 +31,7 @@ jobs:
       - name: Stage install tree
         run: |
           mkdir -p dist/rootfs
-          DESTDIR="$PWD/dist/rootfs" STAGEFORGE_BUILD_DIR="$PWD/build" ./scripts/install-linux.sh
+          DESTDIR="$PWD/dist/rootfs" STAGEMESH_BUILD_DIR="$PWD/build" ./scripts/install-linux.sh
       - name: Create archive and checksums
         run: |
           tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner -C dist/rootfs -czf dist/stagemesh-linux.tar.gz .

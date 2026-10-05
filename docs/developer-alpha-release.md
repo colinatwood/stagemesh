@@ -97,7 +97,8 @@ coverage must remain experimental until end-to-end qualification exists.
 ## Staged Linux installation
 
 The service unit currently supports only `/usr`. The installer accepts an absolute
-`DESTDIR` for package staging and `STAGEFORGE_BUILD_DIR` for the selected build.
+`DESTDIR` for package staging and `STAGEMESH_BUILD_DIR` for the selected build
+(the legacy `STAGEFORGE_BUILD_DIR` name remains accepted for upgrade scripts).
 It does not create the service account, enable/start a service, or activate devices.
 Unsupported prefixes and missing engines fail before destination creation.
 The staged smoke tests use a placeholder engine to validate packaging independently;

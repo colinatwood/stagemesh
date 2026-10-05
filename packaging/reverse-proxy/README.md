@@ -1,7 +1,7 @@
 # Reviewed TLS reverse-proxy contract
 
 StageForge does not terminate public/private-LAN TLS in the Python bridge. For a
-reviewed remote browser deployment, keep `stageforge.service` bound to loopback and
+reviewed remote browser deployment, keep `stagemesh.service` bound to loopback and
 select `STAGEFORGE_DEPLOYMENT_PROFILE=proxy-https`.
 
 The edge proxy MUST:
@@ -25,7 +25,7 @@ The edge proxy MUST:
 9. apply an ingress/firewall policy outside StageForge rather than teaching the
    bridge to trust `X-Forwarded-For` or other forwarded peer headers.
 
-`packaging/stageforge-proxy.env.example` contains the non-secret service settings.
+`packaging/stagemesh-proxy.env.example` contains the non-secret service settings.
 The credential and authorization files must satisfy StageForge's existing private
 file checks. A root-owned parent directory with atomic, service-UID-owned 0600 file
 replacement is the expected rotation pattern.
@@ -33,7 +33,7 @@ replacement is the expected rotation pattern.
 Run on the proxy/backend host after deployment:
 
 ```sh
-/usr/libexec/stageforge/stageforge-http-qualify.py \
+/usr/libexec/stagemesh/stageforge-http-qualify.py \
   --backend-url http://127.0.0.1:8765 \
   --edge-url https://stage-console.internal
 ```

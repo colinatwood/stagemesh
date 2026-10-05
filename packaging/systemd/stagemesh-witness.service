@@ -1,0 +1,36 @@
+[Unit]
+Description=StageMesh Independent Witness
+After=local-fs.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=stageforge
+Group=stageforge
+StateDirectory=stageforge
+RuntimeDirectory=stageforge
+Environment=STAGEFORGE_WITNESS_INDEPENDENT=1
+Environment=STAGEFORGE_WITNESS_HOST=127.0.0.1
+Environment=STAGEFORGE_WITNESS_DATA=/var/lib/stageforge/witness/leases.json
+EnvironmentFile=-/etc/stageforge/witness.env
+ExecStart=/usr/bin/python3 /usr/share/stagemesh/backend/witness_server.py
+Restart=on-failure
+RestartSec=2
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectControlGroups=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+RestrictNamespaces=true
+RestrictSUIDSGID=true
+LockPersonality=true
+SystemCallArchitectures=native
+ReadWritePaths=/var/lib/stageforge /run/stageforge
+RestrictAddressFamilies=AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target

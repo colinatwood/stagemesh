@@ -50,12 +50,12 @@ def qualify(*, build_dir: Path) -> dict[str, Any]:
 
     with tempfile.TemporaryDirectory(prefix="stageforge-package-qual-") as raw:
         stage = Path(raw) / "rootfs"
-        env = {**os.environ, "DESTDIR": str(stage), "PREFIX": "/usr", "STAGEFORGE_BUILD_DIR": str(build_dir)}
+        env = {**os.environ, "DESTDIR": str(stage), "PREFIX": "/usr", "STAGEMESH_BUILD_DIR": str(build_dir)}
 
         first = _run(["sh", str(ROOT / "scripts/install-linux.sh")], env=env)
         (stage / "etc").mkdir(parents=True, exist_ok=True)
-        _run(["systemd-sysusers", f"--root={stage}", str(stage / "usr/lib/sysusers.d/stageforge.conf")])
-        _run(["systemd-tmpfiles", f"--root={stage}", "--create", str(stage / "usr/lib/tmpfiles.d/stageforge.conf")])
+        _run(["systemd-sysusers", f"--root={stage}", str(stage / "usr/lib/sysusers.d/stagemesh.conf")])
+        _run(["systemd-tmpfiles", f"--root={stage}", "--create", str(stage / "usr/lib/tmpfiles.d/stagemesh.conf")])
         uid, gid = _account_ids(stage)
 
         state_dir = stage / "var/lib/stageforge"
@@ -66,29 +66,29 @@ def qualify(*, build_dir: Path) -> dict[str, Any]:
             raise RuntimeError("staged state directory ownership does not match the stageforge account")
 
         required = [
-            stage / "usr/libexec/stageforge/stagemesh_engine",
-            stage / "usr/libexec/stageforge/stageforge-qualify.py",
-            stage / "usr/libexec/stageforge/stageforge-package-qualify.py",
-            stage / "usr/libexec/stageforge/stageforge-qualification-plan.py",
-            stage / "usr/libexec/stageforge/stageforge-qualification-review.py",
-            stage / "usr/libexec/stageforge/stageforge-qualification-status.py",
-            stage / "usr/libexec/stageforge/stageforge-device-permissions.py",
-            stage / "usr/share/stageforge/backend/dev_server.py",
-            stage / "usr/share/stageforge/backend/witness_server.py",
-            stage / "usr/lib/systemd/system/stageforge.service",
-            stage / "usr/lib/systemd/system/stageforge-witness.service",
+            stage / "usr/libexec/stagemesh/stagemesh_engine",
+            stage / "usr/libexec/stagemesh/stageforge-qualify.py",
+            stage / "usr/libexec/stagemesh/stageforge-package-qualify.py",
+            stage / "usr/libexec/stagemesh/stageforge-qualification-plan.py",
+            stage / "usr/libexec/stagemesh/stageforge-qualification-review.py",
+            stage / "usr/libexec/stagemesh/stageforge-qualification-status.py",
+            stage / "usr/libexec/stagemesh/stageforge-device-permissions.py",
+            stage / "usr/share/stagemesh/backend/dev_server.py",
+            stage / "usr/share/stagemesh/backend/witness_server.py",
+            stage / "usr/lib/systemd/system/stagemesh.service",
+            stage / "usr/lib/systemd/system/stagemesh-witness.service",
         ]
         missing_installed = [str(path.relative_to(stage)) for path in required if not path.is_file()]
         if missing_installed:
             raise RuntimeError("staged install is missing files: " + ", ".join(missing_installed))
         for notice in ("LICENSE", "THIRD_PARTY_NOTICES.md"):
-            installed = stage / "usr/share/stageforge" / notice
+            installed = stage / "usr/share/stagemesh" / notice
             if not installed.is_file() or installed.read_bytes() != (ROOT / notice).read_bytes():
                 raise RuntimeError(f"installed notice missing or different: {notice}")
         if (stage / "etc/systemd/system/multi-user.target.wants").exists():
-            raise RuntimeError("installer must not enable StageForge services automatically")
+            raise RuntimeError("installer must not enable StageMesh services automatically")
 
-        _run(["systemd-analyze", "verify", str(ROOT / "packaging/systemd/stageforge.service"), str(ROOT / "packaging/systemd/stageforge-witness.service")])
+        _run(["systemd-analyze", "verify", str(ROOT / "packaging/systemd/stagemesh.service"), str(ROOT / "packaging/systemd/stagemesh-witness.service")])
 
         sentinel = state_dir / "qualification-sentinel.json"
         sentinel.write_text('{"preserve":true}\n')
@@ -98,7 +98,7 @@ def qualify(*, build_dir: Path) -> dict[str, Any]:
         if sentinel.read_bytes() != before:
             raise RuntimeError("reinstall modified persistent state")
 
-        helper = _run([sys.executable, str(stage / "usr/libexec/stageforge/stageforge-qualify.py")])
+        helper = _run([sys.executable, str(stage / "usr/libexec/stagemesh/stageforge-qualify.py")])
         try:
             helper_result = json.loads(helper.stdout)
         except json.JSONDecodeError as exc:
@@ -110,8 +110,8 @@ def qualify(*, build_dir: Path) -> dict[str, Any]:
         _run(["sh", str(ROOT / "scripts/uninstall-linux.sh")], env=uninstall_env)
         if not sentinel.is_file() or sentinel.read_bytes() != before:
             raise RuntimeError("ordinary uninstall did not preserve persistent state")
-        if (stage / "usr/share/stageforge").exists() or (stage / "usr/libexec/stageforge").exists():
-            raise RuntimeError("ordinary uninstall left StageForge program files behind")
+        if any((stage / path).exists() for path in ("usr/share/stagemesh", "usr/libexec/stagemesh", "usr/share/stageforge", "usr/libexec/stageforge")):
+            raise RuntimeError("ordinary uninstall left StageMesh program files behind")
 
         _run(["sh", str(ROOT / "scripts/uninstall-linux.sh"), "--purge-data"], env=uninstall_env)
         if state_dir.exists():
@@ -138,8 +138,8 @@ def qualify(*, build_dir: Path) -> dict[str, Any]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Qualify StageForge Linux packaging in an isolated staged rootfs")
-    parser.add_argument("--build-dir", default=os.environ.get("STAGEFORGE_BUILD_DIR", str(ROOT / "build")))
+    parser = argparse.ArgumentParser(description="Qualify StageMesh Linux packaging in an isolated staged rootfs")
+    parser.add_argument("--build-dir", default=os.environ.get("STAGEMESH_BUILD_DIR", os.environ.get("STAGEFORGE_BUILD_DIR", str(ROOT / "build"))))
     args = parser.parse_args()
     try:
         report = qualify(build_dir=Path(args.build_dir).resolve())

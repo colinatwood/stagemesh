@@ -20,7 +20,7 @@ For production, do not place all three witnesses on the primary/standby hosts, o
 
 ## Witness host configuration
 
-Install the StageForge package on each witness host, create a private keyring owned by the `stageforge` service account, and populate `/etc/stageforge/witness.env` from `packaging/stageforge-witness.env.example`.
+Install the StageMesh package on each witness host, create a private keyring owned by the legacy-compatible `stageforge` service account, and populate `/etc/stageforge/witness.env` from `packaging/stagemesh-witness.env.example`.
 
 Each host needs unique values for:
 
@@ -28,7 +28,7 @@ Each host needs unique values for:
 - `STAGEFORGE_WITNESS_FAILURE_DOMAIN`
 - `STAGEFORGE_WITNESS_KEYRING_FILE`
 
-Strict mode sets `STAGEFORGE_WITNESS_INDEPENDENT=1`. It refuses the legacy `STAGEFORGE_WITNESS_SECRET` / replication-secret fallback. The packaged `stageforge-witness.service` binds the Python witness server to loopback. Put an HTTPS reverse proxy in front of it and expose only that TLS endpoint to the StageForge performance nodes.
+Strict mode sets `STAGEFORGE_WITNESS_INDEPENDENT=1`. It refuses the legacy `STAGEFORGE_WITNESS_SECRET` / replication-secret fallback. The packaged `stagemesh-witness.service` binds the Python witness server to loopback. Put an HTTPS reverse proxy in front of it and expose only that TLS endpoint to the StageForge performance nodes.
 
 The witness keyring uses the same bounded rotating-keyring document as other cluster HMAC paths:
 
@@ -83,7 +83,7 @@ DNS is acceptable when its failure behavior is understood; fixed addresses are a
 Run:
 
 ```bash
-/usr/libexec/stageforge/stageforge-witness-qualify.py
+/usr/libexec/stagemesh/stageforge-witness-qualify.py
 ```
 
 or from a source checkout:
