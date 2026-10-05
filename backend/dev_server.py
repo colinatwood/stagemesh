@@ -963,6 +963,19 @@ class StageForgeHandler(BaseHTTPRequestHandler):
         try:
             body = self._read_json(4 * 1024 * 1024 if path == "/api/v1/replication/apply" else 64 * 1024)
             expected = self._expected_revision()
+            if path == "/api/v1/desktop/shutdown":
+                desktop_mode = self._credentials().get("STAGEMESH_RUNTIME_MODE", "").strip().lower() == "desktop"
+                try:
+                    loopback = ipaddress.ip_address(self.client_address[0]).is_loopback
+                except ValueError:
+                    loopback = False
+                if not desktop_mode or not loopback:
+                    raise PermissionError("desktop shutdown is available only to the local desktop runtime")
+                self.close_connection = True
+                self._json(202, {"status": "stopping", "physicalOutputsArmed": False})
+                self.wfile.flush()
+                threading.Thread(target=self.server.shutdown, daemon=True).start()
+                return
             if path == "/api/v1/hardware/audio-preflight":
                 self._json(200, RUNTIME.audio_hardware_preflight(body))
                 return

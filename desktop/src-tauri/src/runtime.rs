@@ -27,6 +27,8 @@ struct RuntimeInner {
     child: Option<Child>,
     status: RuntimeStatus,
     bootstrap_token: Option<String>,
+    api_token: Option<String>,
+    port: Option<u16>,
 }
 
 pub struct RuntimeSupervisor {
@@ -47,6 +49,8 @@ impl Default for RuntimeSupervisor {
                     error: None,
                 },
                 bootstrap_token: None,
+                api_token: None,
+                port: None,
             }),
         }
     }
@@ -142,6 +146,8 @@ impl RuntimeSupervisor {
         inner.status.state = "running".into();
         inner.child = Some(child);
         inner.bootstrap_token = Some(bootstrap_token);
+        inner.api_token = Some(api_token);
+        inner.port = Some(port);
         Ok(())
     }
 
@@ -177,6 +183,9 @@ impl RuntimeSupervisor {
                 inner.status.pid = None;
                 inner.status.error = Some(format!("runtime exited with {exit}"));
                 inner.child = None;
+                inner.bootstrap_token = None;
+                inner.api_token = None;
+                inner.port = None;
             }
             Some(Ok(None)) => inner.status.state = "running".into(),
             Some(Err(error)) => {
@@ -193,7 +202,18 @@ impl RuntimeSupervisor {
             return;
         };
         if let Some(mut child) = inner.child.take() {
-            let _ = child.kill();
+            let graceful = match (inner.port.take(), inner.api_token.take()) {
+                (Some(port), Some(api_token)) => request_graceful_shutdown(
+                    &mut child,
+                    port,
+                    &api_token,
+                    Duration::from_secs(2),
+                ),
+                _ => false,
+            };
+            if !graceful {
+                let _ = child.kill();
+            }
             let _ = child.wait();
         }
         if inner.status.state == "running" || inner.status.state == "starting" {
@@ -201,6 +221,8 @@ impl RuntimeSupervisor {
             inner.status.pid = None;
         }
         inner.bootstrap_token = None;
+        inner.api_token = None;
+        inner.port = None;
     }
 }
 
@@ -303,6 +325,43 @@ fn wait_until_ready(
         }
         thread::sleep(Duration::from_millis(100));
     }
+}
+
+fn request_graceful_shutdown(
+    child: &mut Child,
+    port: u16,
+    api_token: &str,
+    timeout: Duration,
+) -> bool {
+    let address = SocketAddr::from(([127, 0, 0, 1], port));
+    let Ok(mut stream) = TcpStream::connect_timeout(&address, Duration::from_millis(250)) else {
+        return false;
+    };
+    let _ = stream.set_read_timeout(Some(Duration::from_millis(500)));
+    let _ = stream.set_write_timeout(Some(Duration::from_millis(500)));
+    let request = format!(
+        "POST /api/v1/desktop/shutdown HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nX-StageForge-API-Token: {api_token}\r\nContent-Type: application/json\r\nContent-Length: 2\r\nConnection: close\r\n\r\n{{}}"
+    );
+    if stream.write_all(request.as_bytes()).is_err() {
+        return false;
+    }
+    let mut response = [0_u8; 512];
+    let Ok(count) = stream.read(&mut response) else {
+        return false;
+    };
+    let head = String::from_utf8_lossy(&response[..count]);
+    if !head.starts_with("HTTP/1.1 202 ") && !head.starts_with("HTTP/1.0 202 ") {
+        return false;
+    }
+    let deadline = Instant::now() + timeout;
+    while Instant::now() < deadline {
+        match child.try_wait() {
+            Ok(Some(_)) => return true,
+            Ok(None) => thread::sleep(Duration::from_millis(50)),
+            Err(_) => return false,
+        }
+    }
+    false
 }
 
 #[tauri::command]
