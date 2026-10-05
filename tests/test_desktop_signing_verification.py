@@ -58,6 +58,8 @@ class DesktopSigningVerificationTests(unittest.TestCase):
             )
             self.assertEqual(report["status"], "verified")
             self.assertEqual(report["exactArtifacts"][0]["verification"], "verified")
+            self.assertEqual(report["exactArtifacts"][0]["path"], "StageMesh-setup.exe")
+            self.assertNotIn(str(directory), json.dumps(report))
             self.assertEqual(report["artifactManifest"]["path"], "desktop-artifacts.json")
             self.assertEqual(
                 report["artifactManifest"]["sha256"],
@@ -122,6 +124,8 @@ class DesktopSigningVerificationTests(unittest.TestCase):
             )
             self.assertEqual(report["status"], "failed")
             self.assertEqual(report["exactArtifacts"][0]["status"], "failed")
+            self.assertEqual(report["exactArtifacts"][0]["path"], "missing.exe")
+            self.assertNotIn(str(directory), json.dumps(report))
 
     def test_artifact_outside_manifest_directory_fails_overall_verification(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -134,6 +138,11 @@ class DesktopSigningVerificationTests(unittest.TestCase):
             report = load_script().evaluate("Windows", manifest, [outside], environment={})
             self.assertEqual(report["status"], "failed")
             self.assertIn("outside manifest directory", " ".join(report["blockers"]))
+            self.assertEqual(report["exactArtifacts"][0]["path"], "StageMesh-setup.exe")
+            self.assertEqual(
+                report["exactArtifacts"][0]["pathScope"], "outside-manifest-directory"
+            )
+            self.assertNotIn(str(root), json.dumps(report))
 
 
 if __name__ == "__main__":

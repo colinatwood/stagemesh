@@ -103,6 +103,10 @@ invokes the native verifier for the configured platform:
 - Linux: remains blocked until the owner selects a package/repository signing
   policy and its verification adapter.
 
+Artifact references in the report are bundle-relative. Paths outside the
+manifest directory are reduced to a filename plus an explicit outside-directory
+scope, so CI workspace paths do not become part of portable release evidence.
+
 The workflow runs this report in advisory mode while
 `STAGEMESH_SIGNING_VERIFICATION_MODE` is unset. Set that Actions variable to
 `required` only after the provider, signing step, and verifier tool are all
