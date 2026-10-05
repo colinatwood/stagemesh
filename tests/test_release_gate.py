@@ -35,7 +35,7 @@ class ReleaseGateTests(unittest.TestCase):
 
     def test_missing_engine_cannot_silently_skip_native_tests(self):
         gate = module("release-python-tests")
-        with patch.dict(gate.os.environ, {"STAGEFORGE_NATIVE_ENGINE": ""}):
+        with patch.dict(gate.os.environ, {"STAGEMESH_NATIVE_ENGINE": ""}):
             self.assertEqual(gate.main(), 1)
 
     def test_automation_performance_report_matches_public_contract(self):

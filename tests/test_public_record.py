@@ -90,7 +90,7 @@ class PublicRecordRuntimeTests(unittest.TestCase):
             root = Path(tmp); secret = "external-witness-secret-" + "z" * 20
             policy_path = root / "witness-policy.json"
             policy_path.write_text(json.dumps({"version": 1, "quorum": 1, "witnesses": {"witness-a": secret}}), "utf-8"); os.chmod(policy_path, 0o600)
-            env = {"STAGEFORGE_NATIVE_ENGINE": "off", "STAGEFORGE_PUBLIC_RECORD_WITNESS_FILE": str(policy_path)}
+            env = {"STAGEMESH_NATIVE_ENGINE": "off", "STAGEFORGE_PUBLIC_RECORD_WITNESS_FILE": str(policy_path)}
             with patch.dict("os.environ", env, clear=False):
                 runtime = StageForgeRuntime(root / "runtime")
                 try:
@@ -109,7 +109,7 @@ class PublicRecordRuntimeTests(unittest.TestCase):
                     runtime.close()
 
     def test_authority_grant_and_revoke_return_public_record_references(self):
-        with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEFORGE_NATIVE_ENGINE": "off", "STAGEFORGE_PUBLIC_RECORD_WITNESS_FILE": ""}, clear=False):
+        with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEMESH_NATIVE_ENGINE": "off", "STAGEFORGE_PUBLIC_RECORD_WITNESS_FILE": ""}, clear=False):
             runtime = StageForgeRuntime(Path(tmp))
             try:
                 grant = runtime.venue_authority_grant({"scopeKind": "resource", "scope": "lighting-network", "grantee": "lighting", "ttlSeconds": 60})

@@ -39,7 +39,7 @@ def main():
             if not engine.is_file():
                 raise RuntimeError("Fresh native engine missing; refusing Python fallback")
             env = os.environ.copy()
-            env["STAGEFORGE_NATIVE_ENGINE"] = str(engine)
+            env["STAGEMESH_NATIVE_ENGINE"] = str(engine)
             env["STAGEFORGE_REQUIRE_RT_QUALIFICATION"] = "1"
             env["STAGEFORGE_DATA_DIR"] = str(Path(temporary) / "data")
             run([sys.executable, str(ROOT / "scripts/release-python-tests.py")], env)

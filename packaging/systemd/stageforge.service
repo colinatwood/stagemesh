@@ -9,7 +9,7 @@ Group=stageforge
 RuntimeDirectory=stageforge
 StateDirectory=stageforge
 Environment=STAGEFORGE_DATA_DIR=/var/lib/stageforge
-Environment=STAGEFORGE_NATIVE_ENGINE=/usr/libexec/stageforge/stagemesh_engine
+Environment=STAGEMESH_NATIVE_ENGINE=/usr/libexec/stageforge/stagemesh_engine
 EnvironmentFile=-/etc/stageforge/stageforge.env
 ExecStart=/usr/bin/python3 /usr/share/stageforge/backend/dev_server.py --host 127.0.0.1 --port 8765
 Restart=on-failure

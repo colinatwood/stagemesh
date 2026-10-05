@@ -216,7 +216,7 @@ class TechnologyStateTests(unittest.TestCase):
 
 class TechnologyRuntimeTests(unittest.TestCase):
     def test_runtime_assessment_uses_verified_persisted_scale_receipt(self):
-        with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEFORGE_NATIVE_ENGINE": "off"}, clear=False):
+        with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEMESH_NATIVE_ENGINE": "off"}, clear=False):
             runtime = StageForgeRuntime(Path(tmp))
             try:
                 runtime.state.patch_technology({"ecosystemParticipants": 5, "extensions": [standard_extension(groups=2)]})
@@ -235,7 +235,7 @@ class TechnologyRuntimeTests(unittest.TestCase):
                 runtime.close()
 
     def test_runtime_rejects_fake_or_stale_standard_receipt(self):
-        with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEFORGE_NATIVE_ENGINE": "off"}, clear=False):
+        with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEMESH_NATIVE_ENGINE": "off"}, clear=False):
             runtime = StageForgeRuntime(Path(tmp))
             try:
                 ext = standard_extension(groups=2)
@@ -255,7 +255,7 @@ class TechnologyRuntimeTests(unittest.TestCase):
                 runtime.close()
 
     def test_core_receipt_must_match_current_scale_threshold(self):
-        with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEFORGE_NATIVE_ENGINE": "off"}, clear=False):
+        with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEMESH_NATIVE_ENGINE": "off"}, clear=False):
             runtime = StageForgeRuntime(Path(tmp))
             try:
                 ext = standard_extension(groups=3); ext["requestedCore"] = True

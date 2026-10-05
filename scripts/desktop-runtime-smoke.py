@@ -73,7 +73,7 @@ def main() -> int:
             "STAGEFORGE_DATA_DIR": str(root / "data"),
             "STAGEFORGE_FRONTEND_DIR": str(frontend),
             "STAGEFORGE_RUNTIME_MODE": "desktop",
-            "STAGEFORGE_NATIVE_ENGINE": str(native_engine),
+            "STAGEMESH_NATIVE_ENGINE": str(native_engine),
             "STAGEFORGE_REQUIRE_API_TOKEN": "1",
             "STAGEFORGE_API_TOKEN": api_token,
             "STAGEFORGE_DESKTOP_SESSION_TOKEN": bootstrap_token,

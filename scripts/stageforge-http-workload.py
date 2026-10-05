@@ -87,7 +87,7 @@ def main() -> int:
         with tempfile.TemporaryDirectory(prefix="stageforge-http-workload-") as raw:
             env = os.environ.copy()
             env["STAGEFORGE_DATA_DIR"] = str(Path(raw) / "data")
-            env["STAGEFORGE_NATIVE_ENGINE"] = "off"
+            env["STAGEMESH_NATIVE_ENGINE"] = "off"
             # This qualification exercises the default direct-loopback bridge;
             # deployed proxy/IdP/firewall qualification remains a separate gate.
             for name in ("STAGEFORGE_DEPLOYMENT_PROFILE", "STAGEFORGE_REQUIRE_API_TOKEN",

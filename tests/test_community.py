@@ -136,7 +136,7 @@ class CommunityGovernanceTests(unittest.TestCase):
         self.assertEqual(self.gov.proposals['proposal-a']['appliedChangeHash'], self.gov.proposals['proposal-a']['change']['hash'])
 
     def test_runtime_locks_direct_policy_edits_after_community_process_begins(self):
-        with tempfile.TemporaryDirectory() as tmp, patch.dict('os.environ', {'STAGEFORGE_NATIVE_ENGINE': 'off'}, clear=False):
+        with tempfile.TemporaryDirectory() as tmp, patch.dict('os.environ', {'STAGEMESH_NATIVE_ENGINE': 'off'}, clear=False):
             runtime = StageForgeRuntime(Path(tmp))
             try:
                 runtime.community_create_proposal({'id': 'lock-proposal', 'title': 'Begin governance'})
@@ -282,7 +282,7 @@ class CommunityPublicRecordTests(unittest.TestCase):
 
     def test_runtime_public_record_contains_privacy_preserving_governance_events(self):
         with tempfile.TemporaryDirectory() as tmp, patch.dict(
-            'os.environ', {'STAGEFORGE_NATIVE_ENGINE': 'off', 'STAGEFORGE_ADMIN_EMAIL_MODE': 'outbox'}, clear=False
+            'os.environ', {'STAGEMESH_NATIVE_ENGINE': 'off', 'STAGEFORGE_ADMIN_EMAIL_MODE': 'outbox'}, clear=False
         ):
             runtime = StageForgeRuntime(Path(tmp))
             try:

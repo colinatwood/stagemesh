@@ -62,7 +62,7 @@ class CommunityAccountAuthTests(unittest.TestCase):
 
     def test_runtime_session_votes_without_magic_link_token_and_revocation_fences_old_session(self):
         with tempfile.TemporaryDirectory() as tmp, patch.dict(
-            'os.environ', {'STAGEFORGE_NATIVE_ENGINE': 'off', 'STAGEFORGE_ADMIN_EMAIL_MODE': 'outbox'}, clear=False
+            'os.environ', {'STAGEMESH_NATIVE_ENGINE': 'off', 'STAGEFORGE_ADMIN_EMAIL_MODE': 'outbox'}, clear=False
         ):
             runtime = StageForgeRuntime(Path(tmp))
             try:
@@ -93,7 +93,7 @@ class CommunityAccountAuthTests(unittest.TestCase):
 
     def test_session_vote_requires_exactly_one_active_account_invitation(self):
         with tempfile.TemporaryDirectory() as tmp, patch.dict(
-            'os.environ', {'STAGEFORGE_NATIVE_ENGINE': 'off', 'STAGEFORGE_ADMIN_EMAIL_MODE': 'outbox'}, clear=False
+            'os.environ', {'STAGEMESH_NATIVE_ENGINE': 'off', 'STAGEFORGE_ADMIN_EMAIL_MODE': 'outbox'}, clear=False
         ):
             runtime = StageForgeRuntime(Path(tmp))
             try:

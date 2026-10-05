@@ -18,7 +18,7 @@ MONITOR_FIELDS = ("master", "self", "vocals", "band", "click", "talkback", "ambi
 def _candidate_paths() -> list[Path]:
     executable = "stagemesh_engine.exe" if os.name == "nt" else "stagemesh_engine"
     paths: list[Path] = []
-    configured = os.environ.get("STAGEFORGE_NATIVE_ENGINE", "").strip()
+    configured = os.environ.get("STAGEMESH_NATIVE_ENGINE", "").strip()
     if configured.lower() in {"off", "disabled", "none", "0"}:
         return []
     if configured:
@@ -67,12 +67,12 @@ class NativeEngineClient:
         self._start()
 
     def _start(self) -> None:
-        if os.environ.get("STAGEFORGE_NATIVE_ENGINE", "").strip().lower() in {"off", "disabled", "none", "0"}:
-            self._last_error = "native engine disabled by STAGEFORGE_NATIVE_ENGINE"
+        if os.environ.get("STAGEMESH_NATIVE_ENGINE", "").strip().lower() in {"off", "disabled", "none", "0"}:
+            self._last_error = "native engine disabled by STAGEMESH_NATIVE_ENGINE"
             return
         path = next((candidate.resolve() for candidate in _candidate_paths() if candidate.is_file()), None)
         if path is None:
-            self._last_error = "native engine binary not found; build with CMake or set STAGEFORGE_NATIVE_ENGINE"
+            self._last_error = "native engine binary not found; build with CMake or set STAGEMESH_NATIVE_ENGINE"
             return
         try:
             env = os.environ.copy()

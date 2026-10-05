@@ -79,7 +79,7 @@ class VenueReconciliationTests(unittest.TestCase):
         self.assertIn("authority holder", report["blockers"][0])
 
     def test_runtime_accepts_adapter_evidence_only_for_active_mapping(self):
-        with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEFORGE_NATIVE_ENGINE": "off"}, clear=False):
+        with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEMESH_NATIVE_ENGINE": "off"}, clear=False):
             runtime = StageForgeRuntime(Path(tmp))
             try:
                 venue = {
@@ -127,7 +127,7 @@ class VenueAuthorityLeaseTests(unittest.TestCase):
         self.assertNotIn("lighting", registry.authority_map())
 
     def test_runtime_authority_lease_changes_reconciliation_expected_holder(self):
-        with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEFORGE_NATIVE_ENGINE": "off"}, clear=False):
+        with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEMESH_NATIVE_ENGINE": "off"}, clear=False):
             runtime = StageForgeRuntime(Path(tmp))
             try:
                 venue = {

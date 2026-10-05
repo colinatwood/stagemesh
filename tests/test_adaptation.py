@@ -97,7 +97,7 @@ class VenueAdaptationTests(unittest.TestCase):
                 manager.schedule_commit(second["transactionId"], mode="cue", show_seconds=0.1, bpm=120, cue_id="scene")
 
     def test_committed_patch_can_supply_explicit_execution_device_without_rewriting_show(self):
-        with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEFORGE_NATIVE_ENGINE": "off"}, clear=False):
+        with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEMESH_NATIVE_ENGINE": "off"}, clear=False):
             runtime = StageForgeRuntime(Path(tmp))
             try:
                 venue = {

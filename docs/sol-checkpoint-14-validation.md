@@ -18,7 +18,7 @@ Automatic shedding requires a transaction that changes effect bypass and delay c
 
 ## Validation commands
 
-Run the Python suite with `STAGEFORGE_NATIVE_ENGINE` set to the built native engine, then run `stageforge_native_tests`, `stageforge_current_abi_smoke`, JavaScript syntax and production-panel tests, OpenAPI parsing and every schema parse. The release archive must also pass `unzip -t`.
+Run the Python suite with `STAGEMESH_NATIVE_ENGINE` set to the built native engine, then run `stageforge_native_tests`, `stageforge_current_abi_smoke`, JavaScript syntax and production-panel tests, OpenAPI parsing and every schema parse. The release archive must also pass `unzip -t`.
 
 ## Recorded result
 
