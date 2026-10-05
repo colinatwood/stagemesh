@@ -52,3 +52,26 @@ installer, an owner must complete each separate gate and retain its evidence:
 
 The CI desktop workflow runs this preflight after writing each unsigned
 artifact manifest. Its JSON is a review aid, not a release approval.
+
+## Signing input preflight
+
+`desktop-signing-readiness.py` records whether the expected credential names
+are populated for Windows or macOS without writing or printing credential
+values. The report is included in each desktop artifact and checksummed by the
+artifact manifest. It is informational for unsigned test builds; supplying
+credentials does not itself prove that signing or notarization succeeded.
+
+Windows supports two declared modes: `pfx`, using an imported Authenticode
+certificate, thumbprint and timestamp URL; or `azure-artifact-signing`, using
+Azure identity plus the account endpoint/profile configuration. macOS requires
+the exported Developer ID certificate and temporary keychain password, plus a
+complete Apple ID or App Store Connect API notarization credential set.
+
+Never commit these credentials. Configure them as protected repository or
+environment secrets only after the owner selects the signing providers.
+
+The workflow expects certificate material, passwords and cloud identities in
+GitHub Actions **secrets**. It expects non-secret mode, thumbprint, timestamp,
+Azure account/profile, and API-key path configuration in Actions **variables**.
+The preflight sees only the mapped environment for its runner and writes only
+the names of present or missing inputs.
