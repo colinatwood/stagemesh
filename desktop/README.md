@@ -36,6 +36,15 @@ Build a platform package:
     cd desktop
     npm run tauri build
 
+Before creating a release tag, keep the version synchronized across the npm,
+Tauri, Cargo, and lock manifests and verify it with:
+
+    python scripts/verify-desktop-version.py --tag v0.1.0
+
+Tags matching `v*` run the same Windows, macOS, and Linux package workflow as
+pull requests and `main`. The version gate rejects a tag that does not exactly
+match all six manifest/lockfile version records.
+
 The build automatically generates the platform icon set from
 src-tauri/icons/stagemesh.svg. Outputs are written beneath
 desktop/src-tauri/target/release/bundle/.
@@ -49,7 +58,8 @@ desktop/src-tauri/target/release/bundle/.
 The current CI artifacts are unsigned development packages. Code signing,
 notarization, and release publication require platform certificates and
 repository secrets. Every CI artifact includes `SHA256SUMS` and
-`desktop-artifacts.json`; the latter binds the files to the source commit and
+`desktop-artifacts.json`; the latter binds the files to the synchronized product
+version and source commit and
 records that signing, clean-host installation, and physical hardware remain
 unqualified.
 
