@@ -2,13 +2,18 @@ import importlib.util
 import json
 from pathlib import Path
 import shutil
+import subprocess
+import sys
 import tempfile
 import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "desktop-release-readiness.py"
+INVENTORY_SCRIPT = ROOT / "scripts" / "desktop-dependency-inventory.py"
+MANIFEST_SCRIPT = ROOT / "scripts" / "desktop-artifact-manifest.py"
 VERSION_FILES = (
+    "requirements-desktop.txt",
     "desktop/package.json",
     "desktop/package-lock.json",
     "desktop/src-tauri/tauri.conf.json",
@@ -95,6 +100,70 @@ class DesktopReleaseReadinessTests(unittest.TestCase):
             report = load_script().evaluate(root, "v0.1.0", manifest)
             self.assertFalse(report["passed"])
             self.assertIn("signed=false", " ".join(report["blockers"]))
+
+    def artifact_evidence(self, root: Path, commit: str = "a" * 40):
+        artifacts = root / "artifacts"
+        artifacts.mkdir()
+        inventory = artifacts / "desktop-dependencies.json"
+        inventory_result = subprocess.run([
+            sys.executable, str(INVENTORY_SCRIPT),
+            "--root", str(root),
+            "--output", str(inventory),
+            "--commit", commit,
+            "--version", "0.1.0",
+        ], cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(inventory_result.returncode, 0, inventory_result.stderr)
+        (artifacts / "installer").write_bytes(b"installer")
+        manifest_result = subprocess.run([
+            sys.executable, str(MANIFEST_SCRIPT),
+            "--directory", str(artifacts),
+            "--platform", "test-os",
+            "--commit", "a" * 40,
+            "--version", "0.1.0",
+        ], cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(manifest_result.returncode, 0, manifest_result.stderr)
+        return artifacts / "desktop-artifacts.json", inventory
+
+    def test_dependency_inventory_is_validated_and_bound_to_manifest(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.fixture(root)
+            manifest, inventory = self.artifact_evidence(root)
+            report = load_script().evaluate(root, "v0.1.0", manifest, inventory)
+            self.assertTrue(report["passed"], report["blockers"])
+            self.assertTrue(report["dependencyInventory"]["manifestBound"])
+            self.assertGreater(report["dependencyInventory"]["componentCount"], 0)
+
+    def test_dependency_inventory_tamper_fails_manifest_binding(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.fixture(root)
+            manifest, inventory = self.artifact_evidence(root)
+            inventory.write_text(inventory.read_text(encoding="utf-8") + " ", encoding="utf-8")
+            report = load_script().evaluate(root, "v0.1.0", manifest, inventory)
+            self.assertFalse(report["passed"])
+            self.assertIn("digest does not match", " ".join(report["blockers"]))
+
+    def test_dependency_inventory_cannot_claim_legal_review(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.fixture(root)
+            manifest, inventory = self.artifact_evidence(root)
+            document = json.loads(inventory.read_text(encoding="utf-8"))
+            document["reviewBoundary"]["ownerLegalReviewComplete"] = True
+            inventory.write_text(json.dumps(document), encoding="utf-8")
+            report = load_script().evaluate(root, "v0.1.0", manifest, inventory)
+            self.assertFalse(report["passed"])
+            self.assertIn("cannot claim", " ".join(report["blockers"]))
+
+    def test_dependency_inventory_commit_must_match_manifest(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.fixture(root)
+            manifest, inventory = self.artifact_evidence(root, "b" * 40)
+            report = load_script().evaluate(root, "v0.1.0", manifest, inventory)
+            self.assertFalse(report["passed"])
+            self.assertIn("sourceCommit does not match", " ".join(report["blockers"]))
 
 
 if __name__ == "__main__":
