@@ -1,5 +1,25 @@
 # Changelog
 
+## Desktop release hardening — 2026-10-05
+
+- PR #84 adds a self-contained `verify-download.py` to every Windows, macOS,
+  and Linux desktop bundle. It checks manifest consistency, exact file bytes and
+  SHA-256 values, safe paths, unexpected files, and signing-report binding. It
+  is an integrity and consistency check, not publisher authentication.
+- PR #85 adds an authenticated loopback-only desktop shutdown route. The Tauri
+  supervisor requests graceful sidecar cleanup, waits for a bounded interval,
+  and retains a force-termination fallback when the sidecar is unresponsive.
+- Hosted CI builds and packages all three desktop variants and runs the
+  complete-bundle verifier. The current local Python suite passes 731 tests
+  with 24 expected skips.
+- PR #86 refreshes `PROJECT_MASTER.md` with the current baseline, workflow
+  evidence, exact next action, and unresolved signing, legal, clean-host,
+  hardware, and audible-quality boundaries.
+
+These entries document software evidence only. They do not establish signing,
+notarization, legal approval, clean-host installation, accessibility
+qualification, physical audio/MIDI support, or audible/recording quality.
+
 ## Astra backlog checkpoint 68 — explicit service-identity device-permission qualification helper
 
 - Add an installed `stageforge-device-permissions.py` helper that must run as the requested StageForge service identity and evaluates explicit named device nodes.
