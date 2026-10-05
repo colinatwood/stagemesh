@@ -14,10 +14,12 @@ on:
       - "scripts/build-desktop-runtime.py"
       - "scripts/desktop-artifact-manifest.py"
       - "scripts/desktop-release-readiness.py"
+      - "scripts/desktop-signing-readiness.py"
       - "scripts/desktop-runtime-smoke.py"
       - "docs/desktop-release-readiness.md"
       - "tests/test_desktop_artifact_manifest.py"
       - "tests/test_desktop_release_readiness.py"
+      - "tests/test_desktop_signing_readiness.py"
       - "tests/test_desktop_version.py"
       - "scripts/verify-desktop-version.py"
       - ".github/workflows/desktop.yml"
@@ -36,10 +38,12 @@ on:
       - "scripts/build-desktop-runtime.py"
       - "scripts/desktop-artifact-manifest.py"
       - "scripts/desktop-release-readiness.py"
+      - "scripts/desktop-signing-readiness.py"
       - "scripts/desktop-runtime-smoke.py"
       - "docs/desktop-release-readiness.md"
       - "tests/test_desktop_artifact_manifest.py"
       - "tests/test_desktop_release_readiness.py"
+      - "tests/test_desktop_signing_readiness.py"
       - "tests/test_desktop_version.py"
       - "scripts/verify-desktop-version.py"
       - ".github/workflows/desktop.yml"
@@ -139,6 +143,35 @@ jobs:
       - name: Build and package desktop application
         working-directory: desktop
         run: npm run tauri build
+
+      - name: Record platform signing readiness
+        shell: bash
+        env:
+          STAGEMESH_WINDOWS_SIGNING_MODE: ${{ vars.STAGEMESH_WINDOWS_SIGNING_MODE }}
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+          STAGEMESH_WINDOWS_CERTIFICATE_THUMBPRINT: ${{ vars.STAGEMESH_WINDOWS_CERTIFICATE_THUMBPRINT }}
+          STAGEMESH_WINDOWS_TIMESTAMP_URL: ${{ vars.STAGEMESH_WINDOWS_TIMESTAMP_URL }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          STAGEMESH_WINDOWS_SIGNING_ENDPOINT: ${{ vars.STAGEMESH_WINDOWS_SIGNING_ENDPOINT }}
+          STAGEMESH_WINDOWS_SIGNING_ACCOUNT: ${{ vars.STAGEMESH_WINDOWS_SIGNING_ACCOUNT }}
+          STAGEMESH_WINDOWS_SIGNING_PROFILE: ${{ vars.STAGEMESH_WINDOWS_SIGNING_PROFILE }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY_PATH: ${{ vars.APPLE_API_KEY_PATH }}
+          API_PRIVATE_KEYS_DIR: ${{ vars.API_PRIVATE_KEYS_DIR }}
+        run: >-
+          python scripts/desktop-signing-readiness.py
+          --platform "${{ runner.os }}"
+          --output desktop/src-tauri/target/release/bundle/signing-readiness.json
 
       - name: Record installer checksums and qualification boundary
         shell: bash
