@@ -1,4 +1,5 @@
 import http.client
+import json
 import os
 import sys
 import threading
@@ -72,6 +73,28 @@ class DesktopSessionTests(unittest.TestCase):
                 "X-StageMesh-Desktop-Token": "b" * 64,
             })
         self.assertEqual(status, 403)
+
+    def test_authenticated_desktop_shutdown_stops_the_local_server(self):
+        status, _, raw = self.request("POST", "/api/v1/desktop/shutdown", {
+            "Content-Type": "application/json",
+            "X-StageForge-API-Token": "a" * 64,
+        })
+        self.assertEqual(status, 202)
+        self.assertEqual(json.loads(raw), {
+            "status": "stopping",
+            "physicalOutputsArmed": False,
+        })
+        self.worker.join(timeout=2)
+        self.assertFalse(self.worker.is_alive())
+
+    def test_desktop_shutdown_is_unavailable_outside_desktop_mode(self):
+        with patch.dict(os.environ, {"STAGEMESH_RUNTIME_MODE": ""}, clear=False):
+            status, _, _ = self.request("POST", "/api/v1/desktop/shutdown", {
+                "Content-Type": "application/json",
+                "X-StageForge-API-Token": "a" * 64,
+            })
+        self.assertEqual(status, 403)
+        self.assertTrue(self.worker.is_alive())
 
 
 if __name__ == "__main__":

@@ -13,7 +13,9 @@ runtime. On startup it:
 5. Exchanges the URL-fragment bootstrap credential for an HttpOnly,
    SameSite-strict session cookie. The fragment is removed before normal UI
    requests start.
-6. Terminates the runtime child when the desktop window is destroyed.
+6. Requests authenticated loopback shutdown when the desktop window is
+   destroyed, waits up to two seconds for runtime cleanup, and force terminates
+   the child only when the bounded graceful path cannot complete.
 
 The packaged shell and sidecar use the canonical `STAGEMESH_DATA_DIR`,
 `STAGEMESH_FRONTEND_DIR`, `STAGEMESH_RUNTIME_MODE`,
@@ -30,12 +32,20 @@ Packaged builds include both target-specific executables. The application does
 not create its main window when either executable is absent, exits early, or
 fails the authenticated readiness check.
 
+The shutdown route exists only in desktop mode, requires the random control
+credential, and accepts loopback clients only. The runtime sends its response
+before stopping the HTTP server; the normal `finally` path then closes native
+services and persistence resources. A crashed or unresponsive sidecar cannot
+hold the desktop open indefinitely because the supervisor retains the bounded
+force-termination fallback.
+
 The desktop workflow now compiles the native engine and freezes the Python API
 runtime with PyInstaller before Tauri builds the Windows, macOS, and Linux
 packages. Each runner starts those exact target-tagged sidecars and verifies the
 authenticated health, native-engine status, desktop-session cookie, and bundled
-frontend response before packaging. This proves package composition and
-software startup behavior only.
+frontend response before requesting authenticated graceful shutdown and
+requiring a clean process exit. This proves package composition and software
+startup/shutdown behavior only.
 It does not qualify a physical device, audible output, recording quality,
 drivers, signing identity, or target-OS hardware behavior. Those remain
 separate external qualification gates.

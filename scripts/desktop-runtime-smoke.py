@@ -130,6 +130,25 @@ def main() -> int:
                     raise RuntimeError("packaged frontend was not served")
                 if b"StageMesh" not in app_body:
                     raise RuntimeError("packaged frontend content is invalid")
+
+                shutdown_status, _, shutdown_body = request(
+                    port,
+                    "POST",
+                    "/api/v1/desktop/shutdown",
+                    {
+                        "Content-Type": "application/json",
+                        "X-StageForge-API-Token": api_token,
+                    },
+                )
+                shutdown_payload = json.loads(shutdown_body)
+                if shutdown_status != 202 or shutdown_payload.get("status") != "stopping":
+                    raise RuntimeError(f"desktop runtime rejected graceful shutdown: {shutdown_payload}")
+                try:
+                    return_code = process.wait(timeout=5)
+                except subprocess.TimeoutExpired as exc:
+                    raise RuntimeError("desktop runtime did not exit after graceful shutdown") from exc
+                if return_code != 0:
+                    raise RuntimeError(f"desktop runtime exited with {return_code} after graceful shutdown")
             except Exception as exc:
                 log.flush()
                 details = log_path.read_text(encoding="utf-8", errors="replace")[-4000:]
