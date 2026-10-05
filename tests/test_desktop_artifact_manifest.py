@@ -12,13 +12,14 @@ SCRIPT = ROOT / "scripts" / "desktop-artifact-manifest.py"
 
 
 class DesktopArtifactManifestTests(unittest.TestCase):
-    def run_manifest(self, directory: Path):
+    def run_manifest(self, directory: Path, version: str = "0.1.0"):
         return subprocess.run([
             sys.executable,
             str(SCRIPT),
             "--directory", str(directory),
             "--platform", "test-os",
             "--commit", "a" * 40,
+            "--version", version,
         ], cwd=ROOT, text=True, capture_output=True)
 
     def test_records_deterministic_checksums_and_qualification_boundary(self):
@@ -36,6 +37,7 @@ class DesktopArtifactManifestTests(unittest.TestCase):
 
             manifest = json.loads(original_manifest)
             self.assertEqual(manifest["schemaVersion"], 1)
+            self.assertEqual(manifest["version"], "0.1.0")
             self.assertEqual(manifest["platform"], "test-os")
             self.assertFalse(manifest["signed"])
             self.assertFalse(manifest["qualification"]["cleanHostInstallQualified"])
@@ -57,6 +59,14 @@ class DesktopArtifactManifestTests(unittest.TestCase):
             result = self.run_manifest(Path(temporary))
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("contains no files", result.stderr)
+
+    def test_rejects_an_invalid_version(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            artifacts = Path(temporary)
+            (artifacts / "installer.msi").write_bytes(b"installer")
+            result = self.run_manifest(artifacts, "latest")
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("version must use", result.stderr)
 
 
 if __name__ == "__main__":

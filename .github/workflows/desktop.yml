@@ -15,9 +15,12 @@ on:
       - "scripts/desktop-artifact-manifest.py"
       - "scripts/desktop-runtime-smoke.py"
       - "tests/test_desktop_artifact_manifest.py"
+      - "tests/test_desktop_version.py"
+      - "scripts/verify-desktop-version.py"
       - ".github/workflows/desktop.yml"
   push:
     branches: [main]
+    tags: ['v*']
     paths:
       - "backend/**"
       - "CMakeLists.txt"
@@ -31,6 +34,8 @@ on:
       - "scripts/desktop-artifact-manifest.py"
       - "scripts/desktop-runtime-smoke.py"
       - "tests/test_desktop_artifact_manifest.py"
+      - "tests/test_desktop_version.py"
+      - "scripts/verify-desktop-version.py"
       - ".github/workflows/desktop.yml"
   workflow_dispatch:
 
@@ -75,6 +80,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - name: Verify desktop release version
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            python scripts/verify-desktop-version.py --tag "$GITHUB_REF_NAME"
+          else
+            python scripts/verify-desktop-version.py --tag "v$(python -c 'import json; print(json.load(open("desktop/package.json"))["version"])')"
+          fi
 
       - name: Resolve Rust host target
         shell: bash
@@ -127,6 +141,7 @@ jobs:
           --directory desktop/src-tauri/target/release/bundle
           --platform "${{ runner.os }}"
           --commit "$GITHUB_SHA"
+          --version "$(python -c 'import json; print(json.load(open("desktop/package.json"))["version"])')"
 
       - name: Upload installer artifacts
         uses: actions/upload-artifact@v4

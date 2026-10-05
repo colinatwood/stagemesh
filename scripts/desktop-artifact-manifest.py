@@ -6,12 +6,14 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import re
 import sys
 
 
 MANIFEST_NAME = "desktop-artifacts.json"
 CHECKSUM_NAME = "SHA256SUMS"
 EXCLUDED_NAMES = frozenset({MANIFEST_NAME, CHECKSUM_NAME})
+VERSION_PATTERN = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$")
 
 
 def digest(path: Path) -> str:
@@ -41,6 +43,7 @@ def main() -> int:
     parser.add_argument("--directory", required=True, type=Path)
     parser.add_argument("--platform", required=True)
     parser.add_argument("--commit", required=True)
+    parser.add_argument("--version", required=True)
     args = parser.parse_args()
 
     root = args.directory.resolve()
@@ -49,10 +52,13 @@ def main() -> int:
     files = inventory(root)
     if not files:
         parser.error(f"artifact directory contains no files: {root}")
+    if not VERSION_PATTERN.fullmatch(args.version):
+        parser.error("version must use MAJOR.MINOR.PATCH with an optional prerelease suffix")
 
     manifest = {
         "schemaVersion": 1,
         "product": "StageMesh",
+        "version": args.version,
         "platform": args.platform,
         "sourceCommit": args.commit,
         "signed": False,
