@@ -15,11 +15,13 @@ on:
       - "scripts/desktop-artifact-manifest.py"
       - "scripts/desktop-release-readiness.py"
       - "scripts/desktop-signing-readiness.py"
+      - "scripts/desktop-signing-verification.py"
       - "scripts/desktop-runtime-smoke.py"
       - "docs/desktop-release-readiness.md"
       - "tests/test_desktop_artifact_manifest.py"
       - "tests/test_desktop_release_readiness.py"
       - "tests/test_desktop_signing_readiness.py"
+      - "tests/test_desktop_signing_verification.py"
       - "tests/test_desktop_version.py"
       - "scripts/verify-desktop-version.py"
       - ".github/workflows/desktop.yml"
@@ -39,11 +41,13 @@ on:
       - "scripts/desktop-artifact-manifest.py"
       - "scripts/desktop-release-readiness.py"
       - "scripts/desktop-signing-readiness.py"
+      - "scripts/desktop-signing-verification.py"
       - "scripts/desktop-runtime-smoke.py"
       - "docs/desktop-release-readiness.md"
       - "tests/test_desktop_artifact_manifest.py"
       - "tests/test_desktop_release_readiness.py"
       - "tests/test_desktop_signing_readiness.py"
+      - "tests/test_desktop_signing_verification.py"
       - "tests/test_desktop_version.py"
       - "scripts/verify-desktop-version.py"
       - ".github/workflows/desktop.yml"
@@ -181,6 +185,18 @@ jobs:
           --platform "${{ runner.os }}"
           --commit "$GITHUB_SHA"
           --version "$(python -c 'import json; print(json.load(open("desktop/package.json"))["version"])')"
+
+      - name: Verify exact artifact signatures when configured
+        shell: bash
+        env:
+          STAGEMESH_SIGNING_VERIFICATION_MODE: ${{ vars.STAGEMESH_SIGNING_VERIFICATION_MODE }}
+          STAGEMESH_SIGNTOOL_PATH: ${{ vars.STAGEMESH_SIGNTOOL_PATH }}
+        run: >-
+          python scripts/desktop-signing-verification.py
+          --platform "${{ runner.os }}"
+          --manifest desktop/src-tauri/target/release/bundle/desktop-artifacts.json
+          --directory desktop/src-tauri/target/release/bundle
+          --output desktop/src-tauri/target/release/bundle/signing-verification.json
 
       - name: Verify desktop release readiness boundary
         shell: bash

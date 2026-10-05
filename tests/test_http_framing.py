@@ -61,6 +61,7 @@ class FramingTests(unittest.TestCase):
 
     def test_duplicate_security_headers_are_rejected(self):
         for name in ('Origin', 'Content-Type', 'X-StageForge-API-Token',
+                     'X-StageMesh-Desktop-Token',
                      'X-StageForge-Admin-Token', 'X-StageForge-Adapter-Token',
                      'X-StageForge-Authenticated-User', 'X-StageForge-Auth-Proxy-Token',
                      'X-StageForge-Command-Id'):

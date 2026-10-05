@@ -24,9 +24,20 @@ from http_authorization import authorization_policy, authorize_control_request, 
 from http_deployment import validate_proxy_https_profile
 
 
+def environment_value(environ: Mapping[str, str], canonical: str, legacy: str | None = None) -> str:
+    """Prefer the StageMesh contract while preserving non-desktop deployment aliases."""
+    if canonical in environ:
+        return str(environ.get(canonical, ""))
+    return str(environ.get(legacy, "")) if legacy else ""
+
+
+def environment_truthy(environ: Mapping[str, str], canonical: str, legacy: str | None = None) -> bool:
+    return environment_value(environ, canonical, legacy).strip().lower() in {"1", "true", "yes", "on"}
+
+
 ROOT = Path(__file__).resolve().parents[1]
-FRONTEND = Path(os.environ.get("STAGEFORGE_FRONTEND_DIR", str(ROOT / "frontend"))).resolve()
-DATA_DIR = Path(os.environ.get("STAGEFORGE_DATA_DIR", str(ROOT / ".runtime"))).resolve()
+FRONTEND = Path(environment_value(os.environ, "STAGEMESH_FRONTEND_DIR", "STAGEFORGE_FRONTEND_DIR") or ROOT / "frontend").resolve()
+DATA_DIR = Path(environment_value(os.environ, "STAGEMESH_DATA_DIR", "STAGEFORGE_DATA_DIR") or ROOT / ".runtime").resolve()
 RUNTIME = StageForgeRuntime(DATA_DIR)
 MONITOR_READ_PATHS = frozenset({"/healthz", "/api/v1/native", "/api/v1/node"})
 DESKTOP_SESSION_COOKIE = "stagemesh-session"
@@ -72,7 +83,7 @@ def token_matches(configured: str, supplied: str) -> bool:
 
 
 def desktop_cookie_token(headers: Mapping[str, str], client_host: str, environ: Mapping[str, str]) -> str:
-    if environ.get("STAGEFORGE_RUNTIME_MODE", "").strip().lower() != "desktop":
+    if environ.get("STAGEMESH_RUNTIME_MODE", "").strip().lower() != "desktop":
         return ""
     try:
         if not ipaddress.ip_address(client_host).is_loopback:
@@ -115,12 +126,12 @@ def validate_http_boundary(headers: Mapping[str, str], client_host: str, path: s
         if origin.rstrip("/") not in configured and not same_host:raise PermissionError("request Origin is not allowed")
     try:loopback=ipaddress.ip_address(client_host).is_loopback
     except ValueError:loopback=False
-    require_token=env.get("STAGEFORGE_REQUIRE_API_TOKEN","").strip().lower() in {"1","true","yes","on"}
+    require_token=environment_truthy(env, "STAGEMESH_REQUIRE_API_TOKEN", "STAGEFORGE_REQUIRE_API_TOKEN")
     supplied = headers.get("X-StageForge-API-Token", "")
     if not supplied:
         supplied = desktop_cookie_token(headers, client_host, env)
     monitor = env.get("STAGEFORGE_MONITOR_API_TOKEN", "")
-    control = env.get("STAGEFORGE_API_TOKEN", "")
+    control = environment_value(env, "STAGEMESH_API_TOKEN", "STAGEFORGE_API_TOKEN")
     if monitor and token_matches(monitor, control):
         raise PermissionError("monitor and control credentials must be distinct")
     monitor_request = token_matches(monitor, supplied)
@@ -317,7 +328,7 @@ class StageForgeHandler(BaseHTTPRequestHandler):
         # Reject ambiguous framing before dispatch (including Expect: 100-continue).
         lengths = self.headers.get_all("Content-Length", [])
         security_headers = ('Origin', 'Content-Type', 'X-StageForge-API-Token',
-                            'Cookie', 'X-StageForge-Desktop-Token',
+                            'Cookie', 'X-StageMesh-Desktop-Token',
                             'X-StageForge-Admin-Token', 'X-StageForge-Adapter-Token',
                             'X-StageForge-Authenticated-User', 'X-StageForge-Auth-Proxy-Token',
                             'X-StageForge-Command-Id')
@@ -512,7 +523,7 @@ class StageForgeHandler(BaseHTTPRequestHandler):
         try:
             local_allowed = (
                 ipaddress.ip_address(self.client_address[0]).is_loopback
-                and self._credentials().get("STAGEFORGE_REQUIRE_API_TOKEN", "").strip().lower() not in {"1", "true", "yes", "on"}
+                and not environment_truthy(self._credentials(), "STAGEMESH_REQUIRE_API_TOKEN", "STAGEFORGE_REQUIRE_API_TOKEN")
             )
         except ValueError:
             local_allowed = False
@@ -552,7 +563,7 @@ class StageForgeHandler(BaseHTTPRequestHandler):
         try:
             local_allowed = (
                 ipaddress.ip_address(self.client_address[0]).is_loopback
-                and self._credentials().get("STAGEFORGE_REQUIRE_API_TOKEN", "").strip().lower() not in {"1", "true", "yes", "on"}
+                and not environment_truthy(self._credentials(), "STAGEMESH_REQUIRE_API_TOKEN", "STAGEFORGE_REQUIRE_API_TOKEN")
             )
         except ValueError:
             local_allowed = False
@@ -1449,13 +1460,13 @@ class StageForgeHandler(BaseHTTPRequestHandler):
             loopback = ipaddress.ip_address(self.client_address[0]).is_loopback
         except ValueError:
             loopback = False
-        configured = credentials.get("STAGEFORGE_DESKTOP_SESSION_TOKEN", "")
-        supplied = self.headers.get("X-StageForge-Desktop-Token", "")
-        desktop_mode = credentials.get("STAGEFORGE_RUNTIME_MODE", "").strip().lower() == "desktop"
+        configured = credentials.get("STAGEMESH_DESKTOP_SESSION_TOKEN", "")
+        supplied = self.headers.get("X-StageMesh-Desktop-Token", "")
+        desktop_mode = credentials.get("STAGEMESH_RUNTIME_MODE", "").strip().lower() == "desktop"
         if not desktop_mode or not loopback or not token_matches(configured, supplied):
             self._json(403, {"error": "desktop session authentication failed"})
             return
-        api_token = credentials.get("STAGEFORGE_API_TOKEN", "")
+        api_token = environment_value(credentials, "STAGEMESH_API_TOKEN", "STAGEFORGE_API_TOKEN")
         if not api_token:
             self._json(503, {"error": "desktop API credential is unavailable"})
             return

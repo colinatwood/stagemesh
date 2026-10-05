@@ -461,6 +461,9 @@ class ApiTests(unittest.TestCase):
         self.assertGreater(conflict["current"], revision)
 
     def test_venue_adaptation_transaction_commit_and_rollback(self):
+        native_status, _, native = self.request("GET", "/api/v1/native")
+        if native_status != 200 or not native.get("available"):
+            self.skipTest("native engine not built")
         status, _, before_state = self.request("GET", "/api/v1/state")
         self.assertEqual(status, 200)
         before_venue = before_state["system"]["venue"]
@@ -827,6 +830,8 @@ class ApiTests(unittest.TestCase):
         self.assertIn("acknowledgePhysicalOutput", refused["error"])
 
         status, _, armed = self.request("POST", "/api/v1/lighting/network/arm", {"armed": True, "acknowledgePhysicalOutput": True})
+        if status == 503 and "native lighting output unavailable" in armed.get("error", ""):
+            self.skipTest("native lighting output unavailable")
         self.assertEqual(status, 200)
         self.assertTrue(armed["armed"])
         status, _, scheduled = self.request("POST", "/api/v1/lighting/schedule", {

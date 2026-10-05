@@ -54,6 +54,14 @@ class DesktopArtifactManifestTests(unittest.TestCase):
             self.assertEqual((artifacts / "desktop-artifacts.json").read_bytes(), original_manifest)
             self.assertEqual((artifacts / "SHA256SUMS").read_bytes(), original_checksums)
 
+            (artifacts / "signing-verification.json").write_text(
+                '{"status":"verified"}\n', encoding="utf-8"
+            )
+            third = self.run_manifest(artifacts)
+            self.assertEqual(third.returncode, 0, third.stderr)
+            self.assertEqual((artifacts / "desktop-artifacts.json").read_bytes(), original_manifest)
+            self.assertEqual((artifacts / "SHA256SUMS").read_bytes(), original_checksums)
+
     def test_rejects_an_empty_artifact_directory(self):
         with tempfile.TemporaryDirectory() as temporary:
             result = self.run_manifest(Path(temporary))
