@@ -22,7 +22,7 @@ and controlled testing only.
 
 Each CI artifact includes `SHA256SUMS` plus `desktop-artifacts.json`. Verify the
 checksum for the installer before running it. The JSON inventory records the
-source commit, platform, byte count, and SHA-256 digest for every packaged file;
+product version, source commit, platform, byte count, and SHA-256 digest for every packaged file;
 it also preserves the explicit unsigned, clean-host, and physical-hardware
 qualification boundaries.
 
@@ -61,6 +61,13 @@ The FLkey Mini and Apogee BOOM paths remain subject to the native hardware
 qualification evidence. Device visibility in the app is not the same as
 audible loopback or recording qualification.
 
+For BOOM conversion measurement, use a balanced 1/4-inch TRS cable from one
+main output to a line input, select the line input in Apogee Control 2, disable
+direct monitoring, and start at a low output level. Record the exact Control 2
+routing and gain settings with the reference and captured WAV files. Apogee's
+official guidance confirms that BOOM line inputs accept 1/4-inch connections:
+<https://knowledge.apogeedigital.com/how-to-connect-line-inputs-to-boom>.
+
 ## Linux
 
 The AppImage is portable but still relies on the host's webview and graphics
@@ -89,3 +96,19 @@ selected audio or MIDI backend.
 
 Driver installation, device enumeration, and software smoke tests do not prove
 audible quality, latency, SNR, THD+N, or long-run continuity.
+
+## Clean-host acceptance matrix
+
+Run each installer on a host that has not used the StageMesh source tree or a
+previous development package:
+
+| Priority | Host | Required evidence |
+| --- | --- | --- |
+| P0 | Windows 11 x64 | NSIS/MSI install, WebView2 bootstrap or existing-runtime detection, launch/readiness, save/restart recovery, upgrade and uninstall |
+| P0 | macOS 14+ Apple Silicon | DMG install, Gatekeeper behavior for the unsigned test build, microphone permission, launch/readiness, save/restart recovery and uninstall |
+| P0 | Ubuntu 22.04/24.04 x64 | AppImage plus Debian install, WebKitGTK 4.1 dependency resolution, launch/readiness, save/restart recovery, upgrade and uninstall |
+| P1 | A second non-developer user account on each host | Per-user data isolation, permissions, log location and uninstall state preservation |
+
+The matrix qualifies installed software behavior only. A host passes hardware
+qualification only after the named audio/MIDI device, driver, cable/routing,
+reference signal, capture, continuity, and review artifacts also pass.
