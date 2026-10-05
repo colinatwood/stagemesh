@@ -1,4 +1,4 @@
-# StageForge hardware qualification checklist
+# StageMesh hardware qualification checklist
 
 The developer-alpha software gate is automated in CI. These items remain
 separate and must be marked qualified only on a real Linux host or VM with the
@@ -41,7 +41,7 @@ audio, clock, latency, or device permissions.
 - Install with `scripts/install-linux.sh` on a clean Ubuntu host or VM.
 - Confirm sysusers/tmpfiles provision the service user and state directory.
 - Run `systemctl daemon-reload`, then explicitly enable and start the service.
-- Record `systemctl status stageforge` and `journalctl -u stageforge`.
+- Record `systemctl status stagemesh` and `journalctl -u stagemesh`.
 - Verify reinstall preserves state and uninstall preserves documented state.
 
 ## Device access
