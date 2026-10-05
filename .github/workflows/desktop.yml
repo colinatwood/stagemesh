@@ -13,8 +13,11 @@ on:
       - "requirements-desktop.txt"
       - "scripts/build-desktop-runtime.py"
       - "scripts/desktop-artifact-manifest.py"
+      - "scripts/desktop-release-readiness.py"
       - "scripts/desktop-runtime-smoke.py"
+      - "docs/desktop-release-readiness.md"
       - "tests/test_desktop_artifact_manifest.py"
+      - "tests/test_desktop_release_readiness.py"
       - "tests/test_desktop_version.py"
       - "scripts/verify-desktop-version.py"
       - ".github/workflows/desktop.yml"
@@ -32,8 +35,11 @@ on:
       - "requirements-desktop.txt"
       - "scripts/build-desktop-runtime.py"
       - "scripts/desktop-artifact-manifest.py"
+      - "scripts/desktop-release-readiness.py"
       - "scripts/desktop-runtime-smoke.py"
+      - "docs/desktop-release-readiness.md"
       - "tests/test_desktop_artifact_manifest.py"
+      - "tests/test_desktop_release_readiness.py"
       - "tests/test_desktop_version.py"
       - "scripts/verify-desktop-version.py"
       - ".github/workflows/desktop.yml"
@@ -142,6 +148,18 @@ jobs:
           --platform "${{ runner.os }}"
           --commit "$GITHUB_SHA"
           --version "$(python -c 'import json; print(json.load(open("desktop/package.json"))["version"])')"
+
+      - name: Verify desktop release readiness boundary
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            release_tag="$GITHUB_REF_NAME"
+          else
+            release_tag="v$(python -c 'import json; print(json.load(open("desktop/package.json"))["version"])')"
+          fi
+          python scripts/desktop-release-readiness.py \
+            --tag "$release_tag" \
+            --manifest desktop/src-tauri/target/release/bundle/desktop-artifacts.json
 
       - name: Upload installer artifacts
         uses: actions/upload-artifact@v4
