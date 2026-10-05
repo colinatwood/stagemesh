@@ -53,6 +53,20 @@ installer, an owner must complete each separate gate and retain its evidence:
 The CI desktop workflow runs this preflight after writing each unsigned
 artifact manifest. Its JSON is a review aid, not a release approval.
 
+## Locked dependency inventory
+
+Every desktop CI bundle contains `desktop-dependencies.json`. The report binds
+the exact npm, Cargo, and Python dependency inputs to the source commit and
+product version before `desktop-artifacts.json` hashes the bundle. Generation
+fails if a lockfile is malformed, a Python build requirement is not exactly
+pinned, or duplicate package identifiers are present.
+
+This report is an engineering inventory, not a standard-compliant SBOM. Cargo
+and npm lockfiles can include build-only, optional, or target-specific packages,
+so an entry is not proof that package bytes are present in every installer.
+The report deliberately keeps payload inclusion, dependency-license review,
+and owner/legal approval false until separate evidence is completed.
+
 ## Signing input preflight
 
 `desktop-signing-readiness.py` records whether the expected credential names
