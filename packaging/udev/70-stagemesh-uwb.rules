@@ -1,0 +1,1 @@
+SUBSYSTEM=="tty", ENV{ID_STAGEFORGE_UWB}=="1", GROUP="stageforge", MODE="0660", TAG+="systemd"

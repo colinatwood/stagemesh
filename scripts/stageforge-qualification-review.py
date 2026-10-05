@@ -2,7 +2,7 @@
 from __future__ import annotations
 import argparse,json,sys
 from pathlib import Path
-script=Path(__file__).resolve();source=script.parents[1]/"backend";installed=script.parents[2]/"share/stageforge/backend";sys.path.insert(0,str(source if source.is_dir() else installed))
+script=Path(__file__).resolve();source=script.parents[1]/"backend";installed=script.parents[2]/"share/stagemesh/backend";sys.path.insert(0,str(source if source.is_dir() else installed))
 from qualification_review import create_review,validate_review
 
 def _read(path:Path):
