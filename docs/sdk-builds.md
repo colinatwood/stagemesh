@@ -10,7 +10,7 @@ Native builds run CTest by default:
 
 ```sh
 STAGEMESH_BUILD_DIR=build ./scripts/build-native.sh \
-  -G Ninja -DSTAGEFORGE_BUILD_TESTS=ON
+  -G Ninja -DSTAGEMESH_BUILD_TESTS=ON
 ```
 
 Cross-compiled binaries are linked but cannot run on the host. Skip CTest only
@@ -20,7 +20,7 @@ for that case, explicitly:
 STAGEMESH_BUILD_DIR=build-mingw STAGEMESH_SKIP_TESTS=1 \
   ./scripts/build-native.sh -G Ninja \
   -DCMAKE_TOOLCHAIN_FILE=/path/to/mingw-toolchain.cmake \
-  -DSTAGEFORGE_BUILD_TESTS=ON
+  -DSTAGEMESH_BUILD_TESTS=ON
 ```
 
 `STAGEFORGE_BUILD_CONFIG` is available for multi-configuration generators such

@@ -46,6 +46,25 @@ class ProductNamingTests(unittest.TestCase):
         legacy_variable = "STAGEFORGE" + "_NATIVE_ENGINE"
         self.assertEqual(self._live_source_offenders(legacy_variable), [])
 
+    def test_live_sources_do_not_restore_legacy_build_contracts(self):
+        legacy_contracts = (
+            "STAGEFORGE" + "_BUILD_TESTS",
+            "STAGEFORGE" + "_ENABLE_SANITIZERS",
+            "STAGEFORGE" + "_RT_QUALIFICATION",
+            "STAGEFORGE" + "_DEVICE_ASAN",
+        )
+        offenders = []
+        cmake = (ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
+        native_devices = (ROOT / "native" / "devices.cmake").read_text(encoding="utf-8")
+        for legacy_contract in legacy_contracts:
+            offenders.extend(
+                f"{path}:{legacy_contract}"
+                for path in self._live_source_offenders(legacy_contract)
+            )
+            if legacy_contract in cmake or legacy_contract in native_devices:
+                offenders.append(legacy_contract)
+        self.assertEqual(offenders, [])
+
     def test_build_and_desktop_bundle_use_stagemesh_engine(self):
         cmake = (ROOT / "native" / "engine.cmake").read_text(encoding="utf-8")
         tauri = (ROOT / "desktop" / "src-tauri" / "tauri.conf.json").read_text(encoding="utf-8")

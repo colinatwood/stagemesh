@@ -35,7 +35,7 @@ Development token-only voting remains an explicit opt-in escape hatch through `S
 
 Validated on 2026-09-14:
 
-- fresh Release + `STAGEFORGE_RT_QUALIFICATION=ON` native build;
+- fresh Release + `STAGEMESH_RT_QUALIFICATION=ON` native build;
 - native CTest: **2/2 passed**;
 - full Python suite against that engine: **566 tests passed**;
 - focused community/account-auth coverage passes session signature/tamper/expiry, TTL bounds, legacy-account migration, generation revocation, email/active revocation, invitation requirements and no-magic-link session voting;

@@ -189,7 +189,7 @@ class IsolatedPluginHost:
         self.process:subprocess.Popen[str]|None=None;self.bypassed=True;self.failures=0;self._lock=threading.RLock()
         self.scratch_path:Path|None=None;self.scratch_resource_id=None
         self.starts=0;self.closes=0;self.forced_kills=0;self.last_exit_code=None;self.requests=0;self.process_blocks=0;self.processed_samples=0;self.timeouts=0;self.disconnects=0;self.host_errors=0;self.invalid_responses=0;self.max_request_duration_ns=0;self.last_error=None
-        self.qualification_enabled=os.environ.get("STAGEFORGE_RT_QUALIFICATION","").strip().lower() in {"1","true","yes","on"}
+        self.qualification_enabled=os.environ.get("STAGEMESH_RT_QUALIFICATION","").strip().lower() in {"1","true","yes","on"}
         self.serialization_lock_attempts=0;self.serialization_lock_contentions=0;self.max_serialization_lock_wait_ns=0;self.request_payload_bytes=0;self.response_payload_bytes=0
         self._next_request_id=1;self.protocol_version=None;self.latency_frames=None;self.process_supported=False
         with _HOSTS_LOCK:_HOSTS.add(self)

@@ -14,7 +14,7 @@ namespace stageforge {
 
 RealtimeQualificationScope::RealtimeQualificationScope(RealtimeAudit* audit) noexcept
     : previous_(active_audit) {
-#ifdef STAGEFORGE_RT_QUALIFICATION
+#ifdef STAGEMESH_RT_QUALIFICATION
     active_audit = audit;
 #else
     (void)audit;
@@ -22,13 +22,13 @@ RealtimeQualificationScope::RealtimeQualificationScope(RealtimeAudit* audit) noe
 }
 
 RealtimeQualificationScope::~RealtimeQualificationScope() noexcept {
-#ifdef STAGEFORGE_RT_QUALIFICATION
+#ifdef STAGEMESH_RT_QUALIFICATION
     active_audit = previous_;
 #endif
 }
 
 void note_realtime_allocation(unsigned long long bytes) noexcept {
-#ifdef STAGEFORGE_RT_QUALIFICATION
+#ifdef STAGEMESH_RT_QUALIFICATION
     if (active_audit) active_audit->note_allocation(bytes);
 #else
     (void)bytes;
@@ -36,14 +36,14 @@ void note_realtime_allocation(unsigned long long bytes) noexcept {
 }
 
 void note_realtime_lock_attempt() noexcept {
-#ifdef STAGEFORGE_RT_QUALIFICATION
+#ifdef STAGEMESH_RT_QUALIFICATION
     if (active_audit) active_audit->note_lock_attempt();
 #endif
 }
 
 }  // namespace stageforge
 
-#ifdef STAGEFORGE_RT_QUALIFICATION
+#ifdef STAGEMESH_RT_QUALIFICATION
 void* operator new(std::size_t size) {
     stageforge::note_realtime_allocation(size);
     if (void* value = std::malloc(size ? size : 1)) return value;

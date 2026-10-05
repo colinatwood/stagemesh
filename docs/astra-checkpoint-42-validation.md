@@ -19,7 +19,7 @@ Checkpoint 42 removes the arrangement/clip playback restriction that loop spans 
 
 - Focused playback/production/media snapshot suite: 18 tests passed.
 - Focused arbitrary-loop/session restart suite: 5 tests passed.
-- Fresh release native build with `STAGEFORGE_RT_QUALIFICATION=ON`: 2/2 CTest targets passed.
+- Fresh release native build with `STAGEMESH_RT_QUALIFICATION=ON`: 2/2 CTest targets passed.
 - Release Python suite against that exact native engine: 529 tests passed.
 - Automation performance: passed with 4096 points / 8192 frames and binary block-entry search.
 - Public JSON schemas: 117 parsed successfully.

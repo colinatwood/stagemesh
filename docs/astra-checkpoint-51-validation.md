@@ -23,7 +23,7 @@ The focused plugin-host suite includes an adversarial replacement test. It opens
 
 Validated on 2026-09-14:
 
-- fresh Release + `STAGEFORGE_RT_QUALIFICATION=ON` native build;
+- fresh Release + `STAGEMESH_RT_QUALIFICATION=ON` native build;
 - native CTest: **2/2 passed**;
 - full Python suite against that engine: **568 tests passed**;
 - focused plugin/latency/security regressions: **36 tests passed**;

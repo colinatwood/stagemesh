@@ -28,7 +28,7 @@ Checkpoint 47 replaces string-shaped maturity credentials with signed Public Rec
 
 Validated on 2026-09-14:
 
-- fresh Release + `STAGEFORGE_RT_QUALIFICATION=ON` native build;
+- fresh Release + `STAGEMESH_RT_QUALIFICATION=ON` native build;
 - native CTest: **2/2 passed**;
 - full Python suite against that fresh engine: **548 tests passed with zero test skips**;
 - focused technology/Public Record/authorization tests passed, including missing receipt, fake reference, stale evidence, grandfathered Standard recognition and current-scale Core receipt fencing;

@@ -23,7 +23,7 @@ jobs:
       - name: Install release tooling
         run: python -m pip install -r requirements-release.txt
       - name: Configure and build Release engine
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DSTAGEFORGE_BUILD_TESTS=ON -DSTAGEFORGE_RT_QUALIFICATION=ON
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DSTAGEMESH_BUILD_TESTS=ON -DSTAGEMESH_RT_QUALIFICATION=ON
       - name: Run native tests
         run: |
           cmake --build build --parallel 2

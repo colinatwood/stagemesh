@@ -21,7 +21,7 @@ def platform_attestation():
 
 class PluginHostTests(unittest.TestCase):
     def test_slow_uncontended_acquisition_is_not_contention(self):
-        with patch.dict("os.environ", {"STAGEFORGE_RT_QUALIFICATION": "1"}):
+        with patch.dict("os.environ", {"STAGEMESH_RT_QUALIFICATION": "1"}):
             host=IsolatedPluginHost(ROOT/"scripts/stageforge-plugin-host.py",{"format":"builtin","pluginId":"lock-test"})
         try:
             with patch("plugin_host.time.monotonic_ns", side_effect=[0, 200_000]):
@@ -33,7 +33,7 @@ class PluginHostTests(unittest.TestCase):
 
     def test_failed_nonblocking_acquisition_counts_contention(self):
         from unittest.mock import Mock
-        with patch.dict("os.environ", {"STAGEFORGE_RT_QUALIFICATION": "1"}):
+        with patch.dict("os.environ", {"STAGEMESH_RT_QUALIFICATION": "1"}):
             host=IsolatedPluginHost(ROOT/"scripts/stageforge-plugin-host.py",{"format":"builtin","pluginId":"contended-test"})
         lock=Mock();lock.acquire.side_effect=[False,True]
         try:
@@ -46,7 +46,7 @@ class PluginHostTests(unittest.TestCase):
         finally:host.close()
 
     def test_qualification_mode_measures_plugin_serialization_boundary(self):
-        with patch.dict("os.environ", {"STAGEFORGE_RT_QUALIFICATION": "1"}):
+        with patch.dict("os.environ", {"STAGEMESH_RT_QUALIFICATION": "1"}):
             host=IsolatedPluginHost(ROOT/"scripts/stageforge-plugin-host.py",{"format":"builtin","pluginId":"qualified","configuration":{"gain":1}})
         try:
             host.start();host.process_block([.25,-.25]);audit=host.status()["audit"]
