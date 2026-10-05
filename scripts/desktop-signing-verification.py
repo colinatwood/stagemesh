@@ -74,11 +74,18 @@ def _load_manifest(path: Path) -> dict[str, Any]:
     return payload
 
 
-def _manifest_entries(manifest: dict[str, Any], root: Path, artifact: Path) -> tuple[list[dict[str, Any]], list[str]]:
+def _artifact_reference(root: Path, artifact: Path) -> tuple[str, bool]:
+    """Return a stable report path and whether it is inside the bundle root."""
     try:
-        relative = artifact.resolve().relative_to(root.resolve()).as_posix()
+        return artifact.resolve().relative_to(root.resolve()).as_posix(), True
     except ValueError:
-        return [], [f"artifact is outside manifest directory: {artifact}"]
+        return artifact.name or "selected-artifact", False
+
+
+def _manifest_entries(manifest: dict[str, Any], root: Path, artifact: Path) -> tuple[list[dict[str, Any]], list[str]]:
+    relative, inside_root = _artifact_reference(root, artifact)
+    if not inside_root:
+        return [], [f"artifact is outside manifest directory: {relative}"]
     files = [item for item in manifest["files"] if isinstance(item, dict)]
     if artifact.is_file():
         entries = [item for item in files if item.get("path") == relative]
@@ -91,9 +98,13 @@ def _manifest_entries(manifest: dict[str, Any], root: Path, artifact: Path) -> t
 
 
 def _bind_artifact(manifest: dict[str, Any], root: Path, artifact: Path) -> tuple[dict[str, Any], list[str]]:
+    report_path, inside_root = _artifact_reference(root, artifact)
     entries, blockers = _manifest_entries(manifest, root, artifact)
     if blockers:
-        return {"path": str(artifact), "status": "failed", "manifestEntries": []}, blockers
+        report = {"path": report_path, "status": "failed", "manifestEntries": []}
+        if not inside_root:
+            report["pathScope"] = "outside-manifest-directory"
+        return report, blockers
     actual_by_path = {path.relative_to(root).as_posix(): path for path in _files_in(artifact)}
     expected_paths = {str(item["path"]) for item in entries}
     current_paths = set(actual_by_path)
@@ -119,7 +130,7 @@ def _bind_artifact(manifest: dict[str, Any], root: Path, artifact: Path) -> tupl
             "sha256": actual_sha256,
         })
     return {
-        "path": str(artifact),
+        "path": report_path,
         "status": "failed" if blockers else "bound",
         "manifestEntries": verified_entries,
     }, blockers
@@ -218,8 +229,12 @@ def evaluate(
 
     for artifact in selected:
         if not artifact.exists():
-            exact_reports.append({"path": str(artifact), "status": "failed", "manifestEntries": []})
-            blockers.append(f"artifact does not exist: {artifact}")
+            report_path, inside_root = _artifact_reference(root, artifact)
+            report = {"path": report_path, "status": "failed", "manifestEntries": []}
+            if not inside_root:
+                report["pathScope"] = "outside-manifest-directory"
+            exact_reports.append(report)
+            blockers.append(f"artifact does not exist: {report_path}")
             continue
         binding, binding_blockers = _bind_artifact(manifest, root, artifact)
         blockers.extend(binding_blockers)
