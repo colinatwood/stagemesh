@@ -26,6 +26,11 @@ review, clean-host installation, accessibility, and physical hardware remain
 separate gates. Platform evidence workflows run on pull requests, `main`
 pushes, and manual dispatches.
 
+The Windows desktop artifact also carries a fail-closed clean-host evidence
+collector. It binds observations to the exact candidate and records Windows
+11 install, WebView2, runtime readiness, persistence, upgrade, and uninstall
+phases without asserting qualification. See `docs/desktop-installation.md`.
+
 For software-only ALSA loopback preparation, run
 `sudo scripts/virtual-audio-check.sh` on a Linux host or VM. Loopback verifies
 routing behavior only; it does not qualify physical hardware. The complete
