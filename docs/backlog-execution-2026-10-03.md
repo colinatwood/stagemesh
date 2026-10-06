@@ -2,6 +2,20 @@
 
 As of 2026-10-03, this record covers the 25 rows that remain not Done in the refreshed Checkpoint 83 workbook. It records repository-supported progress and the evidence still required for external rows. It does not convert hosted checks into hardware, deployment, licensing, accessibility, or owner-decision qualification.
 
+## Latest current-main hosted verification (2026-10-06)
+
+After PR #100 merged, commit [145e9994f9f62a9d0a5fba0f000a0ff0f8e81cdf](https://github.com/colinatwood/stagemesh/commit/145e9994f9f62a9d0a5fba0f000a0ff0f8e81cdf) passed the current-main workflows:
+
+- [StageMesh CI run 37542866404](https://github.com/colinatwood/stagemesh/actions/runs/37542866404): Windows x64 native build/tests/platform smoke, macOS Apple Silicon platform smoke, and Linux RT release gate: **all green**.
+- [StageMesh Desktop run 37542866431](https://github.com/colinatwood/stagemesh/actions/runs/37542866431): Windows, macOS and Ubuntu packaging plus the cross-platform release-candidate index: **all green**.
+- Fresh artifact digests are recorded here for exact-candidate review:
+  - Windows: `sha256:85a042800d6d07285aa22a91b91f2f1b1779f6e40e5863a37eaac36ceee29dd1`
+  - macOS: `sha256:2a0b1684298fed04f46b0152ec1f30c9298451c050f8ab89ffa57d7a65b58cef`
+  - Ubuntu: `sha256:9db0290133e65425a556e3cf9c32ca5a7eb3a83bcf643acb71dd9a9025f53300`
+  - Release index: `sha256:189b9f2fbbad17230fb51de5ee85e64745ea4a79d0a0f281a0e1c8701c833040`
+
+These hosted checks establish build, packaging, provenance/SBOM and release-index evidence only. They do **not** qualify clean-host installation, signing/notarization, assistive technology, legal release decisions, physical audio/MIDI I/O, audible quality, licensed plugins, LAN/IdP/firewall deployment or independent witness failure domains. No backlog status is changed by this section; the remaining acceptance evidence is still listed below.
+
 ## Repository checks run
 
 - `python3 -m unittest tests.test_native_engine tests.test_audio_backend_neutral_runtime tests.test_audio_identity tests.test_qualification_bundle tests.test_qualification_review tests.test_qualification_status`: **44 passed, 13 skipped**.
