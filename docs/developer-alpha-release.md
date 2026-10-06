@@ -84,7 +84,9 @@ qualification host. Neither mode activates stage hardware. A passing sanitizer r
 is additional evidence, not a real-time latency or target-hardware qualification.
 - Resolve callback-size/rate correctness, delay-bank concurrency and trigger races.
 - Checkpoint 33 adds a strict loopback `proxy-https` deployment profile and executable backend/TLS-edge qualification helper; checkpoint 34 bounds the per-user authorization audit. A real LAN proxy/certificate/IdP/firewall deployment, controller workload/disk-cost qualification, specialized authorization-audit unification and witness/replication secret lifecycle still block LAN production claims.
-- Choose a project license and inventory redistribution rights/dependency notices.
+- Apache License 2.0 is present and the public contribution/security/support files
+  are release-gated. Owner/legal review of exact dependency redistribution rights
+  and notices remains required before publication.
 - Produce setup instructions, a demo session and known-issues documentation.
 - Measure actual latency, dropouts, reconnect and recovery on named hardware.
 

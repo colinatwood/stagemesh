@@ -5,6 +5,12 @@ frontend, schemas, packaging and tests with the Checkpoint 70–83 platform work
 GitHub is the canonical source. Recovery provenance and integration limits are
 recorded in `docs/consolidation-checkpoint-84.md`.
 
+StageMesh is licensed under [Apache License 2.0](LICENSE). See
+[CONTRIBUTING.md](CONTRIBUTING.md) before submitting changes,
+[SECURITY.md](SECURITY.md) for private vulnerability reporting,
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community expectations, and
+[SUPPORT.md](SUPPORT.md) for support scope.
+
 Build the engine from the repository root with `cmake -S . -B build`, then
 `cmake --build build --config Release` and
 `ctest --test-dir build -C Release --output-on-failure`.
