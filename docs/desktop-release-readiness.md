@@ -107,6 +107,13 @@ physical audio/MIDI qualification. Do not execute a bundled verifier from an
 untrusted source; use trusted system tooling and separately obtained digests
 until the download channel has been authenticated.
 
+Windows bundles also include `windows-clean-host.py`; macOS and Linux bundles
+include `posix-clean-host.py`. These collectors bind later clean-host evidence
+to the exact installer and source manifest. They require a supported target OS,
+preserve the baseline/install/restart/real-upgrade/uninstall ordering, hash the
+runner identity and persistence marker, and keep qualification false even when
+all phases pass. See `desktop-installation.md` for target-specific commands.
+
 ## Locked dependency inventory
 
 Every desktop CI bundle contains `desktop-dependencies.json`. The report binds

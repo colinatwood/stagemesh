@@ -19,6 +19,7 @@ on:
       - "scripts/desktop-signing-readiness.py"
       - "scripts/desktop-signing-verification.py"
       - "scripts/verify-desktop-download.py"
+      - "scripts/posix-desktop-clean-host.py"
       - "scripts/windows-desktop-clean-host.py"
       - "scripts/desktop-runtime-smoke.py"
       - "docs/desktop-release-readiness.md"
@@ -30,6 +31,7 @@ on:
       - "tests/test_desktop_signing_verification.py"
       - "tests/test_desktop_download_verifier.py"
       - "tests/test_desktop_version.py"
+      - "tests/test_posix_desktop_clean_host.py"
       - "tests/test_windows_desktop_clean_host.py"
       - "scripts/verify-desktop-version.py"
       - ".github/workflows/desktop.yml"
@@ -53,6 +55,7 @@ on:
       - "scripts/desktop-signing-readiness.py"
       - "scripts/desktop-signing-verification.py"
       - "scripts/verify-desktop-download.py"
+      - "scripts/posix-desktop-clean-host.py"
       - "scripts/windows-desktop-clean-host.py"
       - "scripts/desktop-runtime-smoke.py"
       - "docs/desktop-release-readiness.md"
@@ -64,6 +67,7 @@ on:
       - "tests/test_desktop_signing_verification.py"
       - "tests/test_desktop_download_verifier.py"
       - "tests/test_desktop_version.py"
+      - "tests/test_posix_desktop_clean_host.py"
       - "tests/test_windows_desktop_clean_host.py"
       - "scripts/verify-desktop-version.py"
       - ".github/workflows/desktop.yml"
@@ -213,6 +217,13 @@ jobs:
         run: >-
           cp scripts/windows-desktop-clean-host.py
           desktop/src-tauri/target/release/bundle/windows-clean-host.py
+
+      - name: Include macOS/Linux clean-host evidence collector
+        if: runner.os != 'Windows'
+        shell: bash
+        run: >-
+          cp scripts/posix-desktop-clean-host.py
+          desktop/src-tauri/target/release/bundle/posix-clean-host.py
 
       - name: Record installer checksums and qualification boundary
         shell: bash

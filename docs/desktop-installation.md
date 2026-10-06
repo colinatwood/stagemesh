@@ -152,6 +152,44 @@ tested. Use a clean snapshot again for the eventual complete sequence.
 
 StageMesh uses WKWebView, CoreAudio, and CoreMIDI.
 
+The macOS CI bundle contains `posix-clean-host.py`. On a fresh macOS 14+
+Apple Silicon host, verify the bundle, record the baseline against the DMG,
+drag `StageMesh.app` to `/Applications`, and then record the installed and
+restart phases. The collector hashes the exact DMG and manifest, machine/user
+identity, installed application identity, observed version, process state, and
+the persistence marker without retaining its plaintext value:
+
+```sh
+python3 verify-download.py --directory .
+python3 posix-clean-host.py \
+  --phase baseline \
+  --evidence ../stagemesh-evidence/macos-clean-host.json \
+  --bundle-directory . \
+  --installer ./dmg/StageMesh_0.1.0_aarch64.dmg \
+  --clean-host-attested
+
+python3 posix-clean-host.py \
+  --phase installed \
+  --evidence ../stagemesh-evidence/macos-clean-host.json \
+  --installed-executable /Applications/StageMesh.app \
+  --runtime-ready-observed \
+  --persistence-marker "PKG-033-clean-host-canary"
+
+python3 posix-clean-host.py \
+  --phase restarted \
+  --evidence ../stagemesh-evidence/macos-clean-host.json \
+  --installed-executable /Applications/StageMesh.app \
+  --runtime-ready-observed \
+  --save-restart-recovered \
+  --persistence-marker "PKG-033-clean-host-canary"
+```
+
+Use the same `upgraded` and `uninstalled` phase flags documented for Windows.
+The upgrade must start from a genuinely different version. Remove the app
+before recording uninstall. A complete report is only ready for owner review;
+it does not establish Gatekeeper, signing, notarization, accessibility, or
+audio/MIDI qualification.
+
 On first use:
 
 - grant microphone permission when capture is requested;
@@ -174,6 +212,36 @@ official guidance confirms that BOOM line inputs accept 1/4-inch connections:
 
 The AppImage is portable but still relies on the host's webview and graphics
 stack. The Debian package declares the WebKitGTK and GTK runtime dependencies.
+
+The Linux CI bundle also contains `posix-clean-host.py`. Run it on a fresh
+Ubuntu 22.04 or 24.04 x64 host for the AppImage and Debian package separately.
+The Debian path reads its installed version from `dpkg`; the AppImage path
+requires the installed/portable executable path and an explicit observed
+version because AppImage has no package registration:
+
+```sh
+python3 verify-download.py --directory .
+python3 posix-clean-host.py \
+  --phase baseline \
+  --evidence ../stagemesh-evidence/linux-appimage-clean-host.json \
+  --bundle-directory . \
+  --installer ./appimage/StageMesh_0.1.0_amd64.AppImage \
+  --clean-host-attested
+
+python3 posix-clean-host.py \
+  --phase installed \
+  --evidence ../stagemesh-evidence/linux-appimage-clean-host.json \
+  --installed-executable "$HOME/.local/bin/StageMesh.AppImage" \
+  --observed-installed-version 0.1.0 \
+  --runtime-ready-observed \
+  --persistence-marker "PKG-033-clean-host-canary"
+```
+
+Record restart, real-version upgrade, and uninstall exactly as with macOS,
+continuing to pass the installed executable and observed version until it is
+removed. For the Debian exercise, select the `.deb`; package registration is
+then mandatory and fail-closed. Preserve each installer format's report
+separately.
 
 For audio and MIDI, install the host's supported stack:
 
@@ -207,8 +275,8 @@ previous development package:
 | Priority | Host | Required evidence |
 | --- | --- | --- |
 | P0 | Windows 11 x64 | NSIS/MSI install, WebView2 bootstrap or existing-runtime detection, launch/readiness, save/restart recovery, upgrade and uninstall |
-| P0 | macOS 14+ Apple Silicon | DMG install, Gatekeeper behavior for the unsigned test build, microphone permission, launch/readiness, save/restart recovery and uninstall |
-| P0 | Ubuntu 22.04/24.04 x64 | AppImage plus Debian install, WebKitGTK 4.1 dependency resolution, launch/readiness, save/restart recovery, upgrade and uninstall |
+| P0 | macOS 14+ Apple Silicon | DMG install, Gatekeeper behavior for the unsigned test build, microphone permission, launch/readiness, save/restart recovery, real-version upgrade and uninstall; preserve `macos-clean-host.json` |
+| P0 | Ubuntu 22.04/24.04 x64 | AppImage plus Debian install, WebKitGTK 4.1 dependency resolution, launch/readiness, save/restart recovery, real-version upgrade and uninstall; preserve separate JSON reports |
 | P1 | A second non-developer user account on each host | Per-user data isolation, permissions, log location and uninstall state preservation |
 
 The matrix qualifies installed software behavior only. A host passes hardware
