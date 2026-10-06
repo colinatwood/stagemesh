@@ -71,6 +71,83 @@ For audio and MIDI:
   claim ASIO qualification yet.
 - The installer does not silently install vendor audio drivers.
 
+### Windows clean-host evidence
+
+The Windows CI bundle contains `windows-clean-host.py`. It records the exact
+manifest and installer hashes, a hashed machine/user identity, Windows 11
+build and architecture, WebView2 detection, installed-version state, and the
+baseline/install/restart/upgrade/uninstall sequence. It never marks the host
+qualified; a complete report only becomes ready for owner review.
+
+Keep the report outside the downloaded bundle so the bundle remains exactly
+verifiable. From PowerShell on a fresh Windows 11 x64 host or VM, first run the
+offline verifier and record the clean baseline (replace the installer path
+with the NSIS or MSI path in the bundle):
+
+```powershell
+py .\verify-download.py --directory .
+py .\windows-clean-host.py `
+  --phase baseline `
+  --evidence ..\stagemesh-evidence\windows-clean-host.json `
+  --bundle-directory . `
+  --installer .\nsis\StageMesh_0.1.0_x64-setup.exe `
+  --clean-host-attested
+```
+
+Install and launch StageMesh. Create a harmless saved template with a unique
+marker name, confirm that the application reaches its main window, then record
+the installed phase:
+
+```powershell
+py .\windows-clean-host.py `
+  --phase installed `
+  --evidence ..\stagemesh-evidence\windows-clean-host.json `
+  --runtime-ready-observed `
+  --persistence-marker "PKG-033-clean-host-canary"
+```
+
+Close and relaunch StageMesh, confirm that the marker is still present, and
+record restart recovery:
+
+```powershell
+py .\windows-clean-host.py `
+  --phase restarted `
+  --evidence ..\stagemesh-evidence\windows-clean-host.json `
+  --runtime-ready-observed `
+  --save-restart-recovered `
+  --persistence-marker "PKG-033-clean-host-canary"
+```
+
+The upgrade phase requires a genuinely different prior StageMesh version; a
+same-version reinstall is rejected. After upgrading to the exact candidate,
+confirm readiness and the same saved marker:
+
+```powershell
+py .\windows-clean-host.py `
+  --phase upgraded `
+  --evidence ..\stagemesh-evidence\windows-clean-host.json `
+  --previous-version 0.0.9 `
+  --upgrade-observed `
+  --runtime-ready-observed `
+  --save-restart-recovered `
+  --persistence-marker "PKG-033-clean-host-canary"
+```
+
+Finally uninstall StageMesh, verify that it is absent from installed programs
+and no StageMesh process remains, then record uninstall:
+
+```powershell
+py .\windows-clean-host.py `
+  --phase uninstalled `
+  --evidence ..\stagemesh-evidence\windows-clean-host.json `
+  --uninstall-observed
+```
+
+If no prior StageMesh desktop version is available yet, run baseline,
+installed, restarted, and uninstalled as a partial exercise. The report will
+correctly keep `readyForQualificationReview` false until a real upgrade is
+tested. Use a clean snapshot again for the eventual complete sequence.
+
 ## macOS
 
 StageMesh uses WKWebView, CoreAudio, and CoreMIDI.

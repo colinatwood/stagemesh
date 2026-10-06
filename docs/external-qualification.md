@@ -27,6 +27,7 @@ Current task IDs are:
 - `independent-witness`
 - `lan-security`
 - `linux-packaging-host`
+- `windows-desktop-clean-host`
 - `windows-platform`
 - `macos-platform`
 - `assistive-technology`
