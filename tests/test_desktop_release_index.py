@@ -238,6 +238,14 @@ class DesktopReleaseIndexTests(unittest.TestCase):
         self.assertIn("attestations: write", release_job)
         self.assertIn("artifact-metadata: write", release_job)
 
+    def test_desktop_workflow_rebuilds_after_project_handoff_changes(self):
+        workflow = (ROOT / ".github" / "workflows" / "desktop.yml").read_text(
+            encoding="utf-8"
+        )
+        pull_request_paths, push_paths = workflow.split("  push:", maxsplit=1)
+        self.assertIn('      - "PROJECT_MASTER.md"', pull_request_paths)
+        self.assertIn('      - "PROJECT_MASTER.md"', push_paths)
+
 
 if __name__ == "__main__":
     unittest.main()
