@@ -53,6 +53,38 @@ installer, an owner must complete each separate gate and retain its evidence:
 The CI desktop workflow runs this preflight after writing each unsigned
 artifact manifest. Its JSON is a review aid, not a release approval.
 
+## Cross-platform release-candidate index
+
+After all three desktop matrix jobs pass, CI downloads their exact artifacts
+and runs `desktop-release-index.py`. The script independently re-runs each
+bundle's offline integrity check, requires exactly one Linux, macOS, and
+Windows bundle with the same version and source commit, and writes
+`desktop-release-index.json`. The index binds each platform manifest,
+checksum file, and signing-verification report by SHA-256.
+
+CI uploads that small index separately as
+`stagemesh-desktop-release-index-<commit>`. The installers remain in their
+original per-platform CI artifacts, avoiding a second large copy. Reviewers
+can use the index to reject missing, duplicated, mixed-version, mixed-commit,
+tampered, or failed-signature candidates before any publication step exists.
+
+The index always identifies itself as an `unsigned-ci-candidate`, keeps
+`readyForPublication` false, and records the legal, signing, clean-host,
+accessibility, and physical-hardware blockers. Even when every exact artifact
+signature verifies, it cannot convert those external gates into release
+approval and it never creates or updates a GitHub Release.
+
+To reproduce the aggregation after downloading the three workflow artifacts
+into sibling directories:
+
+```sh
+python scripts/desktop-release-index.py \
+  --directory release-candidate \
+  --version 0.1.0 \
+  --commit <40-character-source-commit> \
+  --output desktop-release-index.json
+```
+
 ## Download integrity verification
 
 Each platform bundle includes `verify-download.py`, and the script itself is

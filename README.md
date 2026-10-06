@@ -17,11 +17,14 @@ Hosted software evidence does not qualify physical audio/MIDI hardware, licensed
 plugins, deployed services, or installed packages. See
 `docs/remaining-data-requirements.md` for remaining acceptance inputs.
 
-GitHub Actions also provides a manually runnable Linux release-artifact
-workflow. It builds a Release engine, runs native tests, stages the Linux
-installation tree, and publishes an archive with SHA-256 checksums. The
-Windows/macOS platform evidence workflows run on pull requests, `main` pushes,
-and manual dispatches.
+GitHub Actions provides a manually runnable Linux release-artifact workflow
+and a cross-platform desktop workflow. The desktop workflow builds native
+Windows, macOS, and Linux installers, verifies each downloadable bundle, then
+publishes a small SHA-256-bound release-candidate index as a CI artifact. These
+are unsigned test artifacts rather than a public release; signing, legal
+review, clean-host installation, accessibility, and physical hardware remain
+separate gates. Platform evidence workflows run on pull requests, `main`
+pushes, and manual dispatches.
 
 For software-only ALSA loopback preparation, run
 `sudo scripts/virtual-audio-check.sh` on a Linux host or VM. Loopback verifies
