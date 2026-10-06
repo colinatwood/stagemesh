@@ -282,3 +282,28 @@ previous development package:
 The matrix qualifies installed software behavior only. A host passes hardware
 qualification only after the named audio/MIDI device, driver, cable/routing,
 reference signal, capture, continuity, and review artifacts also pass.
+
+### Bind the complete clean-host matrix
+
+After all five reports are complete, place them with the CI
+`desktop-release-index.json` and run the reviewer shipped in any desktop
+bundle. Each report must match that index's version, source commit, and exact
+platform-manifest digest; every phase must have passed. Duplicate, unsupported,
+incomplete, or cross-candidate reports fail closed.
+
+```sh
+python3 review-clean-host.py \
+  --index desktop-release-index.json \
+  --evidence windows-nsis-clean-host.json \
+  --evidence windows-msi-clean-host.json \
+  --evidence macos-clean-host.json \
+  --evidence linux-deb-clean-host.json \
+  --evidence linux-appimage-clean-host.json \
+  --output desktop-clean-host-review.json
+```
+
+A complete review document sets `readyForOwnerReview` to true while keeping
+`ownerReviewComplete`, `cleanHostInstallQualified`, accessibility, and physical
+hardware qualification false. A partial set is still summarized with the exact
+missing installer tracks, so evidence can be collected incrementally without
+overstating completion.
