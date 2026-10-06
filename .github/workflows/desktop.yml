@@ -15,6 +15,7 @@ on:
       - "scripts/desktop-artifact-manifest.py"
       - "scripts/desktop-dependency-inventory.py"
       - "scripts/desktop-release-readiness.py"
+      - "scripts/desktop-release-index.py"
       - "scripts/desktop-signing-readiness.py"
       - "scripts/desktop-signing-verification.py"
       - "scripts/verify-desktop-download.py"
@@ -23,6 +24,7 @@ on:
       - "tests/test_desktop_artifact_manifest.py"
       - "tests/test_desktop_dependency_inventory.py"
       - "tests/test_desktop_release_readiness.py"
+      - "tests/test_desktop_release_index.py"
       - "tests/test_desktop_signing_readiness.py"
       - "tests/test_desktop_signing_verification.py"
       - "tests/test_desktop_download_verifier.py"
@@ -45,6 +47,7 @@ on:
       - "scripts/desktop-artifact-manifest.py"
       - "scripts/desktop-dependency-inventory.py"
       - "scripts/desktop-release-readiness.py"
+      - "scripts/desktop-release-index.py"
       - "scripts/desktop-signing-readiness.py"
       - "scripts/desktop-signing-verification.py"
       - "scripts/verify-desktop-download.py"
@@ -53,6 +56,7 @@ on:
       - "tests/test_desktop_artifact_manifest.py"
       - "tests/test_desktop_dependency_inventory.py"
       - "tests/test_desktop_release_readiness.py"
+      - "tests/test_desktop_release_index.py"
       - "tests/test_desktop_signing_readiness.py"
       - "tests/test_desktop_signing_verification.py"
       - "tests/test_desktop_download_verifier.py"
@@ -244,5 +248,40 @@ jobs:
         with:
           name: stagemesh-desktop-${{ matrix.os }}
           path: desktop/src-tauri/target/release/bundle/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+
+  release-candidate:
+    name: Bind cross-platform release candidate
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download exact platform bundles
+        uses: actions/download-artifact@v4
+        with:
+          pattern: stagemesh-desktop-*
+          path: release-candidate
+
+      - name: Verify and bind Windows, macOS, and Linux bundles
+        shell: bash
+        run: >-
+          python scripts/desktop-release-index.py
+          --directory release-candidate
+          --version "$(python -c 'import json; print(json.load(open("desktop/package.json"))["version"])')"
+          --commit "$GITHUB_SHA"
+          --output desktop-release-index.json
+
+      - name: Upload release-candidate index
+        uses: actions/upload-artifact@v4
+        with:
+          name: stagemesh-desktop-release-index-${{ github.sha }}
+          path: desktop-release-index.json
           if-no-files-found: error
           retention-days: 90

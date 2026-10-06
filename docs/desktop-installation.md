@@ -16,9 +16,17 @@ engine. Startup is fail-closed: the desktop window opens only after an
 authenticated loopback health check succeeds. No public network listener is
 created.
 
-The first published installers will be unsigned until the project signing
-secrets and certificates are configured. Unsigned packages are for development
-and controlled testing only.
+Current CI installers are unsigned and are for development and controlled
+testing only. Public desktop publication remains blocked until the owner
+selects platform signing providers and the Linux package-signing policy,
+configures protected credentials, verifies the exact signed artifacts, and
+completes the separate legal and clean-host gates.
+
+The historical `v0.1.0-alpha1` through `v0.1.0-alpha3` GitHub releases predate
+the current StageMesh desktop pipeline and are not current Windows, macOS, and
+Linux desktop installers. Use artifacts from the `StageMesh Desktop` workflow
+for controlled testing and pair the three platform artifacts with the
+commit-specific release-candidate index.
 
 Each CI artifact includes `SHA256SUMS`, `desktop-artifacts.json`, and a
 self-contained `verify-download.py`. After downloading and extracting one
