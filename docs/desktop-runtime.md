@@ -21,7 +21,7 @@ The packaged shell and sidecar use the canonical `STAGEMESH_DATA_DIR`,
 `STAGEMESH_FRONTEND_DIR`, `STAGEMESH_RUNTIME_MODE`,
 `STAGEMESH_REQUIRE_API_TOKEN`, `STAGEMESH_API_TOKEN`, and
 `STAGEMESH_DESKTOP_SESSION_TOKEN` environment contract. The one-time browser
-exchange uses `X-StageMesh-Desktop-Token`; the legacy StageForge desktop-mode
+exchange uses `X-StageMesh-Desktop-Token`; retired pre-migration desktop-mode
 and bootstrap-token names are not accepted.
 
 The sidecar is intentionally fail-closed. Development builds can point to a

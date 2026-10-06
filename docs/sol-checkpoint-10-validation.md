@@ -19,7 +19,7 @@ Windows/macOS adapters remain deferred.
 
 - 383 Python unit/integration tests passed without skips with the qualification
   native engine selected.
-- `stageforge_native_tests` and `stageforge_current_abi_smoke` passed.
+- `stagemesh_native_tests` and `stagemesh_current_abi_smoke` passed.
 - All 111 JSON schemas and the OpenAPI document parsed.
 - `frontend/app.js` passed the Node syntax check.
 

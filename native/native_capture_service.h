@@ -6,7 +6,7 @@
 
 #include <memory>
 
-namespace stageforge {
+namespace stagemesh {
 
 // Owner-thread controller for one target-OS capture stream. All methods must
 // be called from the thread that constructs this object. It owns the monitor,
@@ -40,4 +40,4 @@ private:
     FenceObservation last_fence_{};
 };
 
-} // namespace stageforge
+} // namespace stagemesh

@@ -4,7 +4,7 @@ Checkpoint 53 turns driver-catalog expiry from a passive match-time rule into an
 
 ## Audit contract
 
-`stageforge-driver-catalog-audit.py` reads a catalog and emits `org.upp.driver-catalog-audit-report` version 1.
+`stagemesh-driver-catalog-audit.py` reads a catalog and emits `org.upp.driver-catalog-audit-report` version 1.
 
 The report includes:
 
@@ -16,7 +16,7 @@ The report includes:
 
 The command exits non-zero when the catalog is unusable. A current but soon-to-expire catalog remains usable while still raising review attention, allowing operators to re-review before exact matches disappear on the expiry date.
 
-The Linux installer now ships the audit helper beside the other StageForge qualification utilities.
+The Linux installer now ships the audit helper beside the other StageMesh qualification utilities.
 
 ## Validation
 

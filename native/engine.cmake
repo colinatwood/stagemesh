@@ -1,6 +1,6 @@
 find_package(Threads REQUIRED)
 
-add_library(stageforge_core STATIC
+add_library(stagemesh_core STATIC
     src/core_state.cpp
     src/audio_device.cpp
     src/audio_device_manager.cpp
@@ -20,13 +20,13 @@ add_library(stageforge_core STATIC
     src/realtime_qualification.cpp
 )
 
-target_compile_features(stageforge_core PUBLIC cxx_std_20)
-target_link_libraries(stageforge_core PUBLIC ${CMAKE_DL_LIBS} Threads::Threads)
+target_compile_features(stagemesh_core PUBLIC cxx_std_20)
+target_link_libraries(stagemesh_core PUBLIC ${CMAKE_DL_LIBS} Threads::Threads)
 if(WIN32)
-    target_compile_definitions(stageforge_core PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN)
-    target_link_libraries(stageforge_core PUBLIC ws2_32)
+    target_compile_definitions(stagemesh_core PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN)
+    target_link_libraries(stagemesh_core PUBLIC ws2_32)
 endif()
-target_include_directories(stageforge_core
+target_include_directories(stagemesh_core
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${PROJECT_SOURCE_DIR}/include
@@ -36,21 +36,21 @@ if(STAGEMESH_RT_QUALIFICATION)
     if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
         message(FATAL_ERROR "STAGEMESH_RT_QUALIFICATION currently supports Linux only; disable it for ordinary builds")
     endif()
-    target_compile_definitions(stageforge_core PUBLIC STAGEMESH_RT_QUALIFICATION=1)
+    target_compile_definitions(stagemesh_core PUBLIC STAGEMESH_RT_QUALIFICATION=1)
     if(UNIX AND NOT APPLE)
-        target_link_options(stageforge_core INTERFACE -Wl,--wrap=pthread_mutex_lock)
+        target_link_options(stagemesh_core INTERFACE -Wl,--wrap=pthread_mutex_lock)
     endif()
 endif()
 
 if(MSVC)
-    target_compile_options(stageforge_core PRIVATE /W4 /permissive-)
+    target_compile_options(stagemesh_core PRIVATE /W4 /permissive-)
 else()
-    target_compile_options(stageforge_core PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(stagemesh_core PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 
 add_executable(stagemesh_engine src/engine_main.cpp)
-target_link_libraries(stagemesh_engine PRIVATE stageforge_core)
+target_link_libraries(stagemesh_engine PRIVATE stagemesh_core)
 target_compile_features(stagemesh_engine PRIVATE cxx_std_20)
 if(MSVC)
     target_compile_options(stagemesh_engine PRIVATE /W4 /permissive-)
@@ -67,18 +67,18 @@ endif()
 
 if(STAGEMESH_BUILD_TESTS)
     enable_testing()
-    add_executable(stageforge_native_tests tests/native_tests.cpp)
-    target_link_libraries(stageforge_native_tests PRIVATE stageforge_core)
-    target_compile_features(stageforge_native_tests PRIVATE cxx_std_20)
+    add_executable(stagemesh_native_tests tests/native_tests.cpp)
+    target_link_libraries(stagemesh_native_tests PRIVATE stagemesh_core)
+    target_compile_features(stagemesh_native_tests PRIVATE cxx_std_20)
     if(MSVC)
-        target_compile_options(stageforge_native_tests PRIVATE /W4 /permissive-)
+        target_compile_options(stagemesh_native_tests PRIVATE /W4 /permissive-)
     else()
-        target_compile_options(stageforge_native_tests PRIVATE -Wall -Wextra -Wpedantic)
+        target_compile_options(stagemesh_native_tests PRIVATE -Wall -Wextra -Wpedantic)
     endif()
-    add_test(NAME stageforge_native_tests COMMAND stageforge_native_tests)
-    add_executable(stageforge_current_abi_smoke ../tests/core_api_510_smoke.c)
-    target_include_directories(stageforge_current_abi_smoke PRIVATE ${PROJECT_SOURCE_DIR}/include)
-    add_test(NAME stageforge_current_abi_smoke COMMAND stageforge_current_abi_smoke)
+    add_test(NAME stagemesh_native_tests COMMAND stagemesh_native_tests)
+    add_executable(stagemesh_current_abi_smoke ../tests/core_api_510_smoke.c)
+    target_include_directories(stagemesh_current_abi_smoke PRIVATE ${PROJECT_SOURCE_DIR}/include)
+    add_test(NAME stagemesh_current_abi_smoke COMMAND stagemesh_current_abi_smoke)
 endif()
 
 add_executable(capture_service_owner_tests tests/capture_service_owner_tests.cpp)
@@ -89,13 +89,13 @@ add_test(NAME capture_service_owner COMMAND capture_service_owner_tests)
 set_tests_properties(capture_service_owner PROPERTIES TIMEOUT 10)
 
 add_executable(midi_input_owner_tests tests/midi_input_owner_tests.cpp)
-target_link_libraries(midi_input_owner_tests PRIVATE stageforge_core)
+target_link_libraries(midi_input_owner_tests PRIVATE stagemesh_core)
 target_compile_features(midi_input_owner_tests PRIVATE cxx_std_20)
 add_test(NAME midi_input_owner COMMAND midi_input_owner_tests)
 set_tests_properties(midi_input_owner PROPERTIES TIMEOUT 10)
 
 if(APPLE)
     add_executable(midi_hardware_smoke midi_hardware_smoke.cpp)
-    target_link_libraries(midi_hardware_smoke PRIVATE stageforge_core)
+    target_link_libraries(midi_hardware_smoke PRIVATE stagemesh_core)
     target_compile_features(midi_hardware_smoke PRIVATE cxx_std_20)
 endif()

@@ -8,19 +8,19 @@
       "url": "https://witness-a.example.net:8790",
       "witnessId": "witness-a",
       "failureDomain": "venue-ups-a",
-      "keyringFile": "/etc/stageforge/witness-a-keys.json"
+      "keyringFile": "/etc/stagemesh/witness-a-keys.json"
     },
     {
       "url": "https://witness-b.example.net:8790",
       "witnessId": "witness-b",
       "failureDomain": "venue-ups-b",
-      "keyringFile": "/etc/stageforge/witness-b-keys.json"
+      "keyringFile": "/etc/stagemesh/witness-b-keys.json"
     },
     {
       "url": "https://witness-c.example.net:8790",
       "witnessId": "witness-c",
       "failureDomain": "remote-witness-c",
-      "keyringFile": "/etc/stageforge/witness-c-keys.json"
+      "keyringFile": "/etc/stagemesh/witness-c-keys.json"
     }
   ]
 }

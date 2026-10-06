@@ -11,13 +11,13 @@ Profile projection produces a digest-bound preview. Role, venue or session value
 The conformance runner executes canonical authentication, tamper, expiry, target, replay, downgrade, capability and profile-projection cases:
 
 ```bash
-python3 scripts/stageforge-conformance.py
+python3 scripts/stagemesh-conformance.py
 ```
 
 The hardware bench analyzer consumes adapter-captured JSON Lines evidence:
 
 ```bash
-python3 scripts/stageforge-hardware-bench.py --input capture.jsonl --source hardware \
+python3 scripts/stagemesh-hardware-bench.py --input capture.jsonl --source hardware \
   --uwb-device /dev/ttyACM0 --le-controller hci0 --duration-ms 60000
 ```
 

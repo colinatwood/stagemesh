@@ -50,7 +50,7 @@ class StagedResourceRegistry:
     def reclaim(self):
         reclaimed=[]
         for resource_class,root,path in list(self._items()):
-            lock_path=root/".stageforge-staging.lock";lock_path.touch(mode=0o600,exist_ok=True)
+            lock_path=root/".stagemesh-staging.lock";lock_path.touch(mode=0o600,exist_ok=True)
             with lock_path.open("r+") as lock:
                 with exclusive_file_lock(lock):
                     owner_path=self._owner_path(path)

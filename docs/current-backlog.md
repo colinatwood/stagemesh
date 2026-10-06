@@ -1,7 +1,7 @@
 # Recovered software backlog history (through Checkpoint 69)
 
 This recovered document is historical. Current acceptance statuses are in
-`backlog/StageForge-Master-Backlog-Checkpoint-83.xlsx`; consolidation findings
+`backlog/StageMesh-Master-Backlog-Checkpoint-83.xlsx`; consolidation findings
 are in `consolidation-checkpoint-84.md`. In particular, later hosted IPC and
 native binder evidence supersedes historical statements below, but does not
 prove full-engine integration or licensed plugin compatibility.
@@ -21,7 +21,7 @@ hardware qualification is deferred at the user's request, not marked complete.
 - **Checkpoint 62:** the real Chromium qualification now inspects the browser accessibility tree and enforces landmarks, names, roles, focusability, bounded BPM semantics and polite live regions. The reference passes with no unnamed interactive or ignored-focusable nodes; actual screen-reader/switch/voice interaction remains open.
 - **Checkpoint 61:** installed isolated-rootfs packaging qualification now runs the real installer/reinstaller, systemd sysusers/tmpfiles provisioning, unit verification, state-preserving uninstall and explicit purge checks. It deliberately reports clean-host and hardware-permission qualification as false; those real-host gates remain open.
 - **Checkpoint 60:** Windows/macOS plugin manifests now require platform-native launch attestations (Windows Authenticode publisher + file identity; macOS Team ID + code-directory hash), platform evidence is fail-closed, and non-Linux external launch refuses the old path-digest fallback. Real native binders and licensed product runs remain open.
-- **Checkpoint 59:** local UPPF framing is now transport-neutral across stream/message transports and the Windows named-pipe adapter contract is fail-closed: StageForge-scoped pipe names, bounded requests and mandatory positive ACL validation before accept. Real Windows DACL creation/inspection and client/server execution remain open.
+- **Checkpoint 59:** local UPPF framing is now transport-neutral across stream/message transports and the Windows named-pipe adapter contract is fail-closed: StageMesh-scoped pipe names, bounded requests and mandatory positive ACL validation before accept. Real Windows DACL creation/inspection and client/server execution remain open.
 
 - **Checkpoint 58:** physical audio state/activation fencing is now backend-neutral. Future WASAPI/CoreAudio execution will use the same active-state, post-start identity revalidation and stop-on-loss rules as ALSA, while null/bridge backends remain non-physical. The ALSA preflight boundary is explicit; real Windows/macOS preflight/configuration and stream adapters remain open.
 

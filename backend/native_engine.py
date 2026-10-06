@@ -76,7 +76,7 @@ class NativeEngineClient:
             return
         try:
             env = os.environ.copy()
-            env["STAGEFORGE_IPC_TOKEN"] = self._ipc_token
+            env["STAGEMESH_IPC_TOKEN"] = self._ipc_token
             process = subprocess.Popen(
                 [str(path), "--stdio"],
                 stdin=subprocess.PIPE,

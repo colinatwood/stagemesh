@@ -27,7 +27,7 @@ class ApiTests(unittest.TestCase):
     def test_oversized_command_id_rejected_without_mutation(self):
         _, _, before = self.request('GET', '/api/v1/state')
         status, _, error = self.request('PATCH', '/api/v1/show', {'bpm': 137},
-                                       headers={'X-StageForge-Command-Id': 'a' * 129})
+                                       headers={'X-StageMesh-Command-Id': 'a' * 129})
         self.assertEqual(status, 400)
         self.assertIn('command ID', error['error'])
         _, _, after = self.request('GET', '/api/v1/state')
@@ -163,10 +163,10 @@ class ApiTests(unittest.TestCase):
         cls.temp = tempfile.TemporaryDirectory()
         cls.port = free_port()
         env = os.environ.copy()
-        env["STAGEFORGE_DATA_DIR"] = cls.temp.name
-        env["STAGEFORGE_GOVERNANCE_TOKEN_ONLY"] = "1"
-        env["STAGEFORGE_ADMIN_EMAIL_MODE"] = "outbox"
-        env["STAGEFORGE_AUTH_PROXY_TOKEN"] = "api-test-auth-proxy"
+        env["STAGEMESH_DATA_DIR"] = cls.temp.name
+        env["STAGEMESH_GOVERNANCE_TOKEN_ONLY"] = "1"
+        env["STAGEMESH_ADMIN_EMAIL_MODE"] = "outbox"
+        env["STAGEMESH_AUTH_PROXY_TOKEN"] = "api-test-auth-proxy"
         cls.process = subprocess.Popen(
             [sys.executable, str(ROOT / "backend" / "dev_server.py"), "--port", str(cls.port)],
             cwd=ROOT,
@@ -348,8 +348,8 @@ class ApiTests(unittest.TestCase):
         status, _, _ = self.request("POST", f"/api/v1/community/proposals/{proposal_id}/email-voters", {"userIds": [account_id], "windowHours": 24})
         self.assertEqual(status, 200)
         proxy_headers = {
-            "X-StageForge-Authenticated-User": account_id,
-            "X-StageForge-Auth-Proxy-Token": "api-test-auth-proxy",
+            "X-StageMesh-Authenticated-User": account_id,
+            "X-StageMesh-Auth-Proxy-Token": "api-test-auth-proxy",
         }
         status, _, session = self.request("POST", "/api/v1/community/session", {}, headers=proxy_headers)
         self.assertEqual(status, 201)
@@ -535,10 +535,10 @@ class ApiTests(unittest.TestCase):
         status, headers, state = self.request("GET", "/api/v1/state")
         self.assertEqual(status, 200)
         etag = headers["ETag"]
-        status, _, updated = self.request("PATCH", "/api/v1/show", {"bpm": 128}, {"If-Match": etag, "X-StageForge-Command-Id": "api-test-1"})
+        status, _, updated = self.request("PATCH", "/api/v1/show", {"bpm": 128}, {"If-Match": etag, "X-StageMesh-Command-Id": "api-test-1"})
         self.assertEqual(status, 200)
         self.assertEqual(updated["transport"]["bpm"], 128)
-        status, _, conflict = self.request("PATCH", "/api/v1/show", {"bpm": 129}, {"If-Match": etag, "X-StageForge-Command-Id": "api-test-2"})
+        status, _, conflict = self.request("PATCH", "/api/v1/show", {"bpm": 129}, {"If-Match": etag, "X-StageMesh-Command-Id": "api-test-2"})
         self.assertEqual(status, 409)
         self.assertIn("current", conflict)
 
@@ -587,23 +587,23 @@ class ApiTests(unittest.TestCase):
 
         status, _, _ = self.request(
             "PATCH", "/api/v1/system", {"capacity": 61},
-            {"If-Match": stale_global, "X-StageForge-Resource-If-Match": f'"system@{system_revision}"'}
+            {"If-Match": stale_global, "X-StageMesh-Resource-If-Match": f'"system@{system_revision}"'}
         )
         self.assertEqual(status, 200)
 
         # Global ETag is now stale, but Alex's monitor resource has not changed.
         status, headers2, changed = self.request(
             "PATCH", "/api/v1/players/alex/monitor", {"self": 83},
-            {"If-Match": stale_global, "X-StageForge-Resource-If-Match": f'"monitor:alex@{monitor_revision}"'}
+            {"If-Match": stale_global, "X-StageMesh-Resource-If-Match": f'"monitor:alex@{monitor_revision}"'}
         )
         self.assertEqual(status, 200)
         self.assertEqual(changed["players"][0]["monitor"]["self"], 83)
-        self.assertIn("X-StageForge-Resource-ETag", headers2)
+        self.assertIn("X-StageMesh-Resource-ETag", headers2)
 
         # Reusing the now-stale monitor token conflicts on that resource only.
         status, _, conflict = self.request(
             "PATCH", "/api/v1/players/alex/monitor", {"self": 84},
-            {"X-StageForge-Resource-If-Match": f'"monitor:alex@{monitor_revision}"'}
+            {"X-StageMesh-Resource-If-Match": f'"monitor:alex@{monitor_revision}"'}
         )
         self.assertEqual(status, 409)
         self.assertIn("monitor:alex", conflict["error"])
@@ -611,12 +611,12 @@ class ApiTests(unittest.TestCase):
     def test_duplicate_command_is_returned_once(self):
         _, headers, state = self.request("GET", "/api/v1/state")
         etag = headers["ETag"]
-        command_headers = {"If-Match": etag, "X-StageForge-Command-Id": "duplicate-api-test"}
+        command_headers = {"If-Match": etag, "X-StageMesh-Command-Id": "duplicate-api-test"}
         status1, _, first = self.request("PATCH", "/api/v1/system", {"capacity": 66}, command_headers)
         status2, headers2, second = self.request("PATCH", "/api/v1/system", {"capacity": 20}, command_headers)
         self.assertEqual(status1, 200)
         self.assertEqual(status2, 200)
-        self.assertEqual(headers2.get("X-StageForge-Deduplicated"), "true")
+        self.assertEqual(headers2.get("X-StageMesh-Deduplicated"), "true")
         self.assertEqual(first["revision"], second["revision"])
         self.assertEqual(second["system"]["capacity"], 66)
 
@@ -652,7 +652,7 @@ class ApiTests(unittest.TestCase):
         status, _, state = self.request("GET", "/api/v1/state")
         self.assertEqual(status, 200)
         resource = state["resourceRevisions"]["midi:alex"]
-        headers = {"X-StageForge-Resource-If-Match": f'"midi:alex@{resource}"'}
+        headers = {"X-StageMesh-Resource-If-Match": f'"midi:alex@{resource}"'}
         status, _, state = self.request("POST", "/api/v1/players/alex/midi/input", {
             "status": 144, "data1": 60, "data2": 96, "showTimeSeconds": 0.12
         }, headers)
@@ -660,7 +660,7 @@ class ApiTests(unittest.TestCase):
         resource = state["resourceRevisions"]["midi:alex"]
         status, _, state = self.request("POST", "/api/v1/players/alex/midi/input", {
             "status": 128, "data1": 60, "data2": 0, "showTimeSeconds": 0.62
-        }, {"X-StageForge-Resource-If-Match": f'"midi:alex@{resource}"'})
+        }, {"X-StageMesh-Resource-If-Match": f'"midi:alex@{resource}"'})
         self.assertEqual(status, 200)
         self.assertEqual(state["notation"]["alex"]["notes"][0]["name"], "C4")
 
@@ -677,7 +677,7 @@ class ApiTests(unittest.TestCase):
         status, _, clock = self.request("GET", "/api/v1/clock")
         self.assertEqual(status, 200)
         self.assertIn(clock["state"], {"free", "locked", "holdover"})
-        self.assertEqual(clock["transportAuthority"], "stageforge")
+        self.assertEqual(clock["transportAuthority"], "stagemesh")
         if clock["available"]:
             status, _, _ = self.request("POST", "/api/v1/clock/source", {"source": "ptp-test"})
             self.assertEqual(status, 200)
@@ -695,14 +695,14 @@ class ApiTests(unittest.TestCase):
         revision = state["resourceRevisions"]["midi-bindings"]
         status, _, bound = self.request(
             "POST", "/api/v1/midi/devices/future-controller/attach", {"playerId": "maya"},
-            {"X-StageForge-Resource-If-Match": f'"midi-bindings@{revision}"'}
+            {"X-StageMesh-Resource-If-Match": f'"midi-bindings@{revision}"'}
         )
         self.assertEqual(status, 200)
         self.assertEqual(bound["midi"]["bindings"]["future-controller"], "maya")
         revision = bound["resourceRevisions"]["midi-bindings"]
         status, _, unbound = self.request(
             "POST", "/api/v1/midi/devices/future-controller/detach", {},
-            {"X-StageForge-Resource-If-Match": f'"midi-bindings@{revision}"'}
+            {"X-StageMesh-Resource-If-Match": f'"midi-bindings@{revision}"'}
         )
         self.assertEqual(status, 200)
         self.assertNotIn("future-controller", unbound["midi"]["bindings"])
@@ -713,7 +713,7 @@ class ApiTests(unittest.TestCase):
         status, _, learning = self.request("POST", "/api/v1/midi/learn", {"targetId":"filter.cutoff","quantize":"off","keySync":False})
         self.assertEqual(status, 200); self.assertEqual(learning["learning"]["state"], "waiting-for-gesture")
         _, _, state = self.request("GET", "/api/v1/state"); resource=state["resourceRevisions"]["midi:alex"]
-        status, _, _ = self.request("POST", "/api/v1/players/alex/midi/input", {"deviceId":"learn-controller","status":0xB3,"data1":74,"data2":96,"showTimeSeconds":1.0}, {"X-StageForge-Resource-If-Match":f'"midi:alex@{resource}"'})
+        status, _, _ = self.request("POST", "/api/v1/players/alex/midi/input", {"deviceId":"learn-controller","status":0xB3,"data1":74,"data2":96,"showTimeSeconds":1.0}, {"X-StageMesh-Resource-If-Match":f'"midi:alex@{resource}"'})
         self.assertEqual(status, 200)
         status, _, mapped = self.request("GET", "/api/v1/midi/mappings");self.assertEqual(status,200);self.assertIsNone(mapped["learning"]);self.assertEqual(mapped["mappings"][-1]["source"]["number"],74);self.assertEqual(mapped["mappings"][-1]["source"]["channel"],3);self.assertFalse(mapped["physicalOutputsArmed"])
         mapping_id=mapped["mappings"][-1]["mappingId"];status,_,after=self.request("POST",f"/api/v1/midi/mappings/{mapping_id}/delete",{});self.assertEqual(status,200);self.assertNotIn(mapping_id,{item["mappingId"] for item in after["mappings"]})
@@ -730,7 +730,7 @@ class ApiTests(unittest.TestCase):
         status, _, updated = self.request(
             "POST", "/api/v1/audio",
             {"deviceId": "future-venue-audio", "sampleRate": 96000, "bufferFrames": 128, "limiterCeilingDb": -2.0},
-            {"X-StageForge-Resource-If-Match": f'"audio@{audio_revision}"'},
+            {"X-StageMesh-Resource-If-Match": f'"audio@{audio_revision}"'},
         )
         self.assertEqual(status, 200)
         self.assertEqual(updated["audio"]["deviceId"], "future-venue-audio")
@@ -754,7 +754,7 @@ class ApiTests(unittest.TestCase):
         revision = state["resourceRevisions"]["audio"]
         status, _, state = self.request(
             "POST", "/api/v1/audio", {"deviceId": alsa["id"], "sampleRate": 48000, "bufferFrames": 64},
-            {"X-StageForge-Resource-If-Match": f'"audio@{revision}"'},
+            {"X-StageMesh-Resource-If-Match": f'"audio@{revision}"'},
         )
         self.assertEqual(status, 200)
 
@@ -791,7 +791,7 @@ class ApiTests(unittest.TestCase):
         status, _, updated = self.request(
             "POST", "/api/v1/audio",
             {"outputs": [{"slot": 1, "deviceId": alsa["id"], "purpose": "monitor", "playerId": "alex", "master": 0.75, "limiterCeilingDb": -3.0}]},
-            {"X-StageForge-Resource-If-Match": f'"audio@{revision}"'},
+            {"X-StageMesh-Resource-If-Match": f'"audio@{revision}"'},
         )
         self.assertEqual(status, 200)
         self.assertEqual(updated["audio"]["outputs"][1]["playerId"], "alex")
@@ -819,7 +819,7 @@ class ApiTests(unittest.TestCase):
         revision = state["resourceRevisions"]["lighting-network"]
         status, _, state = self.request(
             "POST", "/api/v1/lighting/network", {"protocol": "artnet", "target": "127.0.0.1", "port": 6454},
-            {"X-StageForge-Resource-If-Match": f'"lighting-network@{revision}"'},
+            {"X-StageMesh-Resource-If-Match": f'"lighting-network@{revision}"'},
         )
         self.assertEqual(status, 200)
         self.assertEqual(state["lighting"]["network"]["target"], "127.0.0.1")
@@ -853,7 +853,7 @@ class ApiTests(unittest.TestCase):
         status, _, state = self.request(
             "POST", "/api/v1/lighting/network",
             {"protocol": "sacn", "target": "127.0.0.1", "port": 5568, "universeBase": 101},
-            {"X-StageForge-Resource-If-Match": f'"lighting-network@{revision}"'},
+            {"X-StageMesh-Resource-If-Match": f'"lighting-network@{revision}"'},
         )
         self.assertEqual(status, 200)
         self.assertEqual(state["lighting"]["network"]["protocol"], "sacn")
@@ -911,7 +911,7 @@ class ApiTests(unittest.TestCase):
         status, _, state = self.request(
             "POST", "/api/v1/audio",
             {"inputDeviceId": capture["id"], "inputPlayerId": "jordan", "inputRoute": {"output": 0, "gain": 0.25}},
-            {"X-StageForge-Resource-If-Match": f'"audio@{revision}"'},
+            {"X-StageMesh-Resource-If-Match": f'"audio@{revision}"'},
         )
         self.assertEqual(status, 200)
         self.assertEqual(state["audio"]["inputDeviceId"], capture["id"])
@@ -958,7 +958,7 @@ class ApiTests(unittest.TestCase):
             if line.startswith("data:"):
                 break
         self.assertTrue(any(line.startswith("id:") for line in lines))
-        self.assertTrue(any(line == "event: stageforge" for line in lines))
+        self.assertTrue(any(line == "event: stagemesh" for line in lines))
         self.assertTrue(any(line.startswith("data:") for line in lines))
         conn.close()
 
@@ -974,7 +974,7 @@ class ApiTests(unittest.TestCase):
                 "liveInputs": [{"slot": 0, "mode": "network", "ready": True, "sourceId": "redundant-vocal"}],
                 "deterministicSources": [{"id": "tracks-main", "kind": "track", "required": True, "shadowCapable": True, "localAssetReady": True}],
             },
-            {"X-StageForge-Resource-If-Match": f'"handoff@{revision}"'},
+            {"X-StageMesh-Resource-If-Match": f'"handoff@{revision}"'},
         )
         self.assertEqual(status, 200)
         self.assertEqual(updated["handoff"]["policy"]["maxLocalLagMs"], 15.0)
@@ -1008,7 +1008,7 @@ class ApiTests(unittest.TestCase):
         status, _, updated = self.request(
             "PATCH", "/api/v1/technology",
             {"ecosystemParticipants": 5, "extensions": [extension]},
-            {"X-StageForge-Resource-If-Match": f'"technology@{revision}"'},
+            {"X-StageMesh-Resource-If-Match": f'"technology@{revision}"'},
         )
         self.assertEqual(status, 200)
         self.assertTrue(updated["technology"]["extensions"][0]["futureField"]["preserve"])
@@ -1025,7 +1025,7 @@ class ApiTests(unittest.TestCase):
         status, _, rebound = self.request(
             "PATCH", "/api/v1/technology",
             {"ecosystemParticipants": 75, "extensions": [{"id":"artist.open-motion.v1", "adoptionRecordRef":receipt["adoptionRecordRef"]}]},
-            {"X-StageForge-Resource-If-Match": f'"technology@{revision}"'},
+            {"X-StageMesh-Resource-If-Match": f'"technology@{revision}"'},
         )
         self.assertEqual(status, 200); self.assertEqual(rebound["technology"]["ecosystemParticipants"], 75)
         status, _, assessment = self.request("GET", "/api/v1/technology/assessment")

@@ -13,7 +13,7 @@ from session_channel import AuthenticatedSessionChannel, HEADER_SIZE, MAX_PAYLOA
 
 MAX_FRAME = HEADER_SIZE + MAX_PAYLOAD
 _SIZE = struct.Struct(">I")
-_PIPE_NAME = re.compile(r"^\\\\\.\\pipe\\StageForge\\[A-Za-z0-9_.-]{1,96}$", re.I)
+_PIPE_NAME = re.compile(r"^\\\\\.\\pipe\\StageMesh\\[A-Za-z0-9_.-]{1,96}$", re.I)
 
 
 def encode_transport_packet(frame: bytes) -> bytes:
@@ -113,7 +113,7 @@ class LocalIpcServer:
 def validate_windows_pipe_name(name: str) -> str:
     value=str(name or "").strip()
     if not _PIPE_NAME.fullmatch(value):
-        raise ValueError(r"Windows StageForge pipe name must be \\.\pipe\StageForge\<safe-name>")
+        raise ValueError(r"Windows StageMesh pipe name must be \\.\pipe\StageMesh\<safe-name>")
     return value
 
 
@@ -174,7 +174,7 @@ class WindowsNamedPipeIpcServer:
             except (OSError, EOFError):
                 pass
 
-        threading.Thread(target=wake, name="stageforge-pipe-close-wake", daemon=True).start()
+        threading.Thread(target=wake, name="stagemesh-pipe-close-wake", daemon=True).start()
 
     def close(self) -> None:
         listener=self._listener

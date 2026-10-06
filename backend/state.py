@@ -65,7 +65,7 @@ class Player:
 class ShowState:
     """Authoritative non-audio show state for the development bridge.
 
-    The native StageForge core can later implement this contract. The UI never
+    The native StageMesh core can later implement this contract. The UI never
     owns transport/player state. Revisions make concurrent control points
     explicit rather than silently last-write-wins.
     """
@@ -408,7 +408,7 @@ class ShowState:
 
         Unlike crash recovery, replication preserves the incoming running
         transport state so the standby clock can remain warm. Physical output
-        authority is handled by StageForgeRuntime and is never implied here.
+        authority is handled by StageMeshRuntime and is never implied here.
         """
         if not isinstance(snapshot, dict):
             raise ValueError("unsupported replica show state")

@@ -33,7 +33,7 @@ jobs:
       - name: Run exact platform module smoke
         shell: bash
         env:
-          STAGEFORGE_CI_EVIDENCE: platform-module-smoke.json
+          STAGEMESH_CI_EVIDENCE: platform-module-smoke.json
         run: python ci/platform_snapshot_smoke.py
       - name: Run Windows SCM lifecycle smoke
         if: runner.os == 'Windows'
@@ -43,7 +43,7 @@ jobs:
         if: runner.os == 'Windows' || runner.os == 'macOS'
         shell: bash
         env:
-          STAGEFORGE_LAUNCH_EVIDENCE: platform-launch-binding-smoke.json
+          STAGEMESH_LAUNCH_EVIDENCE: platform-launch-binding-smoke.json
         run: python ci/platform_launch_binding_smoke.py
       - uses: actions/upload-artifact@v4
         with:

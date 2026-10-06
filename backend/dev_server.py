@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Mapping
 from urllib.parse import parse_qs, urlparse
 
-from runtime import StageForgeRuntime
+from runtime import StageMeshRuntime
 from state import RevisionConflict
 from stage_templates import StageTemplateConflict
 from adaptation import AdaptationRevisionConflict
@@ -24,21 +24,19 @@ from http_authorization import authorization_policy, authorize_control_request, 
 from http_deployment import validate_proxy_https_profile
 
 
-def environment_value(environ: Mapping[str, str], canonical: str, legacy: str | None = None) -> str:
-    """Prefer the StageMesh contract while preserving non-desktop deployment aliases."""
-    if canonical in environ:
-        return str(environ.get(canonical, ""))
-    return str(environ.get(legacy, "")) if legacy else ""
+def environment_value(environ: Mapping[str, str], name: str) -> str:
+    """Read one canonical StageMesh deployment setting."""
+    return str(environ.get(name, ""))
 
 
-def environment_truthy(environ: Mapping[str, str], canonical: str, legacy: str | None = None) -> bool:
-    return environment_value(environ, canonical, legacy).strip().lower() in {"1", "true", "yes", "on"}
+def environment_truthy(environ: Mapping[str, str], name: str) -> bool:
+    return environment_value(environ, name).strip().lower() in {"1", "true", "yes", "on"}
 
 
 ROOT = Path(__file__).resolve().parents[1]
-FRONTEND = Path(environment_value(os.environ, "STAGEMESH_FRONTEND_DIR", "STAGEFORGE_FRONTEND_DIR") or ROOT / "frontend").resolve()
-DATA_DIR = Path(environment_value(os.environ, "STAGEMESH_DATA_DIR", "STAGEFORGE_DATA_DIR") or ROOT / ".runtime").resolve()
-RUNTIME = StageForgeRuntime(DATA_DIR)
+FRONTEND = Path(environment_value(os.environ, "STAGEMESH_FRONTEND_DIR") or ROOT / "frontend").resolve()
+DATA_DIR = Path(environment_value(os.environ, "STAGEMESH_DATA_DIR") or ROOT / ".runtime").resolve()
+RUNTIME = StageMeshRuntime(DATA_DIR)
 MONITOR_READ_PATHS = frozenset({"/healthz", "/api/v1/native", "/api/v1/node"})
 DESKTOP_SESSION_COOKIE = "stagemesh-session"
 
@@ -109,7 +107,7 @@ def validate_http_boundary(headers: Mapping[str, str], client_host: str, path: s
         parsed_host=urlparse("//"+authority);hostname=(parsed_host.hostname or "").lower();host_port=parsed_host.port
     except ValueError as exc:raise ValueError("invalid Host header") from exc
     allowed={"localhost","127.0.0.1","::1"}
-    allowed.update(value.strip().lower().rstrip(".") for value in env.get("STAGEFORGE_ALLOWED_HOSTS","").split(",") if value.strip())
+    allowed.update(value.strip().lower().rstrip(".") for value in env.get("STAGEMESH_ALLOWED_HOSTS","").split(",") if value.strip())
     if (not hostname or hostname.rstrip(".") not in allowed or parsed_host.username is not None
             or parsed_host.password is not None or parsed_host.path or parsed_host.query or parsed_host.fragment):
         raise PermissionError("request Host is not allowed")
@@ -120,18 +118,18 @@ def validate_http_boundary(headers: Mapping[str, str], client_host: str, path: s
                 or parsed_origin.username is not None or parsed_origin.password is not None
                 or parsed_origin.path or parsed_origin.query or parsed_origin.fragment):
             raise PermissionError("request Origin is not allowed")
-        configured={value.strip().rstrip("/") for value in env.get("STAGEFORGE_ALLOWED_ORIGINS","").split(",") if value.strip()}
+        configured={value.strip().rstrip("/") for value in env.get("STAGEMESH_ALLOWED_ORIGINS","").split(",") if value.strip()}
         default_port=443 if parsed_origin.scheme=="https" else 80
         same_host=(parsed_origin.scheme == "http" and parsed_origin.hostname.lower().rstrip(".")==hostname.rstrip(".") and (parsed_origin.port or default_port)==(host_port or 80))
         if origin.rstrip("/") not in configured and not same_host:raise PermissionError("request Origin is not allowed")
     try:loopback=ipaddress.ip_address(client_host).is_loopback
     except ValueError:loopback=False
-    require_token=environment_truthy(env, "STAGEMESH_REQUIRE_API_TOKEN", "STAGEFORGE_REQUIRE_API_TOKEN")
-    supplied = headers.get("X-StageForge-API-Token", "")
+    require_token=environment_truthy(env, "STAGEMESH_REQUIRE_API_TOKEN")
+    supplied = headers.get("X-StageMesh-API-Token", "")
     if not supplied:
         supplied = desktop_cookie_token(headers, client_host, env)
-    monitor = env.get("STAGEFORGE_MONITOR_API_TOKEN", "")
-    control = environment_value(env, "STAGEMESH_API_TOKEN", "STAGEFORGE_API_TOKEN")
+    monitor = env.get("STAGEMESH_MONITOR_API_TOKEN", "")
+    control = environment_value(env, "STAGEMESH_API_TOKEN")
     if monitor and token_matches(monitor, control):
         raise PermissionError("monitor and control credentials must be distinct")
     monitor_request = token_matches(monitor, supplied)
@@ -220,7 +218,7 @@ class OperationCostLimiter:
                     "active": dict(self._active), "rejected": dict(self._rejected)}
 
 
-class StageForgeHTTPServer(ThreadingHTTPServer):
+class StageMeshHTTPServer(ThreadingHTTPServer):
     """Bound accepted worker connections before creating handler threads."""
     daemon_threads = True
     max_connections = 32
@@ -280,13 +278,13 @@ class DeadlineReader(io.RawIOBase):
             super().close()
 
 
-class StageForgeHandler(BaseHTTPRequestHandler):
-    server_version = "StageForgeDev/0.7"
+class StageMeshHandler(BaseHTTPRequestHandler):
+    server_version = "StageMeshDev/0.7"
     protocol_version = "HTTP/1.1"
 
     def setup(self):
         super().setup()
-        if isinstance(self.server, StageForgeHTTPServer):
+        if isinstance(self.server, StageMeshHTTPServer):
             self.rfile.close()
             self.rfile = io.BufferedReader(DeadlineReader(self.connection.makefile('rb', buffering=0), self))
 
@@ -317,7 +315,7 @@ class StageForgeHandler(BaseHTTPRequestHandler):
         return self._authorization_snapshot
 
     def _finish_request_read(self):
-        if isinstance(self.server, StageForgeHTTPServer):
+        if isinstance(self.server, StageMeshHTTPServer):
             if time.monotonic() >= self._read_deadline:
                 raise TimeoutError("request receive deadline exceeded")
             self.connection.settimeout(self.server.socket_timeout)
@@ -327,11 +325,11 @@ class StageForgeHandler(BaseHTTPRequestHandler):
             return False
         # Reject ambiguous framing before dispatch (including Expect: 100-continue).
         lengths = self.headers.get_all("Content-Length", [])
-        security_headers = ('Origin', 'Content-Type', 'X-StageForge-API-Token',
+        security_headers = ('Origin', 'Content-Type', 'X-StageMesh-API-Token',
                             'Cookie', 'X-StageMesh-Desktop-Token',
-                            'X-StageForge-Admin-Token', 'X-StageForge-Adapter-Token',
-                            'X-StageForge-Authenticated-User', 'X-StageForge-Auth-Proxy-Token',
-                            'X-StageForge-Command-Id')
+                            'X-StageMesh-Admin-Token', 'X-StageMesh-Adapter-Token',
+                            'X-StageMesh-Authenticated-User', 'X-StageMesh-Auth-Proxy-Token',
+                            'X-StageMesh-Command-Id')
         invalid = (len(self.headers.get_all("Host", [])) != 1
                    or any(len(self.headers.get_all(name, [])) > 1 for name in security_headers)
                    or bool(self.headers.get_all("Transfer-Encoding", []))
@@ -357,7 +355,7 @@ class StageForgeHandler(BaseHTTPRequestHandler):
 
     def log_message(self, fmt: str, *args) -> None:
         # Base-handler diagnostics can include attacker-controlled request lines.
-        print('[stageforge] HTTP diagnostic; request details omitted')
+        print('[stagemesh] HTTP diagnostic; request details omitted')
 
     def log_request(self, code='-', size='-') -> None:
         method = getattr(self, 'command', '')
@@ -457,9 +455,9 @@ class StageForgeHandler(BaseHTTPRequestHandler):
         if resource_key:
             resource_revision = (state.get("resourceRevisions") or {}).get(resource_key)
             if resource_revision is not None:
-                headers["X-StageForge-Resource-ETag"] = f'"{resource_key}@{resource_revision}"'
+                headers["X-StageMesh-Resource-ETag"] = f'"{resource_key}@{resource_revision}"'
         if deduplicated:
-            headers["X-StageForge-Deduplicated"] = "true"
+            headers["X-StageMesh-Deduplicated"] = "true"
         return headers
 
     def _append_specialized_authorization(
@@ -509,8 +507,8 @@ class StageForgeHandler(BaseHTTPRequestHandler):
         return record
 
     def _require_admin_auth(self) -> None:
-        configured = self._credentials().get("STAGEFORGE_ADMIN_API_TOKEN", "")
-        supplied = self.headers.get("X-StageForge-Admin-Token", "")
+        configured = self._credentials().get("STAGEMESH_ADMIN_API_TOKEN", "")
+        supplied = self.headers.get("X-StageMesh-Admin-Token", "")
         if configured:
             allowed = token_matches(configured, supplied)
             self._append_specialized_authorization(
@@ -523,7 +521,7 @@ class StageForgeHandler(BaseHTTPRequestHandler):
         try:
             local_allowed = (
                 ipaddress.ip_address(self.client_address[0]).is_loopback
-                and not environment_truthy(self._credentials(), "STAGEMESH_REQUIRE_API_TOKEN", "STAGEFORGE_REQUIRE_API_TOKEN")
+                and not environment_truthy(self._credentials(), "STAGEMESH_REQUIRE_API_TOKEN")
             )
         except ValueError:
             local_allowed = False
@@ -532,25 +530,25 @@ class StageForgeHandler(BaseHTTPRequestHandler):
         )
         if local_allowed:
             return
-        raise PermissionError("admin API requires localhost or STAGEFORGE_ADMIN_API_TOKEN")
+        raise PermissionError("admin API requires localhost or STAGEMESH_ADMIN_API_TOKEN")
 
     def _authenticated_user_id(self) -> str | None:
-        user_id = self.headers.get("X-StageForge-Authenticated-User", "").strip()
+        user_id = self.headers.get("X-StageMesh-Authenticated-User", "").strip()
         if len(user_id) > 128:
             raise PermissionError("authenticated user identity is too long")
         if any(ord(char) < 32 or ord(char) == 127 for char in user_id):
             raise PermissionError("authenticated user identity contains control characters")
         if not user_id:
             return None
-        configured = self._credentials().get("STAGEFORGE_AUTH_PROXY_TOKEN", "")
-        supplied = self.headers.get("X-StageForge-Auth-Proxy-Token", "")
+        configured = self._credentials().get("STAGEMESH_AUTH_PROXY_TOKEN", "")
+        supplied = self.headers.get("X-StageMesh-Auth-Proxy-Token", "")
         if not token_matches(configured, supplied):
             raise PermissionError("authenticated user identity requires a trusted auth proxy token")
         return user_id
 
     def _require_adapter_report_auth(self) -> None:
-        configured = self._credentials().get("STAGEFORGE_ADAPTER_REPORT_TOKEN", "")
-        supplied = self.headers.get("X-StageForge-Adapter-Token", "")
+        configured = self._credentials().get("STAGEMESH_ADAPTER_REPORT_TOKEN", "")
+        supplied = self.headers.get("X-StageMesh-Adapter-Token", "")
         if configured:
             allowed = token_matches(configured, supplied)
             self._append_specialized_authorization(
@@ -563,7 +561,7 @@ class StageForgeHandler(BaseHTTPRequestHandler):
         try:
             local_allowed = (
                 ipaddress.ip_address(self.client_address[0]).is_loopback
-                and not environment_truthy(self._credentials(), "STAGEMESH_REQUIRE_API_TOKEN", "STAGEFORGE_REQUIRE_API_TOKEN")
+                and not environment_truthy(self._credentials(), "STAGEMESH_REQUIRE_API_TOKEN")
             )
         except ValueError:
             local_allowed = False
@@ -572,7 +570,7 @@ class StageForgeHandler(BaseHTTPRequestHandler):
         )
         if local_allowed:
             return
-        raise PermissionError("adapter execution reports require localhost or STAGEFORGE_ADAPTER_REPORT_TOKEN")
+        raise PermissionError("adapter execution reports require localhost or STAGEMESH_ADAPTER_REPORT_TOKEN")
 
     def _read_json(self, max_bytes: int = 64 * 1024) -> dict:
         try:
@@ -607,7 +605,7 @@ class StageForgeHandler(BaseHTTPRequestHandler):
 
 
     def _expected_resource_revision(self, resource_key: str) -> int | None:
-        raw = self.headers.get("X-StageForge-Resource-If-Match")
+        raw = self.headers.get("X-StageMesh-Resource-If-Match")
         if not raw:
             return None
         token = raw.strip().strip('"')
@@ -620,7 +618,7 @@ class StageForgeHandler(BaseHTTPRequestHandler):
             raise ValueError("resource revision must end with an integer") from exc
 
     def _command_id(self) -> str | None:
-        value = self.headers.get("X-StageForge-Command-Id")
+        value = self.headers.get("X-StageMesh-Command-Id")
         value = value.strip() if value else ""
         if len(value) > 128:
             raise ValueError("command ID must not exceed 128 characters")
@@ -1479,7 +1477,7 @@ class StageForgeHandler(BaseHTTPRequestHandler):
         if not desktop_mode or not loopback or not token_matches(configured, supplied):
             self._json(403, {"error": "desktop session authentication failed"})
             return
-        api_token = environment_value(credentials, "STAGEMESH_API_TOKEN", "STAGEFORGE_API_TOKEN")
+        api_token = environment_value(credentials, "STAGEMESH_API_TOKEN")
         if not api_token:
             self._json(503, {"error": "desktop API credential is unavailable"})
             return
@@ -1615,7 +1613,7 @@ class StageForgeHandler(BaseHTTPRequestHandler):
                     self._revalidate_event_authority()
                     current = max(current, int(event["eventId"]))
                     payload = json.dumps({"revision": event["revision"], "event": event}, separators=(",", ":"))
-                    message = f"id: {event['eventId']}\nevent: stageforge\ndata: {payload}\n\n".encode("utf-8")
+                    message = f"id: {event['eventId']}\nevent: stagemesh\ndata: {payload}\n\n".encode("utf-8")
                     self.wfile.write(message)
                     self.wfile.flush()
         except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError, TimeoutError, PermissionError, ValueError):
@@ -1649,9 +1647,9 @@ class StageForgeHandler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="StageForge development UI/API bridge")
-    parser.add_argument("--host", default=os.environ.get("STAGEFORGE_HOST", "127.0.0.1"))
-    parser.add_argument("--port", type=int, default=int(os.environ.get("STAGEFORGE_PORT", "8787")))
+    parser = argparse.ArgumentParser(description="StageMesh development UI/API bridge")
+    parser.add_argument("--host", default=os.environ.get("STAGEMESH_HOST", "127.0.0.1"))
+    parser.add_argument("--port", type=int, default=int(os.environ.get("STAGEMESH_PORT", "8787")))
     args = parser.parse_args()
     try:loopback_bind=args.host.lower()=="localhost" or ipaddress.ip_address(args.host).is_loopback
     except ValueError:loopback_bind=False
@@ -1660,10 +1658,10 @@ def main() -> None:
         deployment = validate_proxy_https_profile(args.host, startup_credentials)
     except (PermissionError, ValueError) as exc:
         parser.error(str(exc))
-    if not loopback_bind and (not startup_credentials.get("STAGEFORGE_ALLOWED_HOSTS","").strip() or not startup_credentials.get("STAGEFORGE_API_TOKEN","")):
-        parser.error("non-loopback binding requires STAGEFORGE_ALLOWED_HOSTS and STAGEFORGE_API_TOKEN")
-    server = StageForgeHTTPServer((args.host, args.port), StageForgeHandler)
-    print(f"StageForge dev bridge: http://{args.host}:{args.port}")
+    if not loopback_bind and (not startup_credentials.get("STAGEMESH_ALLOWED_HOSTS","").strip() or not startup_credentials.get("STAGEMESH_API_TOKEN","")):
+        parser.error("non-loopback binding requires STAGEMESH_ALLOWED_HOSTS and STAGEMESH_API_TOKEN")
+    server = StageMeshHTTPServer((args.host, args.port), StageMeshHandler)
+    print(f"StageMesh dev bridge: http://{args.host}:{args.port}")
     print(f"State directory: {DATA_DIR}")
     if deployment.get("active"):
         print("HTTP deployment profile: proxy-https (TLS terminates at reviewed loopback proxy)")

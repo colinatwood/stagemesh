@@ -1,6 +1,6 @@
 # ESP32 device interoperability
 
-StageForge may use ESP32-class devices as low-cost telemetry, sensor, or
+StageMesh may use ESP32-class devices as low-cost telemetry, sensor, or
 fixture-control endpoints. The [Arduino-ESP32 project](https://github.com/espressif/arduino-esp32)
 supports multiple ESP32 families and provides a practical embedded adapter
 target, but the device remains untrusted until it has passed identity and health
@@ -54,7 +54,7 @@ plan explicitly models and authorizes that operation.
 Begin with read-only telemetry and a simulator. Add output control only through
 an adapter that exposes device identity, capability, link health, command age,
 and armed state. Arduino-ESP32 is an implementation option, not a requirement
-for the StageForge core or its software-only release gates.
+for the StageMesh core or its software-only release gates.
 
 The Arduino-ESP32 repository is distributed under LGPL-2.1 according to its
 project metadata; review license obligations before bundling code or binaries.

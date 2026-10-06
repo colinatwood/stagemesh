@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://upp.stageforge.dev/schema/show-event-v1.json",
+  "$id": "https://upp.stagemesh.dev/schema/show-event-v1.json",
   "title": "UPP Typed Show Event v1",
   "type": "object",
   "additionalProperties": true,

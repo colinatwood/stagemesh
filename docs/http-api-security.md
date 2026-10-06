@@ -5,19 +5,19 @@ binds to loopback by default. Do not expose it directly to an untrusted network 
 the public internet.
 
 Every request now validates its `Host` header against loopback names plus the
-explicit comma-separated `STAGEFORGE_ALLOWED_HOSTS` setting. This blocks a browser
+explicit comma-separated `STAGEMESH_ALLOWED_HOSTS` setting. This blocks a browser
 from using an attacker-controlled DNS name to reach a loopback service. Browser
 requests carrying `Origin` must be same-origin unless their exact origin is listed
-in `STAGEFORGE_ALLOWED_ORIGINS`; opaque (`null`) and foreign origins are rejected.
+in `STAGEMESH_ALLOWED_ORIGINS`; opaque (`null`) and foreign origins are rejected.
 API mutations also require `Content-Type: application/json`.
 
 Any `/api/` request received from a non-loopback client requires
-`STAGEFORGE_API_TOKEN` and the same value in `X-StageForge-API-Token`. The token is
+`STAGEMESH_API_TOKEN` and the same value in `X-StageMesh-API-Token`. The token is
 accepted only as a header and compared without ordinary string equality. Existing
 admin, trusted-auth-proxy, adapter-report, replication and witness credentials keep
 their narrower roles; the API token does not replace them.
 
-Set `STAGEFORGE_REQUIRE_API_TOKEN=1` when a reverse proxy connects from loopback;
+Set `STAGEMESH_REQUIRE_API_TOKEN=1` when a reverse proxy connects from loopback;
 otherwise loopback remains the trusted local-development boundary. The bundled
 browser UI does not collect or retain this token, so authenticated remote access is
 currently intended for a reviewed proxy or API client, not a production browser
@@ -26,9 +26,9 @@ login flow.
 Example private-LAN configuration:
 
 ```bash
-export STAGEFORGE_ALLOWED_HOSTS=stage-console.internal
-export STAGEFORGE_ALLOWED_ORIGINS=https://stage-console.internal
-export STAGEFORGE_API_TOKEN='generate-a-long-random-secret'
+export STAGEMESH_ALLOWED_HOSTS=stage-console.internal
+export STAGEMESH_ALLOWED_ORIGINS=https://stage-console.internal
+export STAGEMESH_API_TOKEN='generate-a-long-random-secret'
 python3 backend/dev_server.py --host 10.0.0.20 --port 8787
 ```
 
@@ -45,9 +45,9 @@ same-origin resource policy, no-referrer and a disabled browser-permissions poli
 
 ### Astra checkpoint 38: controller workload and rate-policy reference
 
-`scripts/stageforge-http-workload.py --json` now provides repeatable software evidence for the HTTP admission policy. Its deterministic model runs four independent 20 rps controller peers beside one 300 rps abusive peer for five seconds using the actual `RequestRateLimiter` policy. The checkpoint reference admitted 400/400 controller requests and rejected 802 abusive requests, demonstrating that the default 100 rps per-peer cap prevents one peer from consuming the 200 rps aggregate refill needed by the 80 rps controller workload.
+`scripts/stagemesh-http-workload.py --json` now provides repeatable software evidence for the HTTP admission policy. Its deterministic model runs four independent 20 rps controller peers beside one 300 rps abusive peer for five seconds using the actual `RequestRateLimiter` policy. The checkpoint reference admitted 400/400 controller requests and rejected 802 abusive requests, demonstrating that the default 100 rps per-peer cap prevents one peer from consuming the 200 rps aggregate refill needed by the 80 rps controller workload.
 
-The same tool launches the real StageForge loopback bridge and runs a mixed normal burst plus a separate abusive burst. The checkpoint reference passed 120/120 normal requests with 22.903 ms p95 latency. A 320-request abusive burst produced 33 explicit `429` responses and no unexpected status codes. The measured timing is host/load dependent and is preserved as reference evidence rather than a universal performance promise.
+The same tool launches the real StageMesh loopback bridge and runs a mixed normal burst plus a separate abusive burst. The checkpoint reference passed 120/120 normal requests with 22.903 ms p95 latency. A 320-request abusive burst produced 33 explicit `429` responses and no unexpected status codes. The measured timing is host/load dependent and is preserved as reference evidence rather than a universal performance promise.
 
 The report always marks `physicalControllerQualified=false` and `deployedLanQualified=false`. It does not replace end-to-end controller timing/reconnect measurement, proxy/IdP/firewall deployment qualification, or named-hardware evidence.
 
@@ -55,7 +55,7 @@ The report always marks `physicalControllerQualified=false` and `deployedLanQual
 
 Known control-plane operations that can perform filesystem, device discovery, compatibility/venue planning, media storage or external delivery work now enter explicit non-blocking admission classes. The default bridge permits at most four expensive operations in flight across the existing 32-worker pool, with class caps of maintenance 1, discovery 2, planning 3, storage 2 and external 2. Ordinary health and show-control requests do not consume these cost slots.
 
-Admission happens only after the ordinary HTTP/auth boundary and role authorization but before request-body execution. Saturated expensive work returns `503` with `Retry-After: 1` and closes the unread request. Slots are released in the per-request `finally` path, including when route code raises. StageForge deliberately does not impose a wall-clock cancellation timer on an already-started mutation: abruptly killing stateful persistence or planning work would create a different correctness problem. Bounding admission and request size is the safe control-plane policy for this bridge.
+Admission happens only after the ordinary HTTP/auth boundary and role authorization but before request-body execution. Saturated expensive work returns `503` with `Retry-After: 1` and closes the unread request. Slots are released in the per-request `finally` path, including when route code raises. StageMesh deliberately does not impose a wall-clock cancellation timer on an already-started mutation: abruptly killing stateful persistence or planning work would create a different correctness problem. Bounding admission and request size is the safe control-plane policy for this bridge.
 
 The initial cost registry covers checkpoints/audit/public-record maintenance; audio/MIDI/hardware discovery; show/venue/technology/interoperability planning; DAW media ingest/verify/render/autosave; temporary-resource cleanup; and community vote-email delivery. New expensive routes must be classified rather than silently relying on the general worker pool. Real controller workload and filesystem/device latency remain deployment qualification work.
 
@@ -69,7 +69,7 @@ Private authorization helpers used without an actual HTTP request context do not
 
 ### Astra checkpoint 34: bounded authorization-audit retention
 
-The checkpoint-32 role-decision audit now rotates into immutable numbered segments before the active file crosses `STAGEFORGE_AUTH_AUDIT_ROTATE_BYTES` (4 MiB default, 64 KiB–256 MiB accepted). `STAGEFORGE_AUTH_AUDIT_RETAIN_SEGMENTS` bounds rotated history (8 default, 1–256). The active file and every segment continue the same SHA-256 chain.
+The checkpoint-32 role-decision audit now rotates into immutable numbered segments before the active file crosses `STAGEMESH_AUTH_AUDIT_ROTATE_BYTES` (4 MiB default, 64 KiB–256 MiB accepted). `STAGEMESH_AUTH_AUDIT_RETAIN_SEGMENTS` bounds rotated history (8 default, 1–256). The active file and every segment continue the same SHA-256 chain.
 
 Pruning commits and fsyncs `authorization-audit-retention.json` before deleting old segments. The anchor records the exact pruned-prefix head, next retained sequence and pruned record/segment counts. Failure to publish that anchor prunes nothing. A crash after anchor publication may leave an already-pruned segment on disk; verification reports the residue but does not reintroduce it into the retained chain. Steady-state decision appends cache the verified head and check file identities, so control traffic does not rescan retained audit history on every mutation.
 
@@ -77,15 +77,15 @@ Pruning commits and fsyncs `authorization-audit-retention.json` before deleting 
 
 ### Astra checkpoint 33: strict HTTPS reverse-proxy deployment profile
 
-Set `STAGEFORGE_DEPLOYMENT_PROFILE=proxy-https` only for a reviewed remote deployment. In this profile StageForge refuses to start unless its backend bind is loopback, private credential-file API authentication is active, allowed hosts are explicit non-loopback hostnames, allowed browser origins are exact HTTPS origins on those hosts, and the per-user authorization policy plus trusted auth-proxy credential are available. The profile is intentionally opt-in; local development behavior is unchanged when it is unset.
+Set `STAGEMESH_DEPLOYMENT_PROFILE=proxy-https` only for a reviewed remote deployment. In this profile StageMesh refuses to start unless its backend bind is loopback, private credential-file API authentication is active, allowed hosts are explicit non-loopback hostnames, allowed browser origins are exact HTTPS origins on those hosts, and the per-user authorization policy plus trusted auth-proxy credential are available. The profile is intentionally opt-in; local development behavior is unchanged when it is unset.
 
-StageForge still does not trust `X-Forwarded-For` or other forwarded peer identity. The edge proxy owns TLS, firewall policy and human authentication, strips client-supplied internal StageForge privilege headers, then injects reviewed identity/internal credentials. See `packaging/reverse-proxy/README.md` and `packaging/stagemesh-proxy.env.example`. The optional systemd `/etc/stageforge/stageforge.env` file is intended for non-secret settings and secret-file paths, not raw credentials.
+StageMesh still does not trust `X-Forwarded-For` or other forwarded peer identity. The edge proxy owns TLS, firewall policy and human authentication, strips client-supplied internal StageMesh privilege headers, then injects reviewed identity/internal credentials. See `packaging/reverse-proxy/README.md` and `packaging/stagemesh-proxy.env.example`. The optional systemd `/etc/stagemesh/stagemesh.env` file is intended for non-secret settings and secret-file paths, not raw credentials.
 
-Run `stageforge-http-qualify.py --backend-url http://127.0.0.1:8765 --edge-url https://stage-console.internal` on the deployment host. The backend probe expects success only for the configured Host/Origin/control credential and explicit 403 denial for bad credential, hostile Host and hostile Origin. The edge probe performs ordinary CA/hostname verification, requires TLS 1.2/1.3, HSTS and StageForge browser security headers. Passing the helper is deployment-security evidence, not a substitute for real controller-load, hardware or venue qualification.
+Run `stagemesh-http-qualify.py --backend-url http://127.0.0.1:8765 --edge-url https://stage-console.internal` on the deployment host. The backend probe expects success only for the configured Host/Origin/control credential and explicit 403 denial for bad credential, hostile Host and hostile Origin. The edge probe performs ordinary CA/hostname verification, requires TLS 1.2/1.3, HSTS and StageMesh browser security headers. Passing the helper is deployment-security evidence, not a substitute for real controller-load, hardware or venue qualification.
 
 ### Astra checkpoint 32: per-user control roles and durable authorization audit
 
-`STAGEFORGE_HTTP_AUTHORIZATION_FILE` optionally enables exact per-user control
+`STAGEMESH_HTTP_AUTHORIZATION_FILE` optionally enables exact per-user control
 authorization behind the existing trusted auth-proxy identity boundary. The JSON
 file must be an absolute-path regular file owned by the service effective UID,
 private to that UID, non-symlink and no larger than 64 KiB. Duplicate JSON keys,
@@ -108,8 +108,8 @@ Example:
 ```
 
 A role-controlled mutation still passes the ordinary HTTP/API-token boundary first.
-The user identity must then be supplied as `X-StageForge-Authenticated-User` and be
-authenticated by the distinct `X-StageForge-Auth-Proxy-Token`. The fixed roles are:
+The user identity must then be supplied as `X-StageMesh-Authenticated-User` and be
+authenticated by the distinct `X-StageMesh-Auth-Proxy-Token`. The fixed roles are:
 
 - `observer`: no API mutation authority; reads remain governed by the ordinary API boundary.
 - `performer`: only assigned player monitor, MIDI-input and notation mutations.
@@ -161,11 +161,11 @@ open at checkpoint 31 and are addressed by checkpoint 32 above.
 
 ### Astra checkpoint 30: private credential-file rotation
 
-Optionally set STAGEFORGE_HTTP_CREDENTIAL_FILE to an absolute path in a trusted,
+Optionally set STAGEMESH_HTTP_CREDENTIAL_FILE to an absolute path in a trusted,
 service-owned directory. The JSON object uses the existing environment key names:
-STAGEFORGE_API_TOKEN (required), STAGEFORGE_MONITOR_API_TOKEN,
-STAGEFORGE_ADMIN_API_TOKEN, STAGEFORGE_AUTH_PROXY_TOKEN and
-STAGEFORGE_ADAPTER_REPORT_TOKEN (optional). No other keys are accepted.
+STAGEMESH_API_TOKEN (required), STAGEMESH_MONITOR_API_TOKEN,
+STAGEMESH_ADMIN_API_TOKEN, STAGEMESH_AUTH_PROXY_TOKEN and
+STAGEMESH_ADAPTER_REPORT_TOKEN (optional). No other keys are accepted.
 Tokens must be distinct printable non-space ASCII strings of 32–512 characters;
 operators must generate cryptographically random secrets rather than passwords.
 
@@ -190,8 +190,8 @@ session revocation, durable authorization audit and deployed TLS remain open.
 
 ### Astra checkpoint 29: scoped monitoring credential
 
-Optionally configure STAGEFORGE_MONITOR_API_TOKEN, distinct from STAGEFORGE_API_TOKEN.
-Send it in X-StageForge-API-Token. It authorizes GET only on /healthz,
+Optionally configure STAGEMESH_MONITOR_API_TOKEN, distinct from STAGEMESH_API_TOKEN.
+Send it in X-StageMesh-API-Token. It authorizes GET only on /healthz,
 /api/v1/native and /api/v1/node. Every other path/method is denied, including
 static content, show state, replication exports, mutations and future routes.
 This is intentional exact allowlisting, not a general read-only account.
@@ -199,7 +199,7 @@ Monitoring exposes detailed operational status; distribute this secret according
 
 Recognized monitoring credentials remain constrained even on loopback. Ordinary
 uncredentialed localhost access remains the trusted development mode; use
-STAGEFORGE_REQUIRE_API_TOKEN=1 for a proxy boundary. Identical monitoring/control
+STAGEMESH_REQUIRE_API_TOKEN=1 for a proxy boundary. Identical monitoring/control
 credentials fail closed. The monitor credential does not satisfy separate admin,
 adapter or proxy identity credentials. Startup still requires a control credential
 and host allowlist for non-loopback binding; monitor-only network startup is not
@@ -215,7 +215,7 @@ for remote clients and token-required proxy mode. Direct localhost development
 probes remain available. Configure protected health probes with the API header;
 there is no separate public detailed-health exception.
 
-X-StageForge-Command-Id values longer than 128 characters after trimming are
+X-StageMesh-Command-Id values longer than 128 characters after trimming are
 rejected rather than truncated. Duplicate command-ID headers are rejected before
 routing. Valid IDs retain existing deduplication semantics. This prevents two long
 IDs with the same prefix from silently sharing an idempotency identity. Routes
@@ -223,13 +223,13 @@ without the existing mutation/deduplication wrapper do not gain deduplication.
 
 ### Astra checkpoint 27: proxy privilege separation and credentials
 
-STAGEFORGE_REQUIRE_API_TOKEN now also disables localhost privilege exemptions
+STAGEMESH_REQUIRE_API_TOKEN now also disables localhost privilege exemptions
 for admin operations and adapter reports. Configure their separate credentials;
 the general API token grants neither role. Direct local-development behavior
 remains available only with that mode disabled. Forwarded headers grant no role.
 
 The plain HTTP bridge accepts same-origin HTTP requests by host and port. HTTPS
-browser origins must be explicitly listed in STAGEFORGE_ALLOWED_ORIGINS for a TLS
+browser origins must be explicitly listed in STAGEMESH_ALLOWED_ORIGINS for a TLS
 proxy. Host and Origin reject URL credentials, paths, query and fragment components.
 Token comparison rejects non-ASCII credentials instead of raising TypeError.
 Duplicate Origin, Content-Type, API/admin/adapter credentials and proxy identity
@@ -296,7 +296,7 @@ limits and proxy/TLS/authorization review remain open.
 
 ### Astra checkpoint 23: connection admission and idle I/O
 
-The CLI bridge uses StageForgeHTTPServer with at most 32 accepted worker
+The CLI bridge uses StageMeshHTTPServer with at most 32 accepted worker
 connections. Admission occurs before thread creation. Excess connections are
 closed without a response, avoiding a blocking write in the accept loop.
 Slots are returned after worker completion or thread-start failure. Sockets have

@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-namespace stageforge {
+namespace stagemesh {
 struct DeviceSelection;
 
 enum class AudioDirection { Playback, Capture };

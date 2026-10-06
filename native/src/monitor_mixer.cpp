@@ -1,8 +1,8 @@
-#include "stageforge/monitor_mixer.hpp"
+#include "stagemesh/monitor_mixer.hpp"
 
 #include <algorithm>
 
-namespace stageforge {
+namespace stagemesh {
 
 float MonitorMixer::gain(float percent) noexcept {
     return std::clamp(percent, 0.0F, 100.0F) * 0.01F;
@@ -38,4 +38,4 @@ void MonitorMixer::mix(
     }
 }
 
-} // namespace stageforge
+} // namespace stagemesh

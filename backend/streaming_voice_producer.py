@@ -58,7 +58,7 @@ class PolyphonicStreamingProducer:
             for _ in range(PREBUFFER_BLOCKS):
                 if more:more=self._push_one(job)
             self.native.streaming_voice_start(slot,generation,1.0,loop);job["state"]="feeding" if more else "feed-complete"
-            if more:job["thread"]=Thread(target=self._run,args=(job,),name=f"stageforge-stream-{slot}-{generation}",daemon=True);job["thread"].start()
+            if more:job["thread"]=Thread(target=self._run,args=(job,),name=f"stagemesh-stream-{slot}-{generation}",daemon=True);job["thread"].start()
             return {"voiceSlot":slot,"generation":generation,"clipId":str(clip_id),"looping":bool(loop),"prebufferedBlocks":job["producedBlocks"],"independentVoice":True,"activationQueued":True,"physicalOutputsArmed":False}
         except BaseException:
             with self.lock:self.jobs.pop(slot,None);self.failures+=1

@@ -24,5 +24,5 @@ The channel authorizes only capability IDs established by the session negotiatio
 Run the independent vector runner with:
 
 ```bash
-python3 scripts/stageforge-channel-conformance.py
+python3 scripts/stagemesh-channel-conformance.py
 ```

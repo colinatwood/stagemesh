@@ -13,7 +13,7 @@ engine = Path(
     os.environ.get('STAGEMESH_NATIVE_ENGINE')
     or root / 'build' / 'native' / ('Release/stagemesh_engine.exe' if os.name == 'nt' else 'stagemesh_engine')
 ).resolve()
-token = 'stageforge-ci-stdio-dispatch-fixture'
+token = 'stagemesh-ci-stdio-dispatch-fixture'
 system = platform.system()
 
 
@@ -39,9 +39,9 @@ def valid_identity_token(value: str, *, midi: bool = False) -> bool:
     return re.fullmatch(pattern, value or '') is not None
 
 
-with tempfile.TemporaryDirectory(prefix='stageforge-stdio-') as temporary:
-    env = {k: v for k, v in os.environ.items() if not k.startswith('STAGEFORGE_')}
-    env.update(STAGEFORGE_IPC_TOKEN=token, STAGEFORGE_DATA_DIR=temporary)
+with tempfile.TemporaryDirectory(prefix='stagemesh-stdio-') as temporary:
+    env = {k: v for k, v in os.environ.items() if not k.startswith('STAGEMESH_')}
+    env.update(STAGEMESH_IPC_TOKEN=token, STAGEMESH_DATA_DIR=temporary)
     process = subprocess.Popen(
         [str(engine), '--stdio'], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
         stderr=subprocess.PIPE, text=True, bufsize=1, env=env)

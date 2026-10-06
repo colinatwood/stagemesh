@@ -1,9 +1,9 @@
-#include "stageforge/transport_clock.hpp"
+#include "stagemesh/transport_clock.hpp"
 
 #include <cmath>
 #include <thread>
 
-namespace stageforge {
+namespace stagemesh {
 
 TransportClock::TransportClock(double sample_rate, double bpm) {
     PublishedState initial{};
@@ -143,4 +143,4 @@ sf_time TransportClock::snapshot() const noexcept {
     };
 }
 
-} // namespace stageforge
+} // namespace stagemesh

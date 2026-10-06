@@ -9,7 +9,7 @@ from unittest import mock
 
 ROOT=Path(__file__).resolve().parents[1]
 SCRIPT=ROOT/"scripts/platform-ci-smoke.py"
-spec=importlib.util.spec_from_file_location("stageforge_platform_ci_smoke",SCRIPT)
+spec=importlib.util.spec_from_file_location("stagemesh_platform_ci_smoke",SCRIPT)
 module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
 
 class PlatformCiSmokeTests(unittest.TestCase):

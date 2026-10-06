@@ -28,14 +28,14 @@ require the [remaining inputs](remaining-data-requirements.md).
 
 ## Hosted validation and workbook
 
-[Checkpoint 82 master workbook](backlog/StageForge-Master-Backlog-Checkpoint-82.xlsx)
+[Checkpoint 82 master workbook](backlog/StageMesh-Master-Backlog-Checkpoint-82.xlsx)
 preserves statuses, acceptance criteria, eight sheets, three tables, one chart
 and 63 formulas. Totals were recalculated and changed regions rendered/reviewed.
 PLUG-034 stays Done for hosted native launch binding; licensed compatibility is
 not closed by this work.
 
 Code `c8f58d075519134324567fa4aa852f48e6c72643` passed all six checks.
-[Native run 34985922021](https://github.com/colinatwood/stageforge/actions/runs/34985922021)
+[Native run 34985922021](https://github.com/colinatwood/stagemesh/actions/runs/34985922021)
 records test merge `1bc5383cd7cf3dd47e150ec66bd69fe6bebc78d0`, source hashes and
 binary hashes in `docs/evidence/checkpoint-82/`. Seven native CTests passed per OS.
 The macOS arm64/AddressSanitizer selected-endpoint fixture recorded 27 playback

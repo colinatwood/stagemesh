@@ -311,7 +311,7 @@ fn wait_until_ready(
             let _ = stream.set_read_timeout(Some(Duration::from_millis(500)));
             let _ = stream.set_write_timeout(Some(Duration::from_millis(500)));
             let request = format!(
-                "GET /healthz HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nX-StageForge-API-Token: {api_token}\r\nConnection: close\r\n\r\n"
+                "GET /healthz HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nX-StageMesh-API-Token: {api_token}\r\nConnection: close\r\n\r\n"
             );
             if stream.write_all(request.as_bytes()).is_ok() {
                 let mut response = [0_u8; 256];
@@ -340,7 +340,7 @@ fn request_graceful_shutdown(
     let _ = stream.set_read_timeout(Some(Duration::from_millis(500)));
     let _ = stream.set_write_timeout(Some(Duration::from_millis(500)));
     let request = format!(
-        "POST /api/v1/desktop/shutdown HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nX-StageForge-API-Token: {api_token}\r\nContent-Type: application/json\r\nContent-Length: 2\r\nConnection: close\r\n\r\n{{}}"
+        "POST /api/v1/desktop/shutdown HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nX-StageMesh-API-Token: {api_token}\r\nContent-Type: application/json\r\nContent-Length: 2\r\nConnection: close\r\n\r\n{{}}"
     );
     if stream.write_all(request.as_bytes()).is_err() {
         return false;

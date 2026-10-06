@@ -9,7 +9,7 @@
 #include <string>
 #include <thread>
 
-namespace stageforge {
+namespace stagemesh {
 
 // Owner-thread controller for one target-OS playback stream. The monitor,
 // selection fence and native stream share one owner thread so an endpoint
@@ -45,4 +45,4 @@ private:
     FenceObservation last_fence_{};
 };
 
-} // namespace stageforge
+} // namespace stagemesh

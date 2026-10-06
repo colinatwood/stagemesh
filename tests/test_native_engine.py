@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 
 from native_engine import NativeEngineClient, parse_response
-from runtime import StageForgeRuntime
+from runtime import StageMeshRuntime
 
 
 class NativeProtocolTests(unittest.TestCase):
@@ -38,7 +38,7 @@ class NativeProtocolTests(unittest.TestCase):
         if not executable.is_file():
             self.skipTest("native engine not built")
         env = os.environ.copy()
-        env["STAGEFORGE_IPC_TOKEN"] = "unit-test-token"
+        env["STAGEMESH_IPC_TOKEN"] = "unit-test-token"
         process = subprocess.Popen(
             [str(executable), "--stdio"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             text=True, bufsize=1, env=env,
@@ -340,7 +340,7 @@ class NativeProtocolTests(unittest.TestCase):
             self.assertEqual(polled["handled"], "0")
             self.assertEqual(polled["physicalOutputsArmed"], "0")
             with self.assertRaises(RuntimeError):
-                client.open_uwb_hardware("/stageforge/nonexistent-uwb-device", 115_200)
+                client.open_uwb_hardware("/stagemesh/nonexistent-uwb-device", 115_200)
             self.assertEqual(client.le_uwb_hardware_status()["uwbOpen"], "0")
             with self.assertRaises(ValueError):
                 client.open_le_iso_hardware(201, "bad", "00:11:22:33:44:55")
@@ -387,7 +387,7 @@ class NativeProtocolTests(unittest.TestCase):
         if not client.available:self.skipTest(client.status().get("error","native engine not built"))
         try:
             hello=client.request("HELLO");self.assertEqual(hello["realtimeAudit"],"1");self.assertIn(hello["realtimeQualification"],("0","1"));self.assertEqual(hello["ingressAudit"],"1");status=client.realtime_audit_status(0)
-            if os.environ.get("STAGEFORGE_REQUIRE_RT_QUALIFICATION") == "1":
+            if os.environ.get("STAGEMESH_REQUIRE_RT_QUALIFICATION") == "1":
                 self.assertEqual(hello["realtimeQualification"], "1", "release gate requires qualification probes")
             self.assertEqual(status["physicalOutputsArmed"],"0");self.assertIn("deadlineMisses",status);self.assertIn("optionalShedBlocks",status);self.assertEqual(status["qualificationEnabled"],hello["realtimeQualification"]);self.assertIn("allocationAttempts",status);self.assertIn("allocatedBytes",status);self.assertIn("lockAttempts",status)
             with self.assertRaises(RuntimeError):client.realtime_audit_status(4)
@@ -545,7 +545,7 @@ class NativeProtocolTests(unittest.TestCase):
 
     def test_runtime_mirrors_monitor_when_native_available(self):
         with tempfile.TemporaryDirectory() as tmp:
-            runtime = StageForgeRuntime(Path(tmp))
+            runtime = StageMeshRuntime(Path(tmp))
             if not runtime.native.available:
                 runtime.close()
                 self.skipTest("native engine not built")

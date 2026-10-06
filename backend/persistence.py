@@ -48,9 +48,9 @@ class StateRepository:
         self.authorization_audit_segments = directory / "authorization-audit-segments"
         self.authorization_audit_retention_path = directory / "authorization-audit-retention.json"
         self.authorization_audit_rotate_bytes = _bounded_env_int(
-            "STAGEFORGE_AUTH_AUDIT_ROTATE_BYTES", 4 * 1024 * 1024, 64 * 1024, 256 * 1024 * 1024)
+            "STAGEMESH_AUTH_AUDIT_ROTATE_BYTES", 4 * 1024 * 1024, 64 * 1024, 256 * 1024 * 1024)
         self.authorization_audit_retain_segments = _bounded_env_int(
-            "STAGEFORGE_AUTH_AUDIT_RETAIN_SEGMENTS", 8, 1, 256)
+            "STAGEMESH_AUTH_AUDIT_RETAIN_SEGMENTS", 8, 1, 256)
         self._lock = RLock()
         self._authorization_lock = RLock()
         self._authorization_state = None

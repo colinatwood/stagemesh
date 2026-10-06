@@ -3,7 +3,7 @@
 #include "audio_preflight.h"
 #include <cstdint>
 
-namespace stageforge {
+namespace stagemesh {
 
 // Bounded, allocation-free conversion primitives. Callers own the buffers;
 // these functions never resize or retain memory and are suitable for a
@@ -40,4 +40,4 @@ bool convert_audio_float(const float* input, std::uint32_t input_frames,
                          float* output, std::uint32_t output_frames,
                          std::uint32_t output_channels, std::uint32_t output_rate_hz) noexcept;
 
-} // namespace stageforge
+} // namespace stagemesh

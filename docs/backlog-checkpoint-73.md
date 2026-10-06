@@ -2,9 +2,9 @@
 
 Latest reconciled snapshot: [Checkpoint 83](backlog-checkpoint-83.md).
 
-Reconciled against the user-supplied `StageForge-Master-Backlog-Checkpoint-73.xlsx`.
+Reconciled against the user-supplied `StageMesh-Master-Backlog-Checkpoint-73.xlsx`.
 That workbook already contains the Checkpoint 73 closure below. The updated
-[Checkpoint 74 master workbook](backlog/StageForge-Master-Backlog-Checkpoint-74.xlsx)
+[Checkpoint 74 master workbook](backlog/StageMesh-Master-Backlog-Checkpoint-74.xlsx)
 preserves that closure and records native device monitor progress without closing
 another backlog row. It is now stored alongside the canonical source.
 
@@ -15,9 +15,9 @@ another backlog row. It is now stored alongside the canonical source.
 
 ## Evidence
 
-- [Merged PR 5](https://github.com/colinatwood/stageforge/pull/5), merge commit
+- [Merged PR 5](https://github.com/colinatwood/stagemesh/pull/5), merge commit
   `f18b0da1a5ce429dc42bed759ce4154668f021c7`.
-- [Successful hosted run](https://github.com/colinatwood/stageforge/actions/runs/34870219024),
+- [Successful hosted run](https://github.com/colinatwood/stagemesh/actions/runs/34870219024),
   PR head `6b4086d2c3e87be224dec115cdad9f3d2f3ef435`; evidence records the
   GitHub test merge SHA `c4d3caa305c759cf23aeac9ab1dc974b5f3e03d3`.
 - Windows artifact: `windows-authenticode-fileid-lock-v1`, signed `whoami.exe`,

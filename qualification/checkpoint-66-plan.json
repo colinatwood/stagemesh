@@ -14,7 +14,7 @@
         "REC-034",
         "SEC-039"
       ],
-      "command": "stageforge-witness-qualify.py",
+      "command": "stagemesh-witness-qualify.py",
       "environment": "three independently hosted witnesses plus primary/standby nodes",
       "requiredArtifacts": [
         "qualification-report",
@@ -34,7 +34,7 @@
       "backlogIds": [
         "SEC-040"
       ],
-      "command": "stageforge-http-qualify.py",
+      "command": "stagemesh-http-qualify.py",
       "environment": "deployed TLS reverse proxy, IdP/auth proxy and venue/control LAN firewall",
       "requiredArtifacts": [
         "qualification-report",
@@ -55,7 +55,7 @@
         "PKG-033",
         "PKG-034"
       ],
-      "command": "stageforge-package-qualify.py",
+      "command": "stagemesh-package-qualify.py",
       "environment": "fresh Linux host or VM with representative audio/MIDI/device access",
       "requiredArtifacts": [
         "qualification-report",
@@ -165,7 +165,7 @@
         "HW-036",
         "HW-037"
       ],
-      "command": "stageforge-qualify.py",
+      "command": "stagemesh-qualify.py",
       "environment": "named production hardware and rehearsal topology",
       "requiredArtifacts": [
         "qualification-report",

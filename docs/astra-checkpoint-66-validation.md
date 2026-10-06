@@ -6,11 +6,11 @@ Checkpoint 66 advances `IPC-033` from a transport/ACL-validation contract to an 
 
 `backend/windows_named_pipe.py` adds a stdlib-only Win32 backend around `CreateNamedPipeW`, `ConnectNamedPipe`, `ReadFile` and `WriteFile`. It preserves checkpoint 59's exact bounded length-prefixed UPPF message bytes and authenticated session/capability/HMAC handling.
 
-The pipe DACL is protected (`D:P`) and contains SYSTEM plus explicit configured SID strings. StageForge rejects broad symbolic principals such as Everyone, Authenticated Users and Builtin Users. Builtin Administrators is not granted by default and must be opted in explicitly. Native startup refuses to construct the listener if no explicit service/operator SID is configured.
+The pipe DACL is protected (`D:P`) and contains SYSTEM plus explicit configured SID strings. StageMesh rejects broad symbolic principals such as Everyone, Authenticated Users and Builtin Users. Builtin Administrators is not granted by default and must be opted in explicitly. Native startup refuses to construct the listener if no explicit service/operator SID is configured.
 
-`FILE_FLAG_FIRST_PIPE_INSTANCE` is used for the serial listener so a pre-existing same-name pipe cannot silently become the StageForge endpoint. Per-message receive/write sizes remain bounded to the UPPF maximum and connection teardown flushes, disconnects and closes the Win32 handle.
+`FILE_FLAG_FIRST_PIPE_INSTANCE` is used for the serial listener so a pre-existing same-name pipe cannot silently become the StageMesh endpoint. Per-message receive/write sizes remain bounded to the UPPF maximum and connection teardown flushes, disconnects and closes the Win32 handle.
 
-Injected test listeners retain checkpoint 59's stricter rule: they cannot self-assert ACL safety and still require an explicit validator. The native listener can satisfy that startup check because the DACL is constructed by StageForge before `CreateNamedPipeW`.
+Injected test listeners retain checkpoint 59's stricter rule: they cannot self-assert ACL safety and still require an explicit validator. The native listener can satisfy that startup check because the DACL is constructed by StageMesh before `CreateNamedPipeW`.
 
 ## Qualification boundary
 

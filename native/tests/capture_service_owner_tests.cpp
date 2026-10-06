@@ -1,4 +1,4 @@
-#include "stageforge/capture_service_owner.hpp"
+#include "stagemesh/capture_service_owner.hpp"
 #include <atomic>
 #include <cstdlib>
 #define assert(condition) do { if (!(condition)) std::abort(); } while (false)
@@ -21,7 +21,7 @@ struct FakeCapture {
 };
 int main() {
     Evidence evidence;
-    stageforge::CaptureServiceOwner<FakeCapture> owner([&] { return std::make_unique<FakeCapture>(evidence); });
+    stagemesh::CaptureServiceOwner<FakeCapture> owner([&] { return std::make_unique<FakeCapture>(evidence); });
     const auto thread = owner.execute([](FakeCapture& service) { service.check(); service.active = true; return service.owner; });
     assert(thread != std::this_thread::get_id());
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
@@ -43,7 +43,7 @@ int main() {
     try { owner.execute([](FakeCapture&) { return true; }); } catch (const std::runtime_error&) { threw = true; }
     assert(threw);
     threw = false;
-    try { stageforge::CaptureServiceOwner<FakeCapture> bad([]() -> std::unique_ptr<FakeCapture> { throw std::runtime_error("startup failure"); }); }
+    try { stagemesh::CaptureServiceOwner<FakeCapture> bad([]() -> std::unique_ptr<FakeCapture> { throw std::runtime_error("startup failure"); }); }
     catch (const std::runtime_error&) { threw = true; }
     assert(threw);
 }

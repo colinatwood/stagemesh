@@ -52,5 +52,5 @@
       });
     }
   }
-  const api={snapFrames,bindClips};if(typeof module!=='undefined')module.exports=api;root.StageForgeArrangement=api;
+  const api={snapFrames,bindClips};if(typeof module!=='undefined')module.exports=api;root.StageMeshArrangement=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

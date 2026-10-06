@@ -5,7 +5,7 @@
 #include <string_view>
 #include <vector>
 
-namespace stageforge {
+namespace stagemesh {
 
 enum class DeviceKind { Audio, Midi };
 enum class IdentityStrength { Volatile, InstallationSnapshot, OsStableEndpoint };

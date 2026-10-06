@@ -1,6 +1,6 @@
 #pragma once
 #include "native_endpoint_stream.h"
-namespace stageforge {
+namespace stagemesh {
 using PlaybackStats = EndpointStreamStats;
 class NativePlaybackStream final : public NativeEndpointStream {
 public:

@@ -1,11 +1,11 @@
 # DAW interoperability direction
 
-Ardour is a useful reference for StageForge’s DAW-facing boundaries: a
+Ardour is a useful reference for StageMesh’s DAW-facing boundaries: a
 real-time audio graph, transport/session state, MIDI control, and plugin
-hosting. StageForge does not copy Ardour source or claim Ardour compatibility
+hosting. StageMesh does not copy Ardour source or claim Ardour compatibility
 from this document.
 
-## StageForge alignment
+## StageMesh alignment
 
 - `DawStreamRenderer` and the playback queues provide bounded, block-oriented
   rendering and exact loop behavior.

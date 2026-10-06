@@ -26,13 +26,13 @@ Windows live audio and physical qualification remain separate.
 
 ## Hosted validation and workbook
 
-[Checkpoint 81 master workbook](backlog/StageForge-Master-Backlog-Checkpoint-81.xlsx)
+[Checkpoint 81 master workbook](backlog/StageMesh-Master-Backlog-Checkpoint-81.xlsx)
 preserves all row statuses and acceptance criteria, eight sheets, three tables,
 one chart and 63 formulas. Recalculated totals remain 25 open / 22 P0; changed
 regions were rendered and reviewed.
 
 Code `60b1064a4de613d802b1cc3622272f92afb81c8a` passed all six checks.
-[Native run 34981909094](https://github.com/colinatwood/stageforge/actions/runs/34981909094)
+[Native run 34981909094](https://github.com/colinatwood/stagemesh/actions/runs/34981909094)
 records test merge `fb9ab228b2307b0f040626e84866a82bfcd889ad`, source hashes and
 binary hashes in `docs/evidence/checkpoint-81/`. Seven CTests passed per OS.
 macOS arm64/AddressSanitizer observed 32 playback callbacks / 16,384 frames and

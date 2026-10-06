@@ -36,5 +36,5 @@
       node.addEventListener('pointerdown',event=>{gesture={x:event.clientX,y:event.clientY};node.setPointerCapture?.(event.pointerId);});node.addEventListener('pointerup',event=>{if(!gesture)return;const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;gesture=null;if(!dx&&!dy)return;const frame=Math.max(0,Math.round(point.frame+dx/Math.max(1,lane.clientWidth)*zoomSeconds*RATE));const gain=Math.max(0,Math.min(2,point.value-dy/Math.max(1,lane.clientHeight)*2));onEdit({action:'upsert',trackId:track.trackId,pointId:point.pointId,parameter:'volume',frame,value:gain});});lane.appendChild(node);}
     if(!points.some(point=>point.pointId===pointInput.value)){pointInput.value='';remove.disabled=true;}status.textContent=`${points.length} linear volume point(s) on ${track?.name||'no track'}.`;
   }
-  const api={render};if(typeof module!=='undefined')module.exports=api;root.StageForgeAutomation=api;
+  const api={render};if(typeof module!=='undefined')module.exports=api;root.StageMeshAutomation=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

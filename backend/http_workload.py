@@ -37,7 +37,7 @@ def summarize_http_results(results: list[dict[str, Any]], expected_statuses: set
 def simulate_rate_policy(limiter_factory: Callable[[Callable[[], float]], Any], *, ticks: int = 500) -> dict[str, Any]:
     """Replay four 20 rps controllers beside one 300 rps abusive peer for 5 s.
 
-    With StageForge's default 100 rps per-peer and 200 rps aggregate refill, the
+    With StageMesh's default 100 rps per-peer and 200 rps aggregate refill, the
     abusive peer must be bounded while the 80 rps aggregate controller workload is
     admitted. The controlled clock makes this qualification deterministic.
     """

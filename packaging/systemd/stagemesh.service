@@ -4,13 +4,13 @@ After=local-fs.target sound.target bluetooth.target
 
 [Service]
 Type=simple
-User=stageforge
-Group=stageforge
-RuntimeDirectory=stageforge
-StateDirectory=stageforge
-Environment=STAGEFORGE_DATA_DIR=/var/lib/stageforge
+User=stagemesh
+Group=stagemesh
+RuntimeDirectory=stagemesh
+StateDirectory=stagemesh
+Environment=STAGEMESH_DATA_DIR=/var/lib/stagemesh
 Environment=STAGEMESH_NATIVE_ENGINE=/usr/libexec/stagemesh/stagemesh_engine
-EnvironmentFile=-/etc/stageforge/stageforge.env
+EnvironmentFile=-/etc/stagemesh/stagemesh.env
 ExecStart=/usr/bin/python3 /usr/share/stagemesh/backend/dev_server.py --host 127.0.0.1 --port 8765
 Restart=on-failure
 RestartSec=2
@@ -28,7 +28,7 @@ RestrictRealtime=false
 RestrictSUIDSGID=true
 LockPersonality=true
 SystemCallArchitectures=native
-ReadWritePaths=/var/lib/stageforge /run/stageforge
+ReadWritePaths=/var/lib/stagemesh /run/stagemesh
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK AF_BLUETOOTH
 LimitMEMLOCK=infinity
 

@@ -20,7 +20,7 @@ work rather than completed support claims.
 
 - 395 Python unit/integration tests passed without skips with the qualification
   native engine selected.
-- `stageforge_native_tests` and `stageforge_current_abi_smoke` passed.
+- `stagemesh_native_tests` and `stagemesh_current_abi_smoke` passed.
 - All 113 JSON schemas and the OpenAPI document parsed.
 - Frontend JavaScript syntax and the Production DOM workflow harness passed.
 

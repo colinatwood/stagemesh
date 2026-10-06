@@ -1,7 +1,7 @@
 #include "device_execution_fence.h"
 #include <stdexcept>
 
-namespace stageforge {
+namespace stagemesh {
 
 DeviceExecutionFence::DeviceExecutionFence(DeviceSelection selection)
     : selection_(std::move(selection)) {

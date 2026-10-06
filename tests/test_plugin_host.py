@@ -22,7 +22,7 @@ def platform_attestation():
 class PluginHostTests(unittest.TestCase):
     def test_slow_uncontended_acquisition_is_not_contention(self):
         with patch.dict("os.environ", {"STAGEMESH_RT_QUALIFICATION": "1"}):
-            host=IsolatedPluginHost(ROOT/"scripts/stageforge-plugin-host.py",{"format":"builtin","pluginId":"lock-test"})
+            host=IsolatedPluginHost(ROOT/"scripts/stagemesh-plugin-host.py",{"format":"builtin","pluginId":"lock-test"})
         try:
             with patch("plugin_host.time.monotonic_ns", side_effect=[0, 200_000]):
                 with host._locked():pass
@@ -34,7 +34,7 @@ class PluginHostTests(unittest.TestCase):
     def test_failed_nonblocking_acquisition_counts_contention(self):
         from unittest.mock import Mock
         with patch.dict("os.environ", {"STAGEMESH_RT_QUALIFICATION": "1"}):
-            host=IsolatedPluginHost(ROOT/"scripts/stageforge-plugin-host.py",{"format":"builtin","pluginId":"contended-test"})
+            host=IsolatedPluginHost(ROOT/"scripts/stagemesh-plugin-host.py",{"format":"builtin","pluginId":"contended-test"})
         lock=Mock();lock.acquire.side_effect=[False,True]
         try:
             with patch.object(host,"_lock",lock):
@@ -47,14 +47,14 @@ class PluginHostTests(unittest.TestCase):
 
     def test_qualification_mode_measures_plugin_serialization_boundary(self):
         with patch.dict("os.environ", {"STAGEMESH_RT_QUALIFICATION": "1"}):
-            host=IsolatedPluginHost(ROOT/"scripts/stageforge-plugin-host.py",{"format":"builtin","pluginId":"qualified","configuration":{"gain":1}})
+            host=IsolatedPluginHost(ROOT/"scripts/stagemesh-plugin-host.py",{"format":"builtin","pluginId":"qualified","configuration":{"gain":1}})
         try:
             host.start();host.process_block([.25,-.25]);audit=host.status()["audit"]
             self.assertTrue(audit["qualificationEnabled"]);self.assertGreaterEqual(audit["serializationLockAttempts"],4);self.assertGreater(audit["requestPayloadBytes"],0);self.assertGreater(audit["responsePayloadBytes"],0)
         finally:host.close()
 
     def test_builtin_isolated_processing(self):
-        host=IsolatedPluginHost(ROOT/"scripts/stageforge-plugin-host.py",{"format":"builtin","pluginId":"gain","configuration":{"gain":2}})
+        host=IsolatedPluginHost(ROOT/"scripts/stagemesh-plugin-host.py",{"format":"builtin","pluginId":"gain","configuration":{"gain":2}})
         try:
             self.assertFalse(host.start()["bypassed"])
             self.assertEqual(host.process_block([.25,-.75]),[.5,-1.0])
@@ -66,14 +66,14 @@ class PluginHostTests(unittest.TestCase):
     def test_external_requires_adapter(self):
         with self.assertRaises(ValueError):validate_plugin_manifest({"format":"vst3","pluginId":"x"})
         manifest={"format":"vst3","pluginId":"x","adapterExecutable":"relative-adapter","hostSystems":[platform.system()],"hostArchitectures":[platform.machine()],"adapterProtocolVersions":[1],"adapterSha256":"sha256:"+"0"*64,**platform_attestation()}
-        with self.assertRaisesRegex(ValueError,"absolute executable"):IsolatedPluginHost(ROOT/"scripts/stageforge-plugin-host.py",manifest)
+        with self.assertRaisesRegex(ValueError,"absolute executable"):IsolatedPluginHost(ROOT/"scripts/stagemesh-plugin-host.py",manifest)
 
     @unittest.skipUnless(sys.platform.startswith("linux"), "Linux external adapter launch binding")
     def test_external_adapter_uses_explicit_executable_without_shell(self):
         with tempfile.TemporaryDirectory() as raw:
             adapter=Path(raw)/"adapter";adapter.write_text("#!/usr/bin/env python3\nimport json,sys\nfor line in sys.stdin:\n r=json.loads(line);o={'ok':True,'active':True,'protocolVersion':1,'pluginId':'external','format':'vst3','supportsProcess':True,'latencyFrames':64} if r['op']=='activate' else {'ok':True,'samples':[v*.5 for v in r['samples']]};o['requestId']=r['requestId'];print(json.dumps(o),flush=True)\n");adapter.chmod(0o700)
             manifest={"format":"vst3","pluginId":"external","adapterExecutable":str(adapter),"hostSystems":[platform.system()],"hostArchitectures":[platform.machine()],"adapterProtocolVersions":[1],"adapterSha256":"sha256:"+hashlib.sha256(adapter.read_bytes()).hexdigest(),**platform_attestation()}
-            host=IsolatedPluginHost(ROOT/"scripts/stageforge-plugin-host.py",manifest)
+            host=IsolatedPluginHost(ROOT/"scripts/stagemesh-plugin-host.py",manifest)
             try:self.assertEqual(host.start()["handshake"]["latencyFrames"],64);self.assertEqual(host.process_block([.5,-.5]),[.25,-.25]);self.assertEqual(host.executable,adapter)
             finally:host.close()
 
@@ -85,7 +85,7 @@ class PluginHostTests(unittest.TestCase):
             adapter.write_text("#!/usr/bin/env python3\nimport json,sys\nfor line in sys.stdin:\n r=json.loads(line);o={'ok':True,'active':True,'protocolVersion':1,'pluginId':'external','format':'vst3','supportsProcess':True,'latencyFrames':7} if r['op']=='activate' else {'ok':True,'samples':r['samples']};o['requestId']=r['requestId'];print(json.dumps(o),flush=True)\n");adapter.chmod(0o700)
             replacement.write_text("#!/usr/bin/env python3\nimport json,sys\nfor line in sys.stdin:\n r=json.loads(line);print(json.dumps({'ok':True,'requestId':r['requestId'],'active':True,'protocolVersion':1,'pluginId':'replaced','format':'vst3','supportsProcess':True,'latencyFrames':999}),flush=True)\n");replacement.chmod(0o700)
             manifest={"format":"vst3","pluginId":"external","adapterExecutable":str(adapter),"hostSystems":[platform.system()],"hostArchitectures":[platform.machine()],"adapterProtocolVersions":[1],"adapterSha256":"sha256:"+hashlib.sha256(adapter.read_bytes()).hexdigest()}
-            host=IsolatedPluginHost(ROOT/"scripts/stageforge-plugin-host.py",manifest)
+            host=IsolatedPluginHost(ROOT/"scripts/stagemesh-plugin-host.py",manifest)
             original_inode=adapter.stat().st_ino;real_popen=plugin_host.subprocess.Popen;replaced=False
             def launch(*args,**kwargs):
                 nonlocal replaced
@@ -106,7 +106,7 @@ class PluginHostTests(unittest.TestCase):
             root=Path(raw);target=root/"target";link=root/"adapter"
             target.write_text("#!/bin/sh\nexit 0\n");target.chmod(0o700);link.symlink_to(target)
             manifest={"format":"lv2","pluginId":"external","adapterExecutable":str(link),"hostSystems":[platform.system()],"hostArchitectures":[platform.machine()],"adapterProtocolVersions":[1],"adapterSha256":"sha256:"+hashlib.sha256(target.read_bytes()).hexdigest()}
-            with self.assertRaisesRegex(ValueError,"regular executable"):IsolatedPluginHost(ROOT/"scripts/stageforge-plugin-host.py",manifest)
+            with self.assertRaisesRegex(ValueError,"regular executable"):IsolatedPluginHost(ROOT/"scripts/stagemesh-plugin-host.py",manifest)
 
     def test_external_manifest_rejects_incompatible_host_protocol_and_hash(self):
         base={"format":"clap","pluginId":"external","adapterExecutable":"/tmp/adapter","hostSystems":[platform.system()],"hostArchitectures":[platform.machine()],"adapterProtocolVersions":[1],"adapterSha256":"sha256:"+"0"*64}
@@ -116,7 +116,7 @@ class PluginHostTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"adapterSha256"):validate_plugin_manifest({**base,"adapterSha256":"sha256:nope"})
 
     def test_windows_manifest_requires_signed_file_identity_attestation(self):
-        base={"format":"vst3","pluginId":"win","adapterExecutable":"C:/StageForge/adapter.exe","hostSystems":["Windows"],"hostArchitectures":["AMD64"],"adapterProtocolVersions":[1],"adapterSha256":"sha256:"+"1"*64}
+        base={"format":"vst3","pluginId":"win","adapterExecutable":"C:/StageMesh/adapter.exe","hostSystems":["Windows"],"hostArchitectures":["AMD64"],"adapterProtocolVersions":[1],"adapterSha256":"sha256:"+"1"*64}
         with self.assertRaisesRegex(ValueError,"Windows platformLaunchAttestation"):
             validate_plugin_manifest(base,host_system="Windows",host_machine="AMD64")
         manifest={**base,"platformLaunchAttestations":{"Windows":{"mode":"windows-authenticode-fileid-v1","publisherCertificateSha256":"sha256:"+"2"*64,"fileIdentityRequired":True}}}
@@ -125,7 +125,7 @@ class PluginHostTests(unittest.TestCase):
         self.assertTrue(normalized["platformLaunchAttestation"]["fileIdentityRequired"])
 
     def test_windows_launch_evidence_binds_hash_publisher_and_file_identity(self):
-        manifest={"format":"vst3","pluginId":"win","adapterExecutable":"C:/StageForge/adapter.exe","hostSystems":["Windows"],"hostArchitectures":["AMD64"],"adapterProtocolVersions":[1],"adapterSha256":"sha256:"+"1"*64,"platformLaunchAttestations":{"Windows":{"mode":"windows-authenticode-fileid-v1","publisherCertificateSha256":"sha256:"+"2"*64,"fileIdentityRequired":True}}}
+        manifest={"format":"vst3","pluginId":"win","adapterExecutable":"C:/StageMesh/adapter.exe","hostSystems":["Windows"],"hostArchitectures":["AMD64"],"adapterProtocolVersions":[1],"adapterSha256":"sha256:"+"1"*64,"platformLaunchAttestations":{"Windows":{"mode":"windows-authenticode-fileid-v1","publisherCertificateSha256":"sha256:"+"2"*64,"fileIdentityRequired":True}}}
         evidence={"adapterSha256":"sha256:"+"1"*64,"signatureStatus":"Valid","publisherCertificateSha256":"sha256:"+"2"*64,"volumeSerial":"VOL-1","fileId":"FILE-123"}
         result=validate_platform_launch_evidence(manifest,evidence,host_system="Windows")
         self.assertEqual(result["binding"],"windows-authenticode-fileid-v1")
@@ -135,7 +135,7 @@ class PluginHostTests(unittest.TestCase):
             validate_platform_launch_evidence(manifest,{**evidence,"fileId":""},host_system="Windows")
 
     def test_macos_manifest_and_launch_evidence_require_exact_codesign_identity(self):
-        manifest={"format":"audio-unit","pluginId":"mac","adapterExecutable":"/Applications/StageForge Adapter.app/Contents/MacOS/adapter","hostSystems":["Darwin"],"hostArchitectures":["arm64"],"adapterProtocolVersions":[1],"adapterSha256":"sha256:"+"4"*64,"platformLaunchAttestations":{"Darwin":{"mode":"macos-codesign-cdhash-v1","teamId":"ABC123DEF4","codeDirectoryHash":"cdhash:"+"5"*40}}}
+        manifest={"format":"audio-unit","pluginId":"mac","adapterExecutable":"/Applications/StageMesh Adapter.app/Contents/MacOS/adapter","hostSystems":["Darwin"],"hostArchitectures":["arm64"],"adapterProtocolVersions":[1],"adapterSha256":"sha256:"+"4"*64,"platformLaunchAttestations":{"Darwin":{"mode":"macos-codesign-cdhash-v1","teamId":"ABC123DEF4","codeDirectoryHash":"cdhash:"+"5"*40}}}
         normalized=validate_plugin_manifest(manifest,host_system="Darwin",host_machine="arm64")
         self.assertEqual(normalized["platformLaunchAttestation"]["teamId"],"ABC123DEF4")
         evidence={"adapterSha256":"sha256:"+"4"*64,"signatureValid":True,"teamId":"ABC123DEF4","codeDirectoryHash":"cdhash:"+"5"*40,"fileId":"dev:1:inode:22"}
@@ -158,7 +158,7 @@ class PluginHostTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as raw:
             adapter=Path(raw)/"adapter";adapter.write_text("#!/bin/sh\nexit 0\n");adapter.chmod(0o700)
             manifest={"format":"lv2","pluginId":"external","adapterExecutable":str(adapter),"hostSystems":[platform.system()],"hostArchitectures":[platform.machine()],"adapterProtocolVersions":[1],"adapterSha256":"sha256:"+"0"*64,**platform_attestation()}
-            with self.assertRaisesRegex(ValueError,"hash mismatch"):IsolatedPluginHost(ROOT/"scripts/stageforge-plugin-host.py",manifest)
+            with self.assertRaisesRegex(ValueError,"hash mismatch"):IsolatedPluginHost(ROOT/"scripts/stagemesh-plugin-host.py",manifest)
 
     def test_timeout_is_reaped_and_audited_before_bypass(self):
         with tempfile.TemporaryDirectory() as raw:
@@ -188,8 +188,8 @@ class PluginHostTests(unittest.TestCase):
             finally:host.close()
 
     def test_plugin_receives_private_scratch_and_close_removes_it(self):
-        with tempfile.TemporaryDirectory() as raw,patch.dict("os.environ",{"STAGEFORGE_PLUGIN_SCRATCH_DIR":raw}):
-            script=Path(raw)/"scratch.py";script.write_text("import json,os,sys\nfor line in sys.stdin:\n r=json.loads(line);open(os.path.join(os.environ['STAGEFORGE_PLUGIN_INSTANCE_SCRATCH_DIR'],'used'),'w').write('x');print(json.dumps({'ok':True,'requestId':r['requestId'],'active':True,'protocolVersion':1,'pluginId':'scratch','format':'builtin','supportsProcess':True,'latencyFrames':0}),flush=True)\n")
+        with tempfile.TemporaryDirectory() as raw,patch.dict("os.environ",{"STAGEMESH_PLUGIN_SCRATCH_DIR":raw}):
+            script=Path(raw)/"scratch.py";script.write_text("import json,os,sys\nfor line in sys.stdin:\n r=json.loads(line);open(os.path.join(os.environ['STAGEMESH_PLUGIN_INSTANCE_SCRATCH_DIR'],'used'),'w').write('x');print(json.dumps({'ok':True,'requestId':r['requestId'],'active':True,'protocolVersion':1,'pluginId':'scratch','format':'builtin','supportsProcess':True,'latencyFrames':0}),flush=True)\n")
             host=IsolatedPluginHost(script,{"format":"builtin","pluginId":"scratch"})
             try:
                 status=host.start();self.assertIsNotNone(status["scratchResourceId"]);self.assertEqual(plugin_host_scratch_status()["liveCount"],1)
@@ -199,14 +199,14 @@ class PluginHostTests(unittest.TestCase):
     def test_scratch_cleanup_keeps_unknown_and_removes_exact_dead_owner(self):
         import json
         from staged_resources import _process_identity
-        with tempfile.TemporaryDirectory() as raw,patch.dict("os.environ",{"STAGEFORGE_PLUGIN_SCRATCH_DIR":raw}):
+        with tempfile.TemporaryDirectory() as raw,patch.dict("os.environ",{"STAGEMESH_PLUGIN_SCRATCH_DIR":raw}):
             from temporary_ownership import create_owner_manifest
             root=Path(raw);dead=root/"host-dead";dead.mkdir();create_owner_manifest(dead/"owner.json",dead,resource_class="plugin-host-scratch",purpose="isolated-effect-host");owner=json.loads((dead/"owner.json").read_text());owner["pid"]=99999999;(dead/"owner.json").write_text(json.dumps(owner));(dead/"bytes").write_bytes(b"x")
             unknown=root/"host-unknown";unknown.mkdir();(unknown/"owner.json").write_text("broken")
             result=plugin_host_scratch_cleanup();self.assertEqual(result["reclaimedCount"],1);self.assertFalse(dead.exists());self.assertTrue(unknown.exists());self.assertEqual(result["unknownOwnerCount"],1)
 
     def test_stderr_flood_cannot_block_handshake(self):
-        with tempfile.TemporaryDirectory() as raw,patch.dict("os.environ",{"STAGEFORGE_PLUGIN_SCRATCH_DIR":raw}):
+        with tempfile.TemporaryDirectory() as raw,patch.dict("os.environ",{"STAGEMESH_PLUGIN_SCRATCH_DIR":raw}):
             script=Path(raw)/"stderr.py";script.write_text("import json,sys\nfor line in sys.stdin:\n r=json.loads(line);sys.stderr.write('x'*1048576);sys.stderr.flush();print(json.dumps({'ok':True,'requestId':r['requestId'],'active':True,'protocolVersion':1,'pluginId':'stderr','format':'builtin','supportsProcess':True,'latencyFrames':0}),flush=True)\n")
             host=IsolatedPluginHost(script,{"format":"builtin","pluginId":"stderr"},timeout=.5)
             try:self.assertFalse(host.start()["bypassed"])
@@ -214,8 +214,8 @@ class PluginHostTests(unittest.TestCase):
 
 
     def test_scratch_manifest_durability_failure_cleans_directory_before_launch(self):
-        with tempfile.TemporaryDirectory() as raw,patch.dict("os.environ",{"STAGEFORGE_PLUGIN_SCRATCH_DIR":raw}),patch("plugin_host.fsync_directory",side_effect=OSError("sync")):
-            host=IsolatedPluginHost(ROOT/"scripts/stageforge-plugin-host.py",{"format":"builtin","pluginId":"durability"})
+        with tempfile.TemporaryDirectory() as raw,patch.dict("os.environ",{"STAGEMESH_PLUGIN_SCRATCH_DIR":raw}),patch("plugin_host.fsync_directory",side_effect=OSError("sync")):
+            host=IsolatedPluginHost(ROOT/"scripts/stagemesh-plugin-host.py",{"format":"builtin","pluginId":"durability"})
             try:
                 with self.assertRaisesRegex(OSError,"sync"):host.start()
                 self.assertIsNone(host.process);self.assertIsNone(host.scratch_path);self.assertEqual(list(Path(raw).glob("host-*")),[])
@@ -223,10 +223,10 @@ class PluginHostTests(unittest.TestCase):
 
     def test_invalid_scratch_budget_fails_before_launch(self):
         for value in ("broken","0","1048575"):
-            with self.subTest(value=value),tempfile.TemporaryDirectory() as raw,patch.dict("os.environ",{"STAGEFORGE_PLUGIN_SCRATCH_DIR":raw,"STAGEFORGE_PLUGIN_SCRATCH_MAX_BYTES":value}):
-                host=IsolatedPluginHost(ROOT/"scripts/stageforge-plugin-host.py",{"format":"builtin","pluginId":"budget"})
+            with self.subTest(value=value),tempfile.TemporaryDirectory() as raw,patch.dict("os.environ",{"STAGEMESH_PLUGIN_SCRATCH_DIR":raw,"STAGEMESH_PLUGIN_SCRATCH_MAX_BYTES":value}):
+                host=IsolatedPluginHost(ROOT/"scripts/stagemesh-plugin-host.py",{"format":"builtin","pluginId":"budget"})
                 try:
-                    with self.assertRaisesRegex(RuntimeError,"STAGEFORGE_PLUGIN_SCRATCH_MAX_BYTES"):host.start()
+                    with self.assertRaisesRegex(RuntimeError,"STAGEMESH_PLUGIN_SCRATCH_MAX_BYTES"):host.start()
                     self.assertIsNone(host.process)
                 finally:host.close()
 

@@ -1,4 +1,4 @@
-"""Minimal Windows Service Control Manager host for StageForge service adapters.
+"""Minimal Windows Service Control Manager host for StageMesh service adapters.
 
 The host owns only the SCM lifecycle. Product-specific resources are supplied through
 on_start/on_stop callbacks so service control remains separate from audio/plugin logic.
@@ -60,7 +60,7 @@ class _WindowsServiceApi:
 
 
 class WindowsServiceHost:
-    """Run bounded StageForge callbacks under the Windows SCM dispatcher."""
+    """Run bounded StageMesh callbacks under the Windows SCM dispatcher."""
 
     def __init__(
         self,

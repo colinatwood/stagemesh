@@ -4,9 +4,9 @@ Checkpoint 54 closes the rendered-browser and responsive-layout portions of the 
 
 ## Rendered qualification contract
 
-`scripts/stageforge-browser-qualification.py` launches a real headless Chromium executable and executes the production `index.html`, `styles.css` and all six StageForge operator JavaScript files.
+`scripts/stagemesh-browser-qualification.py` launches a real headless Chromium executable and executes the production `index.html`, `styles.css` and all six StageMesh operator JavaScript files.
 
-The managed Chromium policy in this environment still blocks direct loopback navigation with `ERR_BLOCKED_BY_ADMINISTRATOR`. The qualification helper therefore keeps the real StageForge handler on loopback, loads the production assets with Playwright `set_content`, and bridges `fetch` calls to that handler. This is intentionally reported as `directBrowserLoopbackNetworkingQualified: false`; checkpoint 54 qualifies rendering, responsive layout, keyboard focus and client-side workflows, not venue-LAN/TLS/IdP/browser-network policy.
+The managed Chromium policy in this environment still blocks direct loopback navigation with `ERR_BLOCKED_BY_ADMINISTRATOR`. The qualification helper therefore keeps the real StageMesh handler on loopback, loads the production assets with Playwright `set_content`, and bridges `fetch` calls to that handler. This is intentionally reported as `directBrowserLoopbackNetworkingQualified: false`; checkpoint 54 qualifies rendering, responsive layout, keyboard focus and client-side workflows, not venue-LAN/TLS/IdP/browser-network policy.
 
 The reference exercise checks:
 

@@ -529,9 +529,9 @@ class CommunityGovernance:
             vote_url = f"{base_url.rstrip('/')}/vote.html?token={token}"
             sent_at = _utc_now()
             expires_at = sent_at + timedelta(hours=int(invite['windowHours']))
-            subject = f"StageForge admin vote: {proposal['title']}"
+            subject = f"StageMesh admin vote: {proposal['title']}"
             text = (
-                f"StageForge community change vote\n\n"
+                f"StageMesh community change vote\n\n"
                 f"Proposal: {proposal['title']}\n"
                 f"Proposal ID: {proposal['id']}\n"
                 f"Version: {proposal['version']}\n\n"

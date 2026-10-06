@@ -9,7 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
-from runtime import StageForgeRuntime
+from runtime import StageMeshRuntime
 
 
 class SessionRestartTests(unittest.TestCase):
@@ -31,7 +31,7 @@ class SessionRestartTests(unittest.TestCase):
                 self.assertEqual(runtime.daw_capture.status()["state"], "aborted")
 
     def open_runtime(self, root):
-        runtime = StageForgeRuntime(root)
+        runtime = StageMeshRuntime(root)
         self.addCleanup(runtime.close)
         if not runtime.native.available:
             self.skipTest("native engine not built")

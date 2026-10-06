@@ -1,5 +1,20 @@
 # Changelog
 
+## StageMesh identity migration — 2026-10-06
+
+- Remove the retired product name from source, native namespaces and include
+  paths, build targets, scripts, services, environment variables, HTTP headers,
+  fixtures, documentation, and backlog workbooks.
+- Standardize the only supported runtime and deployment contracts on
+  `StageMesh`, `stagemesh`, and `STAGEMESH` forms. This is an intentional
+  developer-alpha breaking change; retired aliases are not retained.
+- Add a repository-wide regression that scans path names, UTF-8 text, and XML
+  inside tracked workbooks so the retired identity cannot be reintroduced.
+
+This migration changes software identifiers only. It does not establish
+signing, clean-host, accessibility, physical hardware, or external product
+qualification.
+
 ## Desktop release hardening — 2026-10-05
 
 - PR #84 adds a self-contained `verify-download.py` to every Windows, macOS,
@@ -22,7 +37,7 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 
 ## Astra backlog checkpoint 68 — explicit service-identity device-permission qualification helper
 
-- Add an installed `stageforge-device-permissions.py` helper that must run as the requested StageForge service identity and evaluates explicit named device nodes.
+- Add an installed `stagemesh-device-permissions.py` helper that must run as the requested StageMesh service identity and evaluates explicit named device nodes.
 - Require absolute non-symlink character-device paths with bounded `r`, `w` or `rw` access requests; missing, regular-file and symlink targets fail closed.
 - Report device major/minor, ownership/mode and effective access without changing permissions, groups, udev policy or physical-output authority.
 - Package the helper and include it in the isolated-rootfs installation manifest so real clean-host qualification uses the same installed tool.
@@ -48,7 +63,7 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 
 ## Astra backlog checkpoint 65 — external qualification intake/status aggregation
 
-- Add an installed `stageforge-qualification-status.py` helper that scans exact-build task submissions and reports pending, awaiting-review, approved, rejected, needs-evidence or invalid.
+- Add an installed `stagemesh-qualification-status.py` helper that scans exact-build task submissions and reports pending, awaiting-review, approved, rejected, needs-evidence or invalid.
 - Re-hash every referenced artifact during intake and compare it with the authenticated review, so evidence modified after approval becomes invalid rather than silently remaining approved.
 - Keep status summaries build-bound to the exact qualification plan and expose only hashed reviewer identity/result digests.
 - Add JSON Schema coverage for the aggregate status document and package/install the status helper with the other qualification tools.
@@ -58,7 +73,7 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 ## Astra backlog checkpoint 64 — authenticated external qualification evidence review
 
 - Require passing external qualification results to carry task-specific evidence artifact classes, safe relative paths, byte counts and SHA-256 digests.
-- Add an installed `stageforge-qualification-review.py` helper that verifies exact plan/build/result binding and hashes the actual evidence files before review.
+- Add an installed `stagemesh-qualification-review.py` helper that verifies exact plan/build/result binding and hashes the actual evidence files before review.
 - Add private reviewer-key files with owner-only permissions and HMAC-authenticated approve/reject/needs-evidence review envelopes.
 - Bind review decisions to a canonical result digest, reviewer identity hash, task/backlog IDs, verified artifacts and `physicalOutputsArmed=false`.
 - Keep backlog mutation manual: an approved review is only `eligibleForBacklogReview`, never an automatic Done transition.
@@ -71,7 +86,7 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 - Enumerate eight external gates: independent witness, LAN security, clean Linux packaging, Windows, macOS, assistive technology, licensed plugin matrix and named stage hardware.
 - Add per-task required boolean claims, backlog IDs, environment descriptions and existing qualification commands where available.
 - Add bounded result envelopes that require exact plan/build matching, hashed runner identity, all required claims for a passing result, bounded SHA-256 artifact references and `physicalOutputsArmed=false`.
-- Install `stageforge-qualification-plan.py` and include it in the isolated-rootfs packaging qualification.
+- Install `stagemesh-qualification-plan.py` and include it in the isolated-rootfs packaging qualification.
 - Add JSON Schemas for external qualification plans/results.
 - Release Python suite passes 621 tests; RT native CTest passes 2/2. Automation-performance, all 128 schemas/OpenAPI and all seven frontend JavaScript syntax checks pass.
 
@@ -86,8 +101,8 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 
 ## Astra backlog checkpoint 61 — isolated Linux rootfs packaging qualification
 
-- Add an installed `stageforge-package-qualify.py` helper that exercises the real Linux installer inside a fresh staged rootfs.
-- Provision the staged `stageforge` account with `systemd-sysusers` and the state directory with `systemd-tmpfiles`; verify numeric ownership and mode `0750`.
+- Add an installed `stagemesh-package-qualify.py` helper that exercises the real Linux installer inside a fresh staged rootfs.
+- Provision the staged `stagemesh` account with `systemd-sysusers` and the state directory with `systemd-tmpfiles`; verify numeric ownership and mode `0750`.
 - Verify both packaged systemd units with `systemd-analyze verify` and assert the installer never enables services automatically.
 - Prove reinstall preserves persistent state, ordinary uninstall preserves state while removing program files, and explicit `--purge-data` removes state.
 - Emit an explicit machine-readable report with `cleanHostQualified=false` and `hardwarePermissionsQualified=false`; isolated-rootfs evidence does not replace a real host/device exercise.
@@ -109,9 +124,9 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 - Factor exact bounded length-prefixed UPPF transport packets so stream and message transports carry identical authenticated channel bytes.
 - Reject truncated, oversized and trailing-byte message packets before UPPF decode.
 - Factor the bounded authenticated request loop so Unix sockets and future Windows named pipes share capability/session/sequence/HMAC handling.
-- Add a StageForge-scoped Windows named-pipe server contract using `AF_PIPE` only on Windows.
+- Add a StageMesh-scoped Windows named-pipe server contract using `AF_PIPE` only on Windows.
 - Require a positive explicit ACL validator before named-pipe startup; missing/failed validation is fail-closed and closes the listener before accepting requests.
-- Keep pipe names inside `\\.\pipe\StageForge\<safe-name>` and bound per-connection request counts.
+- Keep pipe names inside `\\.\pipe\StageMesh\<safe-name>` and bound per-connection request counts.
 - Release Python suite passes 610 tests with zero skips; RT native CTest remains 2/2. Automation-performance, all 126 schemas/OpenAPI and all seven frontend JavaScript syntax checks pass.
 - Real Windows DACL creation/inspection, service identity integration and Windows client/server execution remain open before `IPC-033` can be completed.
 
@@ -163,7 +178,7 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 ## Astra backlog checkpoint 54 — rendered browser and responsive operator acceptance
 
 - Add a repeatable real-Chromium operator qualification helper covering desktop, tablet and phone reference viewports.
-- Execute the production HTML/CSS/JavaScript and bridge client fetches to the real StageForge loopback handler when managed Chromium blocks direct loopback navigation.
+- Execute the production HTML/CSS/JavaScript and bridge client fetches to the real StageMesh loopback handler when managed Chromium blocks direct loopback navigation.
 - Verify keyboard skip navigation, rendered player controls, launcher visibility and a safe show-state edit without arming physical outputs.
 - Fix a 390 px viewport overflow by allowing grid children and paired form controls to shrink instead of forcing min-content width.
 - Keep assistive-technology and deployed browser/LAN qualification explicitly open; the report sets both related claims false.
@@ -171,7 +186,7 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 
 ## Astra backlog checkpoint 53 — proactive driver-catalog review audit
 
-- Add an offline `stageforge-driver-catalog-audit.py` utility with deterministic `--as-of` and configurable review-warning horizon.
+- Add an offline `stagemesh-driver-catalog-audit.py` utility with deterministic `--as-of` and configurable review-warning horizon.
 - Report current, review-due, stale, unreviewed and invalid package counts plus per-record days to expiry.
 - Keep catalog usability fail-closed for invalid/stale/unreviewed records while allowing current-but-soon-expiring records to raise review attention before expiry.
 - Add `org.upp.driver-catalog-audit-report` schema and install the audit tool with the Linux qualification utilities.
@@ -221,12 +236,12 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 
 ## Astra backlog checkpoint 48 — strict independent witness deployment
 
-- Add a private `STAGEFORGE_WITNESS_TOPOLOGY_FILE` contract with an explicit majority quorum, unique witness identities, unique declared failure domains, unique per-witness keyrings, bounded clock skew and HTTPS outside explicit loopback qualification.
+- Add a private `STAGEMESH_WITNESS_TOPOLOGY_FILE` contract with an explicit majority quorum, unique witness identities, unique declared failure domains, unique per-witness keyrings, bounded clock skew and HTTPS outside explicit loopback qualification.
 - Pin one immutable HMAC key snapshot per witness for each quorum operation so independent credential rotation cannot mix keys mid-operation.
 - Bind witness identity, declared failure domain and server wall clock into authenticated responses; wrong identity/domain and excess skew do not count toward quorum.
 - Keep legacy shared-secret/shared-keyring witness configuration for compatibility but report strict independent mode separately and never infer physical independence from configuration.
 - Harden independent witness startup: require identity/domain and an explicit witness keyring, forbid shared replication/witness secret fallback, and expose strict configuration health.
-- Package a loopback-only `stageforge-witness.service`, witness env example and installed reference qualification helper.
+- Package a loopback-only `stagemesh-witness.service`, witness env example and installed reference qualification helper.
 - Add a three-process reference drill: 3/3 acquire, 2/3 transfer and successor renewal after one witness loss, and quorum denial after two losses; the report explicitly states `physicalIndependenceQualified: false`.
 - Add independent-witness topology/reference-report schemas, deployment documentation and strict topology/key/identity/skew regression coverage.
 - Fresh RT CTest passes 2/2 and the release Python suite passes 555 tests with zero skips. Automation-performance, all 123 schemas/OpenAPI and all seven frontend JavaScript syntax checks pass.
@@ -329,7 +344,7 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 
 - Add a repeatable local-reference HTTP workload harness that measures normal control responsiveness separately from abusive-rate containment.
 - Replay a deterministic five-second policy model with four 20 rps controllers beside one 300 rps abusive peer; default policy admitted 400/400 controller requests and rejected 802 abusive requests.
-- Run the real loopback StageForge bridge under a mixed 120-request normal controller burst and a 320-request abusive burst; the reference run passed 120/120 normal requests at 22.903 ms p95 and returned 33 explicit 429 throttles with no unexpected statuses.
+- Run the real loopback StageMesh bridge under a mixed 120-request normal controller burst and a 320-request abusive burst; the reference run passed 120/120 normal requests at 22.903 ms p95 and returned 33 explicit 429 throttles with no unexpected statuses.
 - Store the reference result under `qualification/http-workload-reference.json` and label it explicitly as neither physical-controller nor deployed-LAN qualification.
 - Add three deterministic workload-helper regressions; release Python suite passes 513 tests with zero skips, native CTest passes 2/2, automation-performance passes, all 117 schemas/OpenAPI parse and all seven frontend JavaScript files pass syntax checks.
 
@@ -339,7 +354,7 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 - Bound total expensive work to four concurrent requests inside the existing 32-worker HTTP pool, with tighter class caps (maintenance 1, discovery 2, planning 3, storage 2, external 2).
 - Reject saturated expensive work with 503/Retry-After before request-body execution while leaving ordinary health/control routes outside the expensive budget.
 - Release cost slots in the handler `finally` path so route exceptions cannot leak capacity; injected-crash regression verifies recovery.
-- Keep in-flight mutation semantics intact: StageForge rejects excess admission rather than force-cancelling already-started stateful work.
+- Keep in-flight mutation semantics intact: StageMesh rejects excess admission rather than force-cancelling already-started stateful work.
 - Add four operation-cost regressions; release Python suite passes 510 tests with zero skips, native CTest passes 2/2, automation-performance passes, all 117 schemas/OpenAPI parse and all seven frontend JavaScript files pass syntax checks.
 
 ## Astra backlog checkpoint 36 — specialized authorization audit unification
@@ -372,11 +387,11 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 
 ## Astra backlog checkpoint 33 — strict proxy-HTTPS deployment profile
 
-- Add opt-in `STAGEFORGE_DEPLOYMENT_PROFILE=proxy-https` with fail-closed startup requirements for loopback backend binding, private credential-file authentication, exact HTTPS origins and per-user trusted-proxy authorization.
+- Add opt-in `STAGEMESH_DEPLOYMENT_PROFILE=proxy-https` with fail-closed startup requirements for loopback backend binding, private credential-file authentication, exact HTTPS origins and per-user trusted-proxy authorization.
 - Keep forwarded peer headers explicitly untrusted; TLS, firewall and human authentication remain edge-proxy responsibilities.
-- Add a packaged reverse-proxy contract, non-secret systemd environment example and optional `/etc/stageforge/stageforge.env` service settings file.
-- Add `stageforge-http-qualify.py` to exercise backend Host/Origin/token rejection separately from certificate-verified TLS 1.2/1.3, HSTS and browser-security-header edge checks.
-- Pass a live local reference deployment using the real StageForge process behind a temporary trusted TLS proxy; this is software deployment evidence, not venue-LAN qualification.
+- Add a packaged reverse-proxy contract, non-secret systemd environment example and optional `/etc/stagemesh/stagemesh.env` service settings file.
+- Add `stagemesh-http-qualify.py` to exercise backend Host/Origin/token rejection separately from certificate-verified TLS 1.2/1.3, HSTS and browser-security-header edge checks.
+- Pass a live local reference deployment using the real StageMesh process behind a temporary trusted TLS proxy; this is software deployment evidence, not venue-LAN qualification.
 - Add six deployment regressions and packaging checks.
 
 ## Astra backlog checkpoint 32 — per-user control roles and durable authorization audit
@@ -694,7 +709,7 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 ## Core 5.10 - real-time qualification instrumentation
 
 - Added a qualification-only thread scope around native render callbacks that counts C++ allocation requests, requested bytes and pthread mutex acquisition attempts with atomic-only reporting.
-- Added a CMake `STAGEFORGE_RT_QUALIFICATION` switch; ordinary builds default it off while the software release gate explicitly compiles it on and tests both detectors.
+- Added a CMake `STAGEMESH_RT_QUALIFICATION` switch; ordinary builds default it off while the software release gate explicitly compiles it on and tests both detectors.
 - Extended isolated plugin-host audits with qualification mode, serialization lock attempts/contention/wait, and bounded request/response payload byte totals.
 - Exposed qualification state and counters through native stdio, backend/API projections and schemas without arming hardware or claiming real hardware qualification.
 - Advanced engine handshake to 5.0 and public C ABI to 1.67; the append-only `org.upp.core.realtime-audit/1` status now carries qualification counters.
@@ -1225,7 +1240,7 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 
 - Added a nonblocking Linux `AF_BLUETOOTH` / `BTPROTO_ISO` socket adapter for established LE isochronous streams. Platform BAP discovery, pairing, codec selection, QoS and authorization remain outside Core.
 - Added a nonblocking POSIX serial/VCOM UWB bridge with an 80-byte fixed little-endian frame, version/length checks, CRC-32, fragmented-read handling and garbage resynchronization.
-- Kept FiRa UCI and vendor radio commands behind replaceable device adapters. The `SFUW` record is a normalized StageForge evidence frame, not a claim of FiRa UCI wire compatibility or certification.
+- Kept FiRa UCI and vendor radio commands behind replaceable device adapters. The `SFUW` record is a normalized StageMesh evidence frame, not a claim of FiRa UCI wire compatibility or certification.
 - Added a fixed-capacity hardware manager that pumps UWB observations and LE timing sidecars into `LeUwbHub` on the control thread; audio SDUs stay in the audio adapter and no hardware I/O enters the mix callback.
 - Derived LE transport latency and jitter from paired node/hub timing evidence, with existing sequence, authority-epoch, authentication, freshness and uncertainty fences still enforced by the hub.
 - Added `HUB_HW_*` authenticated local commands and Python client methods for explicit open/close, bounded polling and telemetry. Every result keeps `physicalOutputsArmed=0`.
@@ -1237,7 +1252,7 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 - Added fixed-capacity native `LeUwbHub` coordination for up to 64 performer inputs, monitor outputs, stage outputs, lighting endpoints and control endpoints.
 - Combined Bluetooth LE isochronous transport evidence with UWB paired-clock/ranging observations without treating UWB ranging as the audio transport or LE pairing as proof of stage-grade timing.
 - Added authority-epoch fencing, independent monotonic LE/UWB sequences, authenticated-evidence enforcement, UWB propagation correction, clock discipline, bounded drift, observation freshness and UWB holdover.
-- Added group presentation planning in common hub time, device time and StageForge Show Time. Required nodes must jointly satisfy clock uncertainty, range uncertainty, LE jitter, transport latency and end-to-end lead limits.
+- Added group presentation planning in common hub time, device time and StageMesh Show Time. Required nodes must jointly satisfy clock uncertainty, range uncertainty, LE jitter, transport latency and end-to-end lead limits.
 - Group plans fail closed for missing/stale/replayed/unauthenticated/wrong-epoch evidence. Optional nodes remain observable without blocking required program membership.
 - Physical output authority remains separate: every plan and node surface explicitly reports `physicalOutputsArmed=false`; the hub never pairs radios, installs keys or arms audio/lighting hardware.
 - Added native stdio commands, Python client methods and authenticated HTTP adapter-report endpoints for hub configuration, node registration, dual-radio observations, group planning and node inspection.
@@ -1250,7 +1265,7 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 - Added bounded allocation-free 16-tap windowed-sinc conversion at each source and sink edge with persistent fractional-frame accounting for non-integer ratios such as 44.1 → 192 kHz.
 - Added independent persisted sample rates for all four input slots; 44.1, 48, 88.2, 96 and other supported rates can run concurrently into the same canonical graph.
 - Added integer PCM normalization for signed 16-bit, packed little-endian signed 24-bit and signed 32-bit inputs, including mono-to-stereo normalization.
-- Kept drift compensation separate from rate-domain conversion and kept both independent of StageForge Show Time.
+- Kept drift compensation separate from rate-domain conversion and kept both independent of StageMesh Show Time.
 - Added engine handshake 2.4, public C ABI 1.41, `org.upp.audio.canonical-domain/1`, `org.upp.audio.rate-converter/1` and `canonical-audio-profile.schema.json`.
 - Added regressions for exact 48 → 192 kHz conversion, long-run 44.1 → 192 kHz frame accounting, PCM normalization and multi-rate input persistence.
 - Upsampling standardizes the engine processing domain; it intentionally makes no claim to recreate source bandwidth or detail that was never captured.
@@ -1339,7 +1354,7 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 
 ## Core slice 2.3 — Dedicated Show Execution Loop + Native Cue Authority
 
-- Added `ShowExecutionLoop`, a dedicated native Core thread that continuously owns typed timeline ingestion and dispatch against authoritative StageForge Show Time.
+- Added `ShowExecutionLoop`, a dedicated native Core thread that continuously owns typed timeline ingestion and dispatch against authoritative StageMesh Show Time.
 - The loop sleeps/wakes against the next pending Show-Time deadline, wakes on new event or transport/clock changes, and publishes side-effect-free loop telemetry (`cycles`, wakeups, timed waits, dispatch count, compatibility drains/cancels, last Show Time).
 - Converted `EVENT_DRAIN` and `EVENT_CANCEL` into synchronous compatibility requests executed by the same owner thread; they no longer create a second timeline owner.
 - Added `CoreCueState`: cue transitions now update current/previous cue, last event/time and transition count directly in native Core when due. `CUE_STATUS` is observation-only.
@@ -1404,7 +1419,7 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 - Transactions fingerprint both current show requirements and the full venue execution plan; validation re-runs before commit and rejects stale show requirements, changed discovery/provider evidence, timing changes, blockers or unresolved required patches.
 - Added a separate atomic active Venue Patch Layer containing logical patch key → provider/target/capability/timing resolution mappings. The layer is environment state and is excluded from show-critical primary→standby snapshots.
 - Added current→proposed transaction diffs and preserved previous active patch state for rollback.
-- Added `immediate`, `next-bar` and named `cue` commit modes. `next-bar` schedules against current StageForge show time/BPM; cue commits require an explicit cue trigger.
+- Added `immediate`, `next-bar` and named `cue` commit modes. `next-bar` schedules against current StageMesh show time/BPM; cue commits require an explicit cue trigger.
 - Added a single-pending-commit fence so two future venue transactions cannot race at the same musical/cue boundary.
 - Added a separate optimistic adaptation revision so stale production-control clients receive explicit conflicts instead of last-write-wins behavior.
 - Added atomic rollback for the currently active transaction and cancellation rollback for pending transactions.
@@ -1412,7 +1427,7 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 - Added explicit execution mapping support: a committed patch can provide venue-local audio endpoint IDs or lighting network execution details without rewriting portable show-state device intent; live discovery IDs can satisfy the same seam. Physical execution still requires the existing explicit arm acknowledgements.
 - Added `/api/v1/venue/adaptations`, `/active`, proposal/validate/commit/rollback routes and named-cue trigger surface.
 - Added browser controls for proposal, validation, immediate/next-bar commit, current patch visibility and rollback.
-- Added `scripts/stageforge-venue-adapt.py` for offline transaction preview using the same migration/requirements/venue resolver/transaction builder as the live runtime.
+- Added `scripts/stagemesh-venue-adapt.py` for offline transaction preview using the same migration/requirements/venue resolver/transaction builder as the live runtime.
 - Added `venue-adaptation-transaction.schema.json` and `venue-patch-layer.schema.json`.
 - Advanced the public C ABI to 1.23 with `org.upp.venue.adaptation/1` and `org.upp.venue.patch-layer/1`.
 - Expanded compatibility adapter capabilities with venue transaction/patch/boundary/rollback semantics.
@@ -1429,7 +1444,7 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 - Added logical patch readiness (`ready`, `needs-patch`, `blocked`) separately from capability quality.
 - Added department-level compatibility summaries plus deterministic arrival actions (`verify-adapter`, `confirm-human`, `patch`, `timing`, `discovery`, `blocker`).
 - Added `/api/v1/venue/profile`, `/api/v1/venue/profile/inspect`, and `/api/v1/venue/plan`.
-- Added `scripts/stageforge-venue-check.py` for offline show + venue preflight using the same resolver as the runtime.
+- Added `scripts/stagemesh-venue-check.py` for offline show + venue preflight using the same resolver as the runtime.
 - Added frontend venue profile preflight and explicit live-discovery verification controls.
 - Added `venue-profile.schema.json`, `venue-compatibility-plan.schema.json`, and an example venue profile.
 - Advanced the public C ABI to 1.22 with `org.upp.venue.profile/1` and `org.upp.venue.compatibility/1`.
@@ -1439,7 +1454,7 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 - Added `backend/compatibility.py` with explicit API/schema/capability participant normalization and negotiation.
 - Added lossless forward-compatible show-state overlays: a newer document can be read by API 1 only when `minimumReaderApiVersion <= 1`, and unknown nested fields survive load/edit/checkpoint/re-export.
 - Added hard refusal for documents that require a newer reader rather than silently dropping unsupported semantics.
-- Added explicit early API-v0 migration mappings without semantic guessing and a standalone `scripts/stageforge-convert.py` inspector/migrator.
+- Added explicit early API-v0 migration mappings without semantic guessing and a standalone `scripts/stagemesh-convert.py` inspector/migrator.
 - Added `compatibility` metadata to show-state snapshots plus `X-UPP-API-Version` / `X-UPP-Minimum-Reader-Version` response headers.
 - Added `/api/v1/compatibility`, `/show-state`, `/negotiate`, `/show-plan`, `/inspect-show-state`, and `/migrate-show-state` surfaces.
 - Added show-specific requirement resolution with direct/equivalent/acceptable/degraded/blocked quality and declared fallbacks.
@@ -1456,7 +1471,7 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 - Added allocation-free `MonitorMixer` block primitive.
 - Added fixed-capacity timestamped `MidiScheduler`.
 - Added latency/jitter/lookahead `LatencyResolver`.
-- Added native `stageforge_engine` stdio execution process.
+- Added native `stagemesh_engine` stdio execution process.
 - Added optional Python-to-native execution follower integration.
 - Added `/api/v1/native` status endpoint.
 - Added `/api/v1/timing/plan` latency planning endpoint and schema.
@@ -1516,7 +1531,7 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 - Added fixed-capacity native lighting scheduler and per-universe 512-slot DMX state.
 - Added allocation-free ArtDMX packet construction for Art-Net protocol version 14.
 - Added latency-aware lighting scheduling that converts artistic target show time into an earlier dispatch time using endpoint latency, jitter margin and lookahead.
-- Added a development lighting dispatch pump driven by StageForge show time.
+- Added a development lighting dispatch pump driven by StageMesh show time.
 - Kept packet construction/state execution separate from physical UDP transmission; this slice does not silently control venue fixtures.
 - Added `/api/v1/lighting/schedule` and `/api/v1/lighting/universe/{n}` inspection endpoints.
 - Split lighting capability reporting into a healthy local scheduler/encoder and a deliberately unavailable network-output adapter.
@@ -1565,9 +1580,9 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 ## Infrastructure slice 1.0 — Witness Quorum + Multi-Input Capture
 
 - Added an external persistent witness lease service (`scripts/run-witness.sh`) with authenticated HMAC lease requests.
-- Added multi-witness quorum client support through `STAGEFORGE_WITNESS_URLS`; a majority must grant an unexpired lease before the node is authoritative.
+- Added multi-witness quorum client support through `STAGEMESH_WITNESS_URLS`; a majority must grant an unexpired lease before the node is authoritative.
 - Primary nodes configured for witness mode self-fence and demote after quorum lease expiry. Physical audio input/output, lighting and mapped MIDI authority are silenced/detached during fencing.
-- Added optional `STAGEFORGE_AUTO_FAILOVER=1`: a standby promotes only after the replication heartbeat threshold **and** successful witness quorum lease acquisition.
+- Added optional `STAGEMESH_AUTO_FAILOVER=1`: a standby promotes only after the replication heartbeat threshold **and** successful witness quorum lease acquisition.
 - Witness authority epochs are adopted by replication ordering so failover ownership and replicated-state fencing share a monotonic authority generation.
 - Added `/api/v1/witness` and witness detail to node/failover status and the frontend.
 - Added four independent native ALSA capture slots feeding the fixed audio graph concurrently without allocation in the render path.
@@ -1598,7 +1613,7 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 
 - Added allocation-free `AdaptiveDriftController` and fixed-state planar linear resampler for independent physical audio sinks.
 - Each output combines measured hardware sample-rate ppm with fan-out queue pressure, smooths the requested correction and clamps it to a persisted per-output safety envelope.
-- Added per-output desired drift policy: enable/disable, maximum correction ppm and queue-error gain. Drift compensation never changes StageForge Show Time.
+- Added per-output desired drift policy: enable/disable, maximum correction ppm and queue-error gain. Drift compensation never changes StageMesh Show Time.
 - Added native `AUDIO_DRIFT_CONFIG` control with configuration changes fenced while a physical sink is running.
 - Added live sink telemetry for measured ppm, applied correction ppm, source frames consumed per block and number of compensated blocks.
 - Added ALSA first/last physical write timestamps, frames-written counters and maximum excess inter-write gap telemetry.
@@ -1634,7 +1649,7 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 - Added ephemeral handoff execution acknowledgements. Shadow renderers report buffered Show-Time horizon/health/content hash and duplicated live-feed adapters report slot/source/health/latency.
 - `readyForProgramTakeover` and `prebufferReady` become true only when fresh execution evidence satisfies the declared policy; declaration-level readiness alone is never promoted into a fake prebuffer claim.
 - Execution evidence ages out and is cleared whenever replicated authority source/epoch changes, preventing stale readiness from crossing an authority generation.
-- Added localhost-or-token protection for development HTTP execution-report routes through `STAGEFORGE_ADAPTER_REPORT_TOKEN`.
+- Added localhost-or-token protection for development HTTP execution-report routes through `STAGEMESH_ADAPTER_REPORT_TOKEN`.
 - Failover status now exposes the current handoff decision, and the exact decision present at promotion is retained in the continuity report for later diagnosis.
 - Added `handoff-policy.schema.json` and `handoff-decision.schema.json`; show state now references the portable policy contract.
 - Added `handoff-logic` to the capability/resource planner.
@@ -1652,7 +1667,7 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 - Mandatory vendor, mandatory cloud and mandatory AI dependencies block ordinary Standard promotion under the default openness constitution. `No AI` remains a valid participant mode.
 - Added a configurable mandatory-Core extension budget so ecosystem growth favors optional profiles/extensions rather than continuously expanding the universal required core.
 - Standard/Core technology records cannot be silently deleted. They may be deprecated/superseded, but a replacement is assessed for migration/compatibility bridging and the prior record remains present.
-- Technology extension normalization preserves unknown fields so future concepts can survive older StageForge/UPP implementations without data loss.
+- Technology extension normalization preserves unknown fields so future concepts can survive older StageMesh/UPP implementations without data loss.
 - Added exact capability negotiation: common capabilities execute; unknown local/remote capabilities are preserved and surfaced; the core performs no implicit semantic coercion.
 - Added revisioned/persisted `technology` show-state metadata with independent concurrency control and API assessment surfaces.
 - Added `GET /api/v1/technology`, `GET /api/v1/technology/assessment`, `PATCH /api/v1/technology` and `POST /api/v1/technology/negotiate`.
@@ -1678,8 +1693,8 @@ qualification, physical audio/MIDI support, or audible/recording quality.
 - Vote invitation `sentAt` is stamped immediately before email delivery handoff, `expiresAt` is calculated at that moment, and both exact timestamps are embedded in the message. `deliveryAcceptedAt` is recorded separately. Opening/clicking the email never moves the deadline.
 - Added one-time SHA-256-hashed vote credentials; hashes persist across restart but are redacted from API/admin responses.
 - Proposal wording changes increment the proposal version and invalidate ballots issued for an older version.
-- Added account-auth binding through trusted proxy headers/tokens; explicit `STAGEFORGE_GOVERNANCE_TOKEN_ONLY=1` remains a weaker development mode rather than being misrepresented as forwarding-safe authentication.
-- Added admin API fencing: localhost by default or `STAGEFORGE_ADMIN_API_TOKEN` when remote administration is required.
+- Added account-auth binding through trusted proxy headers/tokens; explicit `STAGEMESH_GOVERNANCE_TOKEN_ONLY=1` remains a weaker development mode rather than being misrepresented as forwarding-safe authentication.
+- Added admin API fencing: localhost by default or `STAGEMESH_ADMIN_API_TOKEN` when remote administration is required.
 - Admins may issue ballots and manage proposals but cannot mark a proposal adopted until deterministic community tally policy says it is binding-ready. Active emailed windows cannot be administratively closed, and adopted proposal text/change payloads become immutable.
 - Added canonical proposal change payload/hash records and explicit `/apply` execution for ratified `community-governance-policy` and `technology-openness-policy` changes. Direct policy edits lock once the community process begins.
 - Added a dedicated `/vote.html` email landing surface and vote-context endpoint.

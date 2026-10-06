@@ -37,14 +37,14 @@ class WindowsNamedPipeSecurityTests(unittest.TestCase):
         self.assertEqual(p.sddl().count('S-1-5-21-1-2-3-1001'),1)
 
     def test_native_windows_path_requires_explicit_sid_configuration(self):
-        endpoint=WindowsNamedPipeIpcServer(r'\\.\pipe\StageForge\Control',lambda:None,lambda *_:b'')
+        endpoint=WindowsNamedPipeIpcServer(r'\\.\pipe\StageMesh\Control',lambda:None,lambda *_:b'')
         with mock.patch('local_ipc.os.name','nt'):
             with self.assertRaises(PermissionError): endpoint._factory()
 
     def test_self_validating_native_listener_may_satisfy_startup_contract(self):
         listener=_Listener()
         endpoint=WindowsNamedPipeIpcServer(
-            r'\\.\pipe\StageForge\Control',lambda:None,lambda *_:b'',
+            r'\\.\pipe\StageMesh\Control',lambda:None,lambda *_:b'',
             allowed_sids=('S-1-5-21-1-2-3-1001',),
         )
         with mock.patch.object(endpoint,'_factory',return_value=lambda _:listener):
@@ -55,7 +55,7 @@ class WindowsNamedPipeSecurityTests(unittest.TestCase):
         class WeakListener:
             def close(self): pass
         endpoint=WindowsNamedPipeIpcServer(
-            r'\\.\pipe\StageForge\Control',lambda:None,lambda *_:b'',
+            r'\\.\pipe\StageMesh\Control',lambda:None,lambda *_:b'',
             listener_factory=lambda _:WeakListener(),
         )
         with self.assertRaises(PermissionError): endpoint.start()

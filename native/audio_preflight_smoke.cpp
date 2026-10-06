@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <string>
 
-using namespace stageforge;
+using namespace stagemesh;
 
 namespace {
 const char* boolean(bool value) { return value ? "true" : "false"; }

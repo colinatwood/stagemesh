@@ -4,12 +4,12 @@ import sys
 import unittest
 from unittest.mock import Mock
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"backend"))
-from runtime import StageForgeRuntime
+from runtime import StageMeshRuntime
 
 
 class AudioRecoveryTests(unittest.TestCase):
     def runtime(self):
-        runtime=StageForgeRuntime.__new__(StageForgeRuntime);runtime._audio_control_lock=RLock();return runtime
+        runtime=StageMeshRuntime.__new__(StageMeshRuntime);runtime._audio_control_lock=RLock();return runtime
 
     def test_output_recovery_requires_ack_and_inactive_stream(self):
         runtime=self.runtime();runtime.audio_stream_status=Mock(return_value={"active":False});runtime.activate_audio=Mock(return_value={"active":True})

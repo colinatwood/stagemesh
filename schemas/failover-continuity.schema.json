@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://upp.stageforge.dev/schema/failover-continuity-v1.json",
+  "$id": "https://upp.stagemesh.dev/schema/failover-continuity-v1.json",
   "title": "UPP Failover Continuity Report v1",
   "type": "object",
   "additionalProperties": true,

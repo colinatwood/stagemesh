@@ -67,4 +67,4 @@ function mountDawProduction(doc, request, confirmAction = (message) => globalThi
 }
 
 if (typeof module !== 'undefined') module.exports = {mountDawProduction};
-if (typeof document !== 'undefined') mountDawProduction(document, globalThis.StageForgeUI.api);
+if (typeof document !== 'undefined') mountDawProduction(document, globalThis.StageMeshUI.api);

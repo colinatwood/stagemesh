@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
 from adapters import AdapterRegistry
 from persistence import StateRepository
-from runtime import StageForgeRuntime
+from runtime import StageMeshRuntime
 from replication import ReplicationTracker, make_envelope, verify_envelope
 from planned_handoff import make_offer, make_ready_receipt, verify_offer, verify_ready_receipt
 
@@ -131,7 +131,7 @@ class ReplicationTests(unittest.TestCase):
 class RuntimeTests(unittest.TestCase):
     def test_command_id_is_idempotent(self):
         with tempfile.TemporaryDirectory() as tmp:
-            runtime = StageForgeRuntime(Path(tmp))
+            runtime = StageMeshRuntime(Path(tmp))
             first_revision = runtime.state.revision
             result1, duplicate1 = runtime.mutate("same-command", lambda: runtime.state.patch_show({"bpm": 130}, first_revision))
             result2, duplicate2 = runtime.mutate("same-command", lambda: runtime.state.patch_show({"bpm": 200}, result1["revision"]))
@@ -143,7 +143,7 @@ class RuntimeTests(unittest.TestCase):
 
     def test_standby_is_read_only_until_promoted(self):
         with tempfile.TemporaryDirectory() as tmp:
-            runtime = StageForgeRuntime(Path(tmp))
+            runtime = StageMeshRuntime(Path(tmp))
             envelope = runtime.export_replica()
             runtime.set_node_role({"role": "standby", "acknowledgeAuthorityChange": True})
             with self.assertRaises(RuntimeError):
@@ -157,9 +157,9 @@ class RuntimeTests(unittest.TestCase):
 
     def test_runtime_persists_mutation(self):
         with tempfile.TemporaryDirectory() as tmp:
-            runtime = StageForgeRuntime(Path(tmp))
+            runtime = StageMeshRuntime(Path(tmp))
             runtime.mutate(None, lambda: runtime.state.patch_system({"venue": "Test Venue"}))
-            restored = StageForgeRuntime(Path(tmp))
+            restored = StageMeshRuntime(Path(tmp))
             self.assertEqual(restored.state.snapshot()["system"]["venue"], "Test Venue")
             self.assertFalse(restored.state.snapshot()["transport"]["running"])
             runtime.close()
@@ -173,7 +173,7 @@ if __name__ == "__main__":
 class ContinuityTests(unittest.TestCase):
     def test_failover_continuity_report_separates_clock_from_output_rearm(self):
         with tempfile.TemporaryDirectory() as tmp:
-            runtime = StageForgeRuntime(Path(tmp))
+            runtime = StageMeshRuntime(Path(tmp))
             runtime._record_failover_continuity(4200)
             report = runtime.failover_continuity_status()
             self.assertEqual(report["replicaAgeMs"], 4200)
@@ -187,7 +187,7 @@ class ContinuityTests(unittest.TestCase):
 
     def test_failover_uses_signed_primary_program_position(self):
         with tempfile.TemporaryDirectory() as tmp:
-            runtime = StageForgeRuntime(Path(tmp))
+            runtime = StageMeshRuntime(Path(tmp))
             try:
                 snapshot = runtime.state.persistence_snapshot()
                 runtime.set_node_role({"role": "standby", "acknowledgeAuthorityChange": True})
@@ -214,7 +214,7 @@ class ContinuityTests(unittest.TestCase):
 
     def test_handoff_readiness_explains_live_input_dependency(self):
         with tempfile.TemporaryDirectory() as tmp:
-            runtime = StageForgeRuntime(Path(tmp))
+            runtime = StageMeshRuntime(Path(tmp))
             try:
                 snapshot = runtime.state.persistence_snapshot()
                 runtime.set_node_role({"role": "standby", "acknowledgeAuthorityChange": True})
@@ -238,7 +238,7 @@ class ContinuityTests(unittest.TestCase):
     def test_cross_node_program_gap_is_measured_in_show_time(self):
         from unittest.mock import patch
         with tempfile.TemporaryDirectory() as tmp:
-            runtime = StageForgeRuntime(Path(tmp))
+            runtime = StageMeshRuntime(Path(tmp))
             try:
                 runtime._promotion_at_ns = 1
                 runtime._last_failover_continuity["sourceLastProgramShowNs"] = 1_000_000_000
@@ -293,7 +293,7 @@ class PeerReplicationTransportTests(unittest.TestCase):
     def test_primary_consumes_handoff_readiness_idempotently(self):
         secret = b"ready-secret"
         with tempfile.TemporaryDirectory() as tmp:
-            runtime = StageForgeRuntime(Path(tmp))
+            runtime = StageMeshRuntime(Path(tmp))
             try:
                 runtime._replication_secret = secret
                 runtime.replication.set_role("primary")
@@ -354,12 +354,12 @@ class PeerReplicationTransportTests(unittest.TestCase):
             thread.join(timeout=1)
 
     def test_failover_detector_requires_stale_replica_before_promotion(self):
-        from runtime import StageForgeRuntime
+        from runtime import StageMeshRuntime
         from tempfile import TemporaryDirectory
         import time
 
         with TemporaryDirectory() as directory:
-            runtime = StageForgeRuntime(Path(directory))
+            runtime = StageMeshRuntime(Path(directory))
             try:
                 envelope = runtime.export_replica()
                 runtime.set_node_role({"role": "standby", "acknowledgeAuthorityChange": True})
@@ -407,14 +407,14 @@ class PeerReplicationTransportTests(unittest.TestCase):
         thread.start()
         try:
             env = {
-                "STAGEFORGE_PEER_URL": f"http://127.0.0.1:{server.server_port}",
-                "STAGEFORGE_REPLICATION_SECRET": secret.decode(),
-                "STAGEFORGE_REPLICATION_INTERVAL_SECONDS": "0.05",
-                "STAGEFORGE_REPLICATION_HEARTBEAT_SECONDS": "0.10",
+                "STAGEMESH_PEER_URL": f"http://127.0.0.1:{server.server_port}",
+                "STAGEMESH_REPLICATION_SECRET": secret.decode(),
+                "STAGEMESH_REPLICATION_INTERVAL_SECONDS": "0.05",
+                "STAGEMESH_REPLICATION_HEARTBEAT_SECONDS": "0.10",
                 "STAGEMESH_NATIVE_ENGINE": "off",
             }
             with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", env, clear=False):
-                runtime = StageForgeRuntime(Path(tmp))
+                runtime = StageMeshRuntime(Path(tmp))
                 try:
                     deadline = time.time() + 1.0
                     status = runtime.replication_status()
@@ -557,7 +557,7 @@ class WitnessRuntimeFencingTests(unittest.TestCase):
         from unittest.mock import patch
         from witness import WitnessQuorumClient, WitnessResult
         with tempfile.TemporaryDirectory() as tmp:
-            runtime = StageForgeRuntime(Path(tmp))
+            runtime = StageMeshRuntime(Path(tmp))
             try:
                 runtime.replication.set_role("primary")
                 runtime._auto_failover = True
@@ -590,7 +590,7 @@ class WitnessRuntimeFencingTests(unittest.TestCase):
                 return {"transferred": True, **facts, "grants": 2, "quorum": 2}
 
         with tempfile.TemporaryDirectory() as tmp:
-            runtime = StageForgeRuntime(Path(tmp))
+            runtime = StageMeshRuntime(Path(tmp))
             try:
                 runtime.replication.set_role("primary")
                 runtime._witness = FakeWitness()
@@ -620,7 +620,7 @@ class WitnessRuntimeFencingTests(unittest.TestCase):
                 return {"leaseValid": False, "leaseEpoch": 1}
 
         with tempfile.TemporaryDirectory() as tmp:
-            runtime = StageForgeRuntime(Path(tmp))
+            runtime = StageMeshRuntime(Path(tmp))
             try:
                 runtime.replication.set_role("primary")
                 runtime._witness = PartialWitness()
@@ -663,14 +663,14 @@ class WitnessRuntimeFencingTests(unittest.TestCase):
         runtime = None
         try:
             env = {
-                "STAGEFORGE_WITNESS_URLS": f"http://127.0.0.1:{server.server_port}",
-                "STAGEFORGE_WITNESS_SECRET": secret.decode(),
-                "STAGEFORGE_WITNESS_TTL_MS": "500",
-                "STAGEFORGE_WITNESS_TIMEOUT_SECONDS": "0.1",
+                "STAGEMESH_WITNESS_URLS": f"http://127.0.0.1:{server.server_port}",
+                "STAGEMESH_WITNESS_SECRET": secret.decode(),
+                "STAGEMESH_WITNESS_TTL_MS": "500",
+                "STAGEMESH_WITNESS_TIMEOUT_SECONDS": "0.1",
                 "STAGEMESH_NATIVE_ENGINE": "off",
             }
             with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", env, clear=False):
-                runtime = StageForgeRuntime(Path(tmp))
+                runtime = StageMeshRuntime(Path(tmp))
                 deadline = _time.time() + 1.0
                 while not runtime.witness_status()["authoritative"] and _time.time() < deadline:
                     _time.sleep(0.02)
@@ -713,15 +713,15 @@ class AutomaticFailoverTests(unittest.TestCase):
         thread = Thread(target=server.serve_forever, daemon=True); thread.start()
         try:
             env = {
-                "STAGEFORGE_NODE_ID": "node-b", "STAGEFORGE_NODE_ROLE": "standby",
-                "STAGEFORGE_WITNESS_URLS": f"http://127.0.0.1:{server.server_port}",
-                "STAGEFORGE_WITNESS_SECRET": secret.decode(), "STAGEFORGE_CLUSTER_ID": "show-auto",
-                "STAGEFORGE_WITNESS_TTL_MS": "500", "STAGEFORGE_AUTO_FAILOVER": "1",
-                "STAGEFORGE_FAILOVER_SUSPECT_MS": "100", "STAGEFORGE_FAILOVER_PROMOTE_MS": "200",
+                "STAGEMESH_NODE_ID": "node-b", "STAGEMESH_NODE_ROLE": "standby",
+                "STAGEMESH_WITNESS_URLS": f"http://127.0.0.1:{server.server_port}",
+                "STAGEMESH_WITNESS_SECRET": secret.decode(), "STAGEMESH_CLUSTER_ID": "show-auto",
+                "STAGEMESH_WITNESS_TTL_MS": "500", "STAGEMESH_AUTO_FAILOVER": "1",
+                "STAGEMESH_FAILOVER_SUSPECT_MS": "100", "STAGEMESH_FAILOVER_PROMOTE_MS": "200",
                 "STAGEMESH_NATIVE_ENGINE": "off",
             }
             with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", env, clear=False):
-                runtime = StageForgeRuntime(Path(tmp))
+                runtime = StageMeshRuntime(Path(tmp))
                 try:
                     primary = ReplicationTracker("node-a", "primary")
                     runtime.apply_replica(primary.export(runtime.state.persistence_snapshot()))

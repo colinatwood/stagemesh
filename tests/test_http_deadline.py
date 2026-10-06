@@ -6,16 +6,16 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'backend'))
-from dev_server import StageForgeHTTPServer, StageForgeHandler
+from dev_server import StageMeshHTTPServer, StageMeshHandler
 
 
 class DeadlineTests(unittest.TestCase):
     def run_trickle(self, prefix):
-        class Server(StageForgeHTTPServer):
+        class Server(StageMeshHTTPServer):
             request_read_timeout = 0.2
             socket_timeout = 1.0
 
-        class Handler(StageForgeHandler):
+        class Handler(StageMeshHandler):
             reached = False
 
             def do_POST(self):

@@ -1,4 +1,4 @@
-#include "stageforge/audio_device_manager.hpp"
+#include "stagemesh/audio_device_manager.hpp"
 
 #include <algorithm>
 #include <cstdio>
@@ -12,7 +12,7 @@
 #include "device_monitor.h"
 #endif
 
-namespace stageforge {
+namespace stagemesh {
 
 namespace {
 
@@ -56,7 +56,7 @@ std::string identity_token(const DeviceRecord& record) {
 } // namespace
 
 void AudioDeviceManager::add_null() noexcept {
-    add_endpoint("StageForge Null Audio Device", "null", "null", false, true);
+    add_endpoint("StageMesh Null Audio Device", "null", "null", false, true);
 }
 
 void AudioDeviceManager::add_endpoint(
@@ -185,4 +185,4 @@ void AudioDeviceManager::scan_platform() noexcept {
 #endif
 }
 
-} // namespace stageforge
+} // namespace stagemesh

@@ -17,7 +17,7 @@ Validated 2026-09-11 in the available Linux development environment.
 
 - 378 Python unit/integration tests passed without skips with the rebuilt
   qualification native engine selected.
-- `stageforge_native_tests` and `stageforge_current_abi_smoke` passed.
+- `stagemesh_native_tests` and `stagemesh_current_abi_smoke` passed.
 - All 110 JSON schemas and the OpenAPI document parsed.
 - `frontend/app.js` passed the Node syntax check.
 - The ALSA null endpoint returned a configured 31-frame period for a requested

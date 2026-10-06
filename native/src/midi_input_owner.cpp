@@ -1,8 +1,8 @@
-#include "stageforge/midi_input_owner.hpp"
+#include "stagemesh/midi_input_owner.hpp"
 
 #include <chrono>
 
-namespace stageforge {
+namespace stagemesh {
 
 MidiInputOwner::MidiInputOwner() : worker_([this] { run(); }) {
     // The worker performs the initial scan before accepting commands. This
@@ -81,4 +81,4 @@ bool MidiInputOwner::inject(std::string_view id, std::string_view player, const 
     catch (...) { return false; }
 }
 
-} // namespace stageforge
+} // namespace stagemesh

@@ -25,7 +25,7 @@ class CaptureDrainer:
             self.spool.abort();self.spool=None;raise
         self.track=track;self.stop_event.clear();self.finish_event=Event()
         with self.lock:self.state={"state":"recording","track":track,"takeId":take_id,"fileName":Path(file_name).name,"blocks":0,"frames":0,"dropoutBlocks":0,"generation":generation,"physicalInputArmed":True,"physicalOutputsArmed":False}
-        self.thread=Thread(target=self._run,args=(track,),name="stageforge-capture-drain",daemon=True);self.thread.start();return self.status()
+        self.thread=Thread(target=self._run,args=(track,),name="stagemesh-capture-drain",daemon=True);self.thread.start();return self.status()
     def _run(self,track:int)->None:
         last=0;drained=0
         while not self.stop_event.is_set():

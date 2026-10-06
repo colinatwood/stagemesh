@@ -27,7 +27,7 @@ class DevicePermissionTests(unittest.TestCase):
                 denied=qualify_device_permissions(service_user=current,device_specs=['/dev/null:rw'])
         self.assertFalse(denied['serviceIdentityQualified']);self.assertFalse(denied['hardwarePermissionsQualified']);self.assertEqual(denied['devices'],[])
     def test_missing_device_is_explicit_failure(self):
-        row=inspect_device(Path('/dev/stageforge-definitely-missing'),'rw')
+        row=inspect_device(Path('/dev/stagemesh-definitely-missing'),'rw')
         self.assertFalse(row['present']);self.assertFalse(row['allowed'])
 
 if __name__=='__main__':unittest.main()

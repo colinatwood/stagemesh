@@ -53,7 +53,7 @@ class ReplicationPushClient:
             self._peer_url + "/api/v1/replication/apply",
             data=payload,
             method="POST",
-            headers={"Content-Type": "application/json", "User-Agent": "StageForge-Replication/1"},
+            headers={"Content-Type": "application/json", "User-Agent": "StageMesh-Replication/1"},
         )
         with self._lock:
             self._last_attempt_at = monotonic()
@@ -96,7 +96,7 @@ class ReplicationPushClient:
             self._peer_url + "/api/v1/handoff/planned/peer-ready",
             data=payload,
             method="POST",
-            headers={"Content-Type": "application/json", "User-Agent": "StageForge-Handoff/1"},
+            headers={"Content-Type": "application/json", "User-Agent": "StageMesh-Handoff/1"},
         )
         try:
             with urlopen(request, timeout=self._timeout) as response:

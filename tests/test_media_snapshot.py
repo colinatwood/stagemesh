@@ -20,7 +20,7 @@ from test_daw_playback import FakeNative
 
 class MediaSnapshotTests(unittest.TestCase):
     def test_status_classifies_resources_without_owner_or_source_paths(self):
-        with tempfile.TemporaryDirectory() as raw,patch.dict(os.environ,{"STAGEFORGE_SNAPSHOT_DIR":raw}):
+        with tempfile.TemporaryDirectory() as raw,patch.dict(os.environ,{"STAGEMESH_SNAPSHOT_DIR":raw}):
             store=Path(raw)
             live=store/"snapshot-live";live.mkdir();create_owner_manifest(live/"owner.json",live,resource_class="media-snapshot",purpose="arrangement-playback",extra={"reservedBytes":77});(live/"source.wav").write_bytes(b"1234")
             dead=store/"snapshot-dead";dead.mkdir();create_owner_manifest(dead/"owner.json",dead,resource_class="media-snapshot",purpose="offline-render",extra={"reservedBytes":88});owner=json.loads((dead/"owner.json").read_text());owner["pid"]=99999999;(dead/"owner.json").write_text(json.dumps(owner))
@@ -30,7 +30,7 @@ class MediaSnapshotTests(unittest.TestCase):
             encoded=json.dumps(status);self.assertNotIn('"pid"',encoded);self.assertNotIn(str(store),encoded)
 
     def test_acknowledged_reclaim_removes_only_proven_dead_exact_owner(self):
-        with tempfile.TemporaryDirectory() as raw,patch.dict(os.environ,{"STAGEFORGE_SNAPSHOT_DIR":raw}):
+        with tempfile.TemporaryDirectory() as raw,patch.dict(os.environ,{"STAGEMESH_SNAPSHOT_DIR":raw}):
             store=Path(raw)
             live=store/"snapshot-live";live.mkdir();create_owner_manifest(live/"owner.json",live,resource_class="media-snapshot",purpose="playback")
             dead=store/"snapshot-dead";dead.mkdir();create_owner_manifest(dead/"owner.json",dead,resource_class="media-snapshot",purpose="render");owner=json.loads((dead/"owner.json").read_text());owner["pid"]=99999999;(dead/"owner.json").write_text(json.dumps(owner))
@@ -51,7 +51,7 @@ class MediaSnapshotTests(unittest.TestCase):
     def test_configured_shared_store_and_owner_manifest(self):
         with tempfile.TemporaryDirectory() as raw, tempfile.TemporaryDirectory() as shared:
             root = Path(raw); _, session = self.fixture(root)
-            with patch.dict(os.environ, {"STAGEFORGE_SNAPSHOT_DIR": shared}):
+            with patch.dict(os.environ, {"STAGEMESH_SNAPSHOT_DIR": shared}):
                 snapshot = MediaSnapshot(root, render_plan(session, 0, 256))
                 try:
                     self.assertEqual(snapshot.root.parent, Path(shared).resolve())
@@ -65,12 +65,12 @@ class MediaSnapshotTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw); _, session = self.fixture(root)
             plan = render_plan(session, 0, 256)
-            with patch.dict(os.environ, {"STAGEFORGE_SNAPSHOT_MAX_BYTES": str(1024*1024),
-                                         "STAGEFORGE_SNAPSHOT_FREE_RESERVE_BYTES": "0"}):
+            with patch.dict(os.environ, {"STAGEMESH_SNAPSHOT_MAX_BYTES": str(1024*1024),
+                                         "STAGEMESH_SNAPSHOT_FREE_RESERVE_BYTES": "0"}):
                 snapshot = MediaSnapshot(root, plan); snapshot.close()
             for value in ("invalid", "0", "-1"):
-                with self.subTest(value=value), patch.dict(os.environ, {"STAGEFORGE_SNAPSHOT_MAX_BYTES": value}):
-                    with self.assertRaisesRegex(RuntimeError, "STAGEFORGE_SNAPSHOT_MAX_BYTES"):
+                with self.subTest(value=value), patch.dict(os.environ, {"STAGEMESH_SNAPSHOT_MAX_BYTES": value}):
+                    with self.assertRaisesRegex(RuntimeError, "STAGEMESH_SNAPSHOT_MAX_BYTES"):
                         MediaSnapshot(root, plan)
 
 

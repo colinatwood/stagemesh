@@ -1,4 +1,4 @@
-# StageForge infrastructure slice
+# StageMesh infrastructure slice
 
 ## Principle
 
@@ -68,7 +68,7 @@ If-Match: "rev-41"
 For independent departmental controls they should additionally use the relevant resource token:
 
 ```http
-X-StageForge-Resource-If-Match: "monitor:alex@12"
+X-StageMesh-Resource-If-Match: "monitor:alex@12"
 ```
 
 When a resource token is present, an unrelated global change does not invalidate that operation. A stale write to the same resource still receives `409`.
@@ -80,7 +80,7 @@ This preserves a single audit order without making FOH, lighting, production and
 Every mutation may send:
 
 ```http
-X-StageForge-Command-Id: <unique command id>
+X-StageMesh-Command-Id: <unique command id>
 ```
 
 Retries with the same command ID return the original result instead of re-executing the command. This is essential once commands travel across unreliable or reconnecting control links.
@@ -216,7 +216,7 @@ The native hub treats LE and UWB as complementary evidence domains. A platform a
 
 Up to 64 endpoints can be registered as performer inputs, monitor outputs, stage outputs, lighting or controls. Each required endpoint needs fresh authenticated observations from both domains under the current authority epoch. Core separately rejects sequence replay, stale LE evidence, expired UWB holdover, excessive drift, clock/range uncertainty, jitter, latency and presentation lead.
 
-`HUB_PLAN` produces one target in hub monotonic time and StageForge Show Time. `HUB_TARGET` projects that boundary into each locked endpoint's disciplined device clock, allowing adapters to schedule locally instead of reacting to a last-moment network message. Optional endpoints can degrade without blocking the required group. A ready plan is execution timing permission only and always reports `physicalOutputsArmed=0`.
+`HUB_PLAN` produces one target in hub monotonic time and StageMesh Show Time. `HUB_TARGET` projects that boundary into each locked endpoint's disciplined device clock, allowing adapters to schedule locally instead of reacting to a last-moment network message. Optional endpoints can degrade without blocking the required group. A ready plan is execution timing permission only and always reports `physicalOutputsArmed=0`.
 
 The default policy targets 10 ms presentation lead, caps admitted end-to-end timing at 30 ms, requires LE observations within 100 ms, permits UWB clock holdover to 500 ms, and limits reported clock uncertainty to 250 µs and jitter to 500 µs. These are admission defaults, not claims about unmeasured hardware. Codec, controller, RF, buffering, amplifier and transducer latency must be reported and proven by adapters before a device is accepted for a live-stage path.
 
@@ -287,7 +287,7 @@ This yields a 9 ms reserve and a 91 ms dispatch point for a 100 ms target.
 
 ## Public C ABI
 
-`include/stageforge/core_api.h` is now API 1.55 and keeps the base ABI small. Domain functionality is discovered through versioned extension identifiers, including:
+`include/stagemesh/core_api.h` is now API 1.55 and keeps the base ABI small. Domain functionality is discovered through versioned extension identifiers, including:
 
 - event sink
 - resource control
@@ -329,7 +329,7 @@ The resource planner can therefore suspend visual/AI work before critical audio/
 
 ## Native MIDI input + desired-state bindings
 
-The native MIDI input seam now treats physical endpoints as replaceable capacity. On Linux, StageForge can discover and open raw `/dev/snd/midiC*D*` inputs without linking libasound. The parser handles running status and ignores SysEx payloads in this first channel-voice slice. Other operating systems can implement CoreMIDI/Windows MIDI Services backends behind the same `MidiInputManager` and C extension semantics.
+The native MIDI input seam now treats physical endpoints as replaceable capacity. On Linux, StageMesh can discover and open raw `/dev/snd/midiC*D*` inputs without linking libasound. The parser handles running status and ignores SysEx payloads in this first channel-voice slice. Other operating systems can implement CoreMIDI/Windows MIDI Services backends behind the same `MidiInputManager` and C extension semantics.
 
 MIDI device mappings are **desired state** in the show model. If a mapped controller is absent, the binding remains pending. Native hot-plug scans automatically reattach the endpoint when the same device ID returns. MIDI activity owns `midi:<player>` resource revisions; notation owns `notation:<player>` revisions and only advances when it actually observes a note event.
 
@@ -339,7 +339,7 @@ The development bridge runs a small internal MIDI pump that drains the native bo
 
 `ClockDiscipline` accepts paired local/source timestamps from future PTP, MTC, Link, MIDI-clock or hardware adapters. It estimates rate drift, applies only a fraction of phase error per observation, and enters holdover after source observations stop. It never abruptly rewrites transport position.
 
-Clock authority and transport authority remain separate: the current native transport remains StageForge-controlled while the external clock layer provides a disciplined time reference. The next migration step is to let transport/sample-time progression consume that reference with explicit authority handoff.
+Clock authority and transport authority remain separate: the current native transport remains StageMesh-controlled while the external clock layer provides a disciplined time reference. The next migration step is to let transport/sample-time progression consume that reference with explicit authority handoff.
 
 ## Next native/infrastructure work
 
@@ -353,7 +353,7 @@ Clock authority and transport authority remain separate: the current native tran
 
 ## Auto notation boundary
 
-Notation is a **derived representation**, not an authority over the performance. StageForge stores completed raw note timing independently from the quantized score view. Changing the notation grid or project-key spelling therefore never rewrites the captured performance.
+Notation is a **derived representation**, not an authority over the performance. StageMesh stores completed raw note timing independently from the quantized score view. Changing the notation grid or project-key spelling therefore never rewrites the captured performance.
 
 Each player owns an independent notation resource:
 
@@ -416,7 +416,7 @@ External clock drift updates transport rate after rebasing the current transport
 
 ## Lighting scheduling
 
-Lighting state changes use the same StageForge show-time domain as MIDI. The bridge computes a dispatch time from target show time plus the endpoint timing profile, then queues the event in the native fixed-capacity scheduler. A development dispatch loop drains events as show time reaches the dispatch timestamp.
+Lighting state changes use the same StageMesh show-time domain as MIDI. The bridge computes a dispatch time from target show time plus the endpoint timing profile, then queues the event in the native fixed-capacity scheduler. A development dispatch loop drains events as show time reaches the dispatch timestamp.
 
 The native core can encode the resulting 512-slot universe into ArtDMX or an E1.31 data packet and send it through the explicitly selected Art-Net or sACN unicast adapter. The network adapters accept unicast IPv4 only in this slice, and **configuration is not authority**: neither can transmit until explicitly armed. Reconfiguration, restart, standby demotion and shutdown disarm both. Multicast sACN, synchronization packets and physical console/network qualification remain future work.
 
@@ -424,7 +424,7 @@ The native core can encode the resulting 512-slot universe into ArtDMX or an E1.
 
 The development bridge now models node authority independently from show state. A node is either `primary` or `standby`. Only the primary accepts ordinary show mutations, mapped MIDI ingestion, physical audio activation and lighting arming. A standby can receive verified replicated state and keep its native transport warm, but it is read-only to normal control clients.
 
-Replication uses a versioned canonical JSON envelope containing source node, authority epoch, monotonic sequence, show revision, complete recoverable snapshot and SHA-256 digest. When `STAGEFORGE_REPLICATION_SECRET` is configured the digest is additionally authenticated with HMAC-SHA256. The protocol rejects tampering, stale epochs and duplicate/out-of-order sequences. The envelope contract remains transport-neutral. The development bridge now supplies an optional authenticated HTTP push transport for venue-LAN primary-to-standby heartbeat/state delivery, so another transport can replace it later without changing the state contract.
+Replication uses a versioned canonical JSON envelope containing source node, authority epoch, monotonic sequence, show revision, complete recoverable snapshot and SHA-256 digest. When `STAGEMESH_REPLICATION_SECRET` is configured the digest is additionally authenticated with HMAC-SHA256. The protocol rejects tampering, stale epochs and duplicate/out-of-order sequences. The envelope contract remains transport-neutral. The development bridge now supplies an optional authenticated HTTP push transport for venue-LAN primary-to-standby heartbeat/state delivery, so another transport can replace it later without changing the state contract.
 
 Authority handoff is explicit. Demotion immediately disarms Art-Net/sACN, deactivates hardware audio and detaches native MIDI inputs. Promotion re-enables the ability to bind/receive MIDI, but **does not automatically re-arm audio or lighting**. This prevents failover from producing duplicate physical output simply because two machines are healthy at once.
 
@@ -435,24 +435,24 @@ The coordination layer carries this transaction as a target-bound canonical offe
 
 ## Automatic replication, witness leases and failover
 
-When `STAGEFORGE_PEER_URL` and replication authentication are configured, the primary pushes authenticated state changes and heartbeat envelopes to the standby. Legacy `STAGEFORGE_REPLICATION_SECRET` remains supported; `STAGEFORGE_REPLICATION_KEYRING_FILE` adds restart-free old/new overlap with an authenticated key identifier and no legacy downgrade fallback. Replica age still provides the `healthy` / `suspect` / `eligible` failure signal.
+When `STAGEMESH_PEER_URL` and replication authentication are configured, the primary pushes authenticated state changes and heartbeat envelopes to the standby. Legacy `STAGEMESH_REPLICATION_SECRET` remains supported; `STAGEMESH_REPLICATION_KEYRING_FILE` adds restart-free old/new overlap with an authenticated key identifier and no legacy downgrade fallback. Replica age still provides the `healthy` / `suspect` / `eligible` failure signal.
 
-For automatic authority transfer, StageForge now supports external witness leases. Configure an odd set of independent witness services with `STAGEFORGE_WITNESS_URLS`; a majority is required. Each witness persists one unexpired holder per cluster and advances its epoch when authority changes. Lease requests are HMAC authenticated.
+For automatic authority transfer, StageMesh now supports external witness leases. Configure an odd set of independent witness services with `STAGEMESH_WITNESS_URLS`; a majority is required. Each witness persists one unexpired holder per cluster and advances its epoch when authority changes. Lease requests are HMAC authenticated.
 
 A configured primary is authoritative only while it holds a quorum lease. If renewal fails until the lease expires, the old primary self-fences: physical audio input/output and lighting are disabled, mapped MIDI is detached, and the node demotes to standby. This solves the dangerous side of split brain rather than merely electing a new node.
 
-With `STAGEFORGE_AUTO_FAILOVER=1`, a standby promotes only when **both** conditions are true:
+With `STAGEMESH_AUTO_FAILOVER=1`, a standby promotes only when **both** conditions are true:
 
 1. replicated-primary heartbeat age exceeds the promotion threshold, and
 2. the standby successfully acquires a witness quorum lease.
 
-Promotion adopts the witness authority epoch into the replication tracker. Physical audio and lighting remain disarmed after promotion. Without witnesses configured, StageForge retains the previous manual-after-failure-detection behavior.
+Promotion adopts the witness authority epoch into the replication tracker. Physical audio and lighting remain disarmed after promotion. Without witnesses configured, StageMesh retains the previous manual-after-failure-detection behavior.
 
 ## Native multi-input / multi-output audio and logical player sources
 
 Linux ALSA capture/playback are dynamically loaded from `libasound.so.2`, preserving compile-time independence. The native engine owns four capture slots and four independently activatable physical output slots. Capture data is written once into a fixed-capacity `AudioFanoutRing`; each active output owns an independent read cursor, so FOH, a player monitor, broadcast and another sink can consume the same captured source without stealing samples from one another. Slow sinks accrue their own dropped/underrun telemetry rather than blocking the capture producer or another sink.
 
-Each output slot can bind directly to a fixed graph output or resolve a logical player monitor output through `MonitorGraphRouter`. Each ALSA sink reports callbacks, xruns, fan-out queue/drop/underrun counts and an observed sample-rate ppm estimate. Each sink also feeds the measured ppm and queue error into the bounded adaptive drift controller described above; correction changes only sink consumption and never StageForge Show Time. Steady-state render/fan-out paths allocate no memory and take no locks.
+Each output slot can bind directly to a fixed graph output or resolve a logical player monitor output through `MonitorGraphRouter`. Each ALSA sink reports callbacks, xruns, fan-out queue/drop/underrun counts and an observed sample-rate ppm estimate. Each sink also feeds the measured ppm and queue error into the bounded adaptive drift controller described above; correction changes only sink consumption and never StageMesh Show Time. Steady-state render/fan-out paths allocate no memory and take no locks.
 
 The show model stores four portable desired mappings:
 
@@ -475,7 +475,7 @@ Capture activation and signal routing remain separate authority decisions per sl
 
 ## Cross-node program continuity
 
-Replication protocol v2 carries a signed `executionTelemetry` object beside the recoverable show snapshot. This data is **not** artistic state and is never allowed to overwrite the show model. It describes the execution edge of the current authority so a standby can compare program positions in StageForge Show Time.
+Replication protocol v2 carries a signed `executionTelemetry` object beside the recoverable show snapshot. This data is **not** artistic state and is never allowed to overwrite the show model. It describes the execution edge of the current authority so a standby can compare program positions in StageMesh Show Time.
 
 For each active output the primary reports the last rendered block end in Show-Time nanoseconds. On promotion the standby retains that cursor. When its newly armed sink renders its first block, the runtime computes:
 
@@ -544,7 +544,7 @@ Governance data is excluded from live show snapshots and failover replication. I
 
 ## Venue realization reconciliation
 
-A committed Venue Patch Layer is only the intended environment mapping. StageForge separately reconciles that mapping against the current venue compatibility plan and fresh adapter realization evidence. The reconciler reports `realized`, `unverified`, `drift`, or `blocked`; it does not silently rewrite mappings or arm hardware. Repair uses the normal adaptation transaction path.
+A committed Venue Patch Layer is only the intended environment mapping. StageMesh separately reconciles that mapping against the current venue compatibility plan and fresh adapter realization evidence. The reconciler reports `realized`, `unverified`, `drift`, or `blocked`; it does not silently rewrite mappings or arm hardware. Repair uses the normal adaptation transaction path.
 
 Execution adapters can report logical patch key, provider, target, health, execution state, and current authority holder. Reports are ephemeral and freshness-bounded so a stale green report cannot become durable venue truth.
 

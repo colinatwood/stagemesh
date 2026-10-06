@@ -29,7 +29,7 @@ def main():
             print("Release prerequisites available")
             return 0
         # Never reuse a developer build tree or delete user-selected paths.
-        with tempfile.TemporaryDirectory(prefix="stageforge-release-") as temporary:
+        with tempfile.TemporaryDirectory(prefix="stagemesh-release-") as temporary:
             build = Path(temporary) / "build"
             run(["cmake", "-S", str(ROOT), "-B", str(build), "-DCMAKE_BUILD_TYPE=Release",
                  "-DSTAGEMESH_BUILD_TESTS=ON", "-DSTAGEMESH_RT_QUALIFICATION=ON"])
@@ -40,8 +40,8 @@ def main():
                 raise RuntimeError("Fresh native engine missing; refusing Python fallback")
             env = os.environ.copy()
             env["STAGEMESH_NATIVE_ENGINE"] = str(engine)
-            env["STAGEFORGE_REQUIRE_RT_QUALIFICATION"] = "1"
-            env["STAGEFORGE_DATA_DIR"] = str(Path(temporary) / "data")
+            env["STAGEMESH_REQUIRE_RT_QUALIFICATION"] = "1"
+            env["STAGEMESH_DATA_DIR"] = str(Path(temporary) / "data")
             run([sys.executable, str(ROOT / "scripts/release-python-tests.py")], env)
             run([sys.executable, str(ROOT / "scripts/automation-performance.py"), "--json"], env)
             for schema in sorted((ROOT / "schemas").glob("*.json")):

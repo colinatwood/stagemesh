@@ -1,6 +1,6 @@
 """Deployment-profile validation and non-secret HTTP qualification helpers.
 
-The StageForge HTTP bridge is intentionally plain HTTP. A deployed browser/API
+The StageMesh HTTP bridge is intentionally plain HTTP. A deployed browser/API
 surface terminates TLS at a reviewed reverse proxy and keeps this process on
 loopback. This module makes that contract executable without teaching the bridge
 to trust forwarding headers or to terminate TLS itself.
@@ -43,9 +43,9 @@ def _loopback_host(value: str) -> bool:
 def _allowed_hosts(raw: str) -> tuple[str, ...]:
     values = tuple(item.strip().lower().rstrip(".") for item in raw.split(",") if item.strip())
     if not values or len(set(values)) != len(values):
-        raise ValueError("proxy-https profile requires unique STAGEFORGE_ALLOWED_HOSTS")
+        raise ValueError("proxy-https profile requires unique STAGEMESH_ALLOWED_HOSTS")
     for value in values:
-        # STAGEFORGE_ALLOWED_HOSTS is intentionally hostname-only. Ports belong in
+        # STAGEMESH_ALLOWED_HOSTS is intentionally hostname-only. Ports belong in
         # Origin, not in the Host allowlist value.
         parsed = urlparse("//" + value)
         if (not parsed.hostname or parsed.username is not None or parsed.password is not None
@@ -60,7 +60,7 @@ def _allowed_hosts(raw: str) -> tuple[str, ...]:
 def _allowed_origins(raw: str, hosts: tuple[str, ...]) -> tuple[str, ...]:
     values = tuple(item.strip().rstrip("/") for item in raw.split(",") if item.strip())
     if not values or len(set(values)) != len(values):
-        raise ValueError("proxy-https profile requires unique STAGEFORGE_ALLOWED_ORIGINS")
+        raise ValueError("proxy-https profile requires unique STAGEMESH_ALLOWED_ORIGINS")
     host_set = set(hosts)
     for value in values:
         parsed = urlparse(value)
@@ -68,7 +68,7 @@ def _allowed_origins(raw: str, hosts: tuple[str, ...]) -> tuple[str, ...]:
                 or parsed.password is not None or parsed.path or parsed.query or parsed.fragment):
             raise ValueError("proxy-https origins must be exact HTTPS origins without paths")
         if parsed.hostname.lower().rstrip(".") not in host_set:
-            raise ValueError("proxy-https origin hostname must be in STAGEFORGE_ALLOWED_HOSTS")
+            raise ValueError("proxy-https origin hostname must be in STAGEMESH_ALLOWED_HOSTS")
     return values
 
 
@@ -82,24 +82,24 @@ def validate_proxy_https_profile(bind_host: str, environ: Mapping[str, str] | No
     proxy credential.
     """
     env = os.environ if environ is None else environ
-    profile = str(env.get("STAGEFORGE_DEPLOYMENT_PROFILE", "")).strip().lower()
+    profile = str(env.get("STAGEMESH_DEPLOYMENT_PROFILE", "")).strip().lower()
     if not profile:
         return {"active": False, "profile": "development"}
     if profile != PROXY_HTTPS_PROFILE:
-        raise ValueError("unsupported STAGEFORGE_DEPLOYMENT_PROFILE")
+        raise ValueError("unsupported STAGEMESH_DEPLOYMENT_PROFILE")
     if not _loopback_host(bind_host):
         raise ValueError("proxy-https backend must bind to loopback")
-    if not _truthy(env.get("STAGEFORGE_REQUIRE_API_TOKEN")):
-        raise ValueError("proxy-https profile requires STAGEFORGE_REQUIRE_API_TOKEN=1")
-    if not str(env.get("STAGEFORGE_HTTP_CREDENTIAL_FILE", "")).strip():
-        raise ValueError("proxy-https profile requires STAGEFORGE_HTTP_CREDENTIAL_FILE")
-    if not str(env.get("STAGEFORGE_API_TOKEN", "")):
+    if not _truthy(env.get("STAGEMESH_REQUIRE_API_TOKEN")):
+        raise ValueError("proxy-https profile requires STAGEMESH_REQUIRE_API_TOKEN=1")
+    if not str(env.get("STAGEMESH_HTTP_CREDENTIAL_FILE", "")).strip():
+        raise ValueError("proxy-https profile requires STAGEMESH_HTTP_CREDENTIAL_FILE")
+    if not str(env.get("STAGEMESH_API_TOKEN", "")):
         raise ValueError("proxy-https profile requires the control credential")
-    hosts = _allowed_hosts(str(env.get("STAGEFORGE_ALLOWED_HOSTS", "")))
-    origins = _allowed_origins(str(env.get("STAGEFORGE_ALLOWED_ORIGINS", "")), hosts)
-    if not str(env.get("STAGEFORGE_HTTP_AUTHORIZATION_FILE", "")).strip():
-        raise ValueError("proxy-https profile requires STAGEFORGE_HTTP_AUTHORIZATION_FILE")
-    if not str(env.get("STAGEFORGE_AUTH_PROXY_TOKEN", "")):
+    hosts = _allowed_hosts(str(env.get("STAGEMESH_ALLOWED_HOSTS", "")))
+    origins = _allowed_origins(str(env.get("STAGEMESH_ALLOWED_ORIGINS", "")), hosts)
+    if not str(env.get("STAGEMESH_HTTP_AUTHORIZATION_FILE", "")).strip():
+        raise ValueError("proxy-https profile requires STAGEMESH_HTTP_AUTHORIZATION_FILE")
+    if not str(env.get("STAGEMESH_AUTH_PROXY_TOKEN", "")):
         raise ValueError("proxy-https profile requires the trusted auth-proxy credential")
     # Parse the policy now so a deployed service does not start with a malformed or
     # weakly-permissioned role file and discover that fact only on the first mutation.
@@ -149,7 +149,7 @@ def _request(connection, method: str, path: str, headers: Mapping[str, str]) -> 
 def qualify_loopback_backend(base_url: str, public_host: str, public_origin: str,
                              api_token: str, timeout: float = 5.0,
                              connection_factory=None) -> dict[str, Any]:
-    """Exercise the StageForge backend boundary from the proxy host.
+    """Exercise the StageMesh backend boundary from the proxy host.
 
     This intentionally talks to the loopback HTTP bridge, not the public TLS edge.
     It proves the backend's Host/Origin/token contract while leaving TLS to the edge
@@ -173,7 +173,7 @@ def qualify_loopback_backend(base_url: str, public_host: str, public_origin: str
             connection.close()
 
     valid_headers = {"Host": public_host, "Origin": public_origin,
-                     "X-StageForge-API-Token": api_token}
+                     "X-StageMesh-API-Token": api_token}
     status, headers, _ = run(valid_headers)
     failures = []
     if status != 200:
@@ -181,7 +181,7 @@ def qualify_loopback_backend(base_url: str, public_host: str, public_origin: str
     failures.extend(evaluate_security_headers(headers, require_hsts=False))
 
     invalid = dict(valid_headers)
-    invalid["X-StageForge-API-Token"] = "stageforge-invalid-qualification-token"
+    invalid["X-StageMesh-API-Token"] = "stagemesh-invalid-qualification-token"
     invalid_status, _, _ = run(invalid)
     if invalid_status != 403:
         failures.append(f"invalid backend credential returned {invalid_status}, expected 403")

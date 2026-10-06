@@ -3,7 +3,7 @@
 455 Python tests passed on 2026-09-13. Five new tests cover remote/proxy health
 authentication, local-development health compatibility, command-ID length handling,
 and real API rejection with unchanged show revision and tempo. Raw-socket duplicate
-security-header tests now include X-StageForge-Command-Id.
+security-header tests now include X-StageMesh-Command-Id.
 
 No native source changes or fresh native/sanitizer build. The suite reports missing
 CMake/CTest sanitizer prerequisites. No hardware or deployed TLS qualification.

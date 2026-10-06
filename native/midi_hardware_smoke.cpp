@@ -1,4 +1,4 @@
-#include "stageforge/midi_input.hpp"
+#include "stagemesh/midi_input.hpp"
 #include "device_identity.h"
 
 #include <CoreFoundation/CoreFoundation.h>
@@ -48,7 +48,7 @@ bool contains_folded(std::string value, std::string needle) {
 }
 
 std::string manager_id(MIDIEndpointRef source) {
-    const auto hash = stageforge::sha256_token(
+    const auto hash = stagemesh::sha256_token(
         "coremidi-native:" + std::to_string(static_cast<std::uint64_t>(source)) + ":in");
     std::string digest = hash;
     if (digest.rfind("sha256:", 0) == 0) digest.erase(0, 7);
@@ -64,7 +64,7 @@ void require(bool condition, const char* message) {
 
 int main() {
     try {
-        const char* configured = std::getenv("STAGEFORGE_MIDI_DEVICE_NAME");
+        const char* configured = std::getenv("STAGEMESH_MIDI_DEVICE_NAME");
         const std::string needle = configured && *configured ? configured : "FLkey Mini";
         MIDIEndpointRef selected = 0;
         std::string selected_name;
@@ -72,7 +72,7 @@ int main() {
             const auto source = MIDIGetSource(index);
             const auto name = endpoint_name(source);
             if (contains_folded(endpoint_search_text(source), needle)) {
-                require(selected == 0, "multiple matching MIDI sources; narrow STAGEFORGE_MIDI_DEVICE_NAME");
+                require(selected == 0, "multiple matching MIDI sources; narrow STAGEMESH_MIDI_DEVICE_NAME");
                 selected = source;
                 selected_name = name;
             }
@@ -86,7 +86,7 @@ int main() {
             throw std::runtime_error("named MIDI source not found; inspect the listed CoreMIDI source metadata");
         }
 
-        stageforge::MidiInputManager manager;
+        stagemesh::MidiInputManager manager;
         require(manager.scan() > 0, "CoreMIDI input scan found no sources");
         const auto id = manager_id(selected);
         require(manager.attach(id, "hardware-qualification"), "production MIDI input attach failed");
@@ -95,7 +95,7 @@ int main() {
         const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(15);
         while (std::chrono::steady_clock::now() < deadline) {
             CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.05, true);
-            stageforge::CapturedMidiInput event{};
+            stagemesh::CapturedMidiInput event{};
             while (manager.pop(event)) ++events;
             if (events > 0) break;
         }

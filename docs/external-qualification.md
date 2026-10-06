@@ -1,17 +1,17 @@
 # External qualification evidence
 
-StageForge software/reference qualification can be executed in the source environment, but the remaining production gates require independent hosts, target operating systems, licensed fixtures, assistive technology or named hardware. Checkpoint 63 makes those runs reproducible and exact-build-bound.
+StageMesh software/reference qualification can be executed in the source environment, but the remaining production gates require independent hosts, target operating systems, licensed fixtures, assistive technology or named hardware. Checkpoint 63 makes those runs reproducible and exact-build-bound.
 
 Generate a plan after building the native engine:
 
 ```sh
-python3 scripts/stageforge-qualification-plan.py --build-dir "$PWD/build" --output stageforge-qualification-plan.json
+python3 scripts/stagemesh-qualification-plan.py --build-dir "$PWD/build" --output stagemesh-qualification-plan.json
 ```
 
 The plan contains a deterministic source fingerprint, exact native-engine SHA-256 and eight external tasks. Generate a result skeleton for one task with:
 
 ```sh
-python3 scripts/stageforge-qualification-plan.py --build-dir "$PWD/build" --template independent-witness
+python3 scripts/stagemesh-qualification-plan.py --build-dir "$PWD/build" --template independent-witness
 ```
 
 A result is accepted only for the exact `planId`, source fingerprint and native-engine digest. Runner identity is represented only as a SHA-256 hash. Passing results must set every task-specific required claim to true. Artifact references are bounded and carry SHA-256 digests; large/raw artifacts remain outside the envelope.
@@ -47,11 +47,11 @@ Create a private reviewer key file owned by the service/reviewer account with mo
 Then review one exact-build result:
 
 ```sh
-stageforge-qualification-review.py \
-  --plan stageforge-qualification-plan.json \
+stagemesh-qualification-review.py \
+  --plan stagemesh-qualification-plan.json \
   --result independent-witness-result.json \
   --artifacts-dir ./evidence \
-  --review-key-file /etc/stageforge/qualification-review-key.json \
+  --review-key-file /etc/stagemesh/qualification-review-key.json \
   --decision approve \
   --output independent-witness-review.json
 ```
@@ -65,11 +65,11 @@ Verify an existing review with `--verify <review.json>` using the same private r
 Checkpoint 65 adds a directory-level intake view for one exact-build plan. Each task directory may contain `result.json`, `review.json` and an `artifacts/` directory. Run:
 
 ```sh
-stageforge-qualification-status.py \
-  --plan stageforge-qualification-plan.json \
+stagemesh-qualification-status.py \
+  --plan stagemesh-qualification-plan.json \
   --submissions-dir ./qualification-submissions \
-  --review-key-file /etc/stageforge/qualification-review-key.json \
-  --output stageforge-qualification-status.json
+  --review-key-file /etc/stagemesh/qualification-review-key.json \
+  --output stagemesh-qualification-status.json
 ```
 
 The helper revalidates the result, re-hashes the actual artifacts, verifies the review HMAC/result digest and checks that the review's artifact-verification set exactly matches the files now present. Task states are `pending`, `awaiting-review`, `approved`, `rejected`, `needs-evidence` or `invalid`. Changed evidence after review becomes `invalid`. `allTasksApproved` is only a mechanical summary of that exact plan; it does not close backlog rows or authorize deployment.

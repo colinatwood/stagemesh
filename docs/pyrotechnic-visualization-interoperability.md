@@ -1,6 +1,6 @@
 # Pyrotechnic visualization and show safety
 
-StageForge can learn from
+StageMesh can learn from
 [FireShow](https://github.com/giuseppe-coco/FireShow)'s 3D fireworks design,
 particle visualization, event timeline, and synchronized audio concepts. These
 capabilities belong in a simulation and planning layer; they must never imply
@@ -26,7 +26,7 @@ checks, geographic and timing constraints, and an emergency-stop path. A visual
 timeline event is not a firing command. A failed preview, stale plan, lost
 connection, or mismatched device must result in no physical action.
 
-StageForge should not implement or document construction, ignition, wiring, or
+StageMesh should not implement or document construction, ignition, wiring, or
 operational procedures for pyrotechnic devices. It can provide safe planning,
 simulation, audit, and clearly fenced integration points for qualified operators
 and compliant external systems.

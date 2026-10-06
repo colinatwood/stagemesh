@@ -6,17 +6,17 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'backend'))
-from dev_server import StageForgeHTTPServer, StageForgeHandler
+from dev_server import StageMeshHTTPServer, StageMeshHandler
 
 
-class SmallServer(StageForgeHTTPServer):
+class SmallServer(StageMeshHTTPServer):
     max_connections = 1
     socket_timeout = 0.15
 
 
 class CapacityTests(unittest.TestCase):
     def setUp(self):
-        self.server = SmallServer(('127.0.0.1', 0), StageForgeHandler)
+        self.server = SmallServer(('127.0.0.1', 0), StageMeshHandler)
 
     def tearDown(self):
         self.server.server_close()

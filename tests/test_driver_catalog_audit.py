@@ -27,7 +27,7 @@ class DriverCatalogAuditTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as raw:
             path=Path(raw)/"catalog.json";path.write_text('{"schemaVersion":2,"packages":[{"hardwareId":"bad"}]}')
             report=audit_catalog(path,as_of=date(2026,9,14));self.assertFalse(report["catalogUsable"]);self.assertEqual(report["counts"]["invalid"],1)
-            proc=subprocess.run([sys.executable,str(ROOT/"scripts/stageforge-driver-catalog-audit.py"),"--catalog",str(path),"--as-of","2026-09-14","--json"],capture_output=True,text=True)
+            proc=subprocess.run([sys.executable,str(ROOT/"scripts/stagemesh-driver-catalog-audit.py"),"--catalog",str(path),"--as-of","2026-09-14","--json"],capture_output=True,text=True)
             self.assertEqual(proc.returncode,1);self.assertFalse(json.loads(proc.stdout)["catalogUsable"])
 
 if __name__=="__main__":unittest.main()

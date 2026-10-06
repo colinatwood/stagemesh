@@ -32,7 +32,7 @@ else:
     report["microphoneAuthorization"] = "not-probed-on-this-platform"
 if platform.system() == "Darwin" and os.environ.get("GITHUB_ENV"):
     with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
-        env.write("STAGEFORGE_HOSTED_CAPTURE_AUTHORIZED=" +
+        env.write("STAGEMESH_HOSTED_CAPTURE_AUTHORIZED=" +
                   ("1" if report["microphoneAuthorization"] == "authorized" else "0") + "\n")
 Path("qualification-availability.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 print(json.dumps(report, indent=2))

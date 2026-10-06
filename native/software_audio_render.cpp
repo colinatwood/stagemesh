@@ -6,7 +6,7 @@
 #include <AudioUnit/AudioUnit.h>
 #endif
 
-namespace stageforge {
+namespace stagemesh {
 #ifdef __APPLE__
 namespace {
 void checked(OSStatus status, const char* operation) {

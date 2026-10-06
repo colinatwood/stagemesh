@@ -35,7 +35,7 @@ class WindowsNamedPipeError(RuntimeError):
 def normalize_windows_sid(value: str) -> str:
     sid = str(value or "").strip().upper()
     if sid in _FORBIDDEN_ALIASES:
-        raise ValueError("broad Windows security principals are not permitted for StageForge named pipes")
+        raise ValueError("broad Windows security principals are not permitted for StageMesh named pipes")
     if not _SID.fullmatch(sid):
         raise ValueError("Windows named-pipe principals must be explicit SID strings")
     return sid

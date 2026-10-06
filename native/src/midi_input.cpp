@@ -1,4 +1,4 @@
-#include "stageforge/midi_input.hpp"
+#include "stagemesh/midi_input.hpp"
 
 #include <algorithm>
 #include <array>
@@ -23,7 +23,7 @@
 #endif
 #endif
 
-namespace stageforge {
+namespace stagemesh {
 namespace {
 
 template <std::size_t N>
@@ -536,5 +536,5 @@ MidiIngressAuditStatus MidiInputManager::audit_status() const noexcept {
     return {audit_polls_.load(std::memory_order_relaxed),audit_bytes_.load(std::memory_order_relaxed),audit_messages_.load(std::memory_order_relaxed),audit_queue_drops_.load(std::memory_order_relaxed),audit_injected_.load(std::memory_order_relaxed),audit_max_poll_ns_.load(std::memory_order_relaxed),false,audit_topology_detaches_.load(std::memory_order_relaxed)};
 }
 
-} // namespace stageforge
+} // namespace stagemesh
 

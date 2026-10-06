@@ -1,6 +1,6 @@
 # ROS 2 robotics interoperability
 
-StageForge may integrate with robotics systems through a ROS 2 adapter for
+StageMesh may integrate with robotics systems through a ROS 2 adapter for
 telemetry, planning, simulation, and explicitly authorized commands. ROS 2's
 managed-node model provides a useful lifecycle boundary: nodes are configured,
 inactive, active, or finalized under supervisory control.
@@ -10,7 +10,7 @@ References: [ROS 2 managed-node design](https://design.ros2.org/articles/node_li
 
 ## Lifecycle and authority
 
-Map ROS 2 lifecycle states into StageForge capabilities:
+Map ROS 2 lifecycle states into StageMesh capabilities:
 
 - **Unconfigured:** no device or command resources acquired.
 - **Inactive:** configuration and diagnostics allowed; motion or physical
@@ -38,7 +38,7 @@ duplicate, out-of-order, wrong-frame, or wrong-generation commands.
 
 ## Time, frames, and recovery
 
-Keep ROS time, system monotonic time, and StageForge show time distinguishable.
+Keep ROS time, system monotonic time, and StageMesh show time distinguishable.
 Record clock offsets and synchronization health. Every pose or trajectory must
 name its coordinate frame and transform generation; an unknown or stale frame
 invalidates the command.
@@ -65,5 +65,5 @@ explicit re-arm.
 
 The first adapter should support simulation and read-only telemetry before any
 actuator command path. Robotics middleware availability is a host capability,
-not a release assumption; StageForge must remain testable without ROS 2 or robot
+not a release assumption; StageMesh must remain testable without ROS 2 or robot
 hardware installed.

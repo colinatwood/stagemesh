@@ -1,7 +1,7 @@
 # PipeWire interoperability direction
 
 PipeWire is a reference for low-latency multimedia processing and sharing on
-modern Linux. StageForge should support it as an optional session/graph
+modern Linux. StageMesh should support it as an optional session/graph
 adapter while retaining direct ALSA and future JACK paths.
 
 ## Adapter boundaries
@@ -32,7 +32,7 @@ they do not establish physical latency, converter quality, clock stability,
 or stage-hardware qualification.
 
 The PipeWire project maintains the core graph, WirePlumber session policy,
-ALSA integration, and JACK compatibility layers. StageForge should integrate
+ALSA integration, and JACK compatibility layers. StageMesh should integrate
 through documented APIs and package contracts rather than vendor their source.
 
 Reference: [PipeWire on GitHub](https://github.com/PipeWire).

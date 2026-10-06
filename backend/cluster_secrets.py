@@ -2,7 +2,7 @@
 
 The keyring is deliberately a control-plane primitive.  It is re-read for each
 network/authentication operation so an atomic file replacement can rotate keys
-without restarting StageForge, while each individual operation pins one
+without restarting StageMesh, while each individual operation pins one
 immutable snapshot and cannot mix keys mid-quorum or mid-transaction.
 """
 from __future__ import annotations

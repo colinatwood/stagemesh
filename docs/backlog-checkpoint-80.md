@@ -1,6 +1,6 @@
 # Checkpoint 80: native capture and selected endpoint recovery
 
-[Master backlog](backlog/StageForge-Master-Backlog-Checkpoint-80.xlsx):
+[Master backlog](backlog/StageMesh-Master-Backlog-Checkpoint-80.xlsx):
 **25 open / 22 P0**; four software, 19 qualification, two decisions.
 All statuses and acceptance criteria are preserved, including PLUG-034 Done
 for hosted verification-to-launch binding and separate licensed compatibility.
@@ -26,7 +26,7 @@ notification subscriptions.
 ## Hosted evidence
 
 Code `a9294525ac2c2583d9a63f51a3164daee55aa6b0` passed all six checks.
-[Native run 34926534068](https://github.com/colinatwood/stageforge/actions/runs/34926534068)
+[Native run 34926534068](https://github.com/colinatwood/stagemesh/actions/runs/34926534068)
 records test merge `7625aea179ec725b15e0c441a16fcbf731c7f6ec` and source/binary
 hashes, archived under `docs/evidence/checkpoint-80/`. Seven CTests passed per OS.
 

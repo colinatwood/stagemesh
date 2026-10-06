@@ -1,9 +1,9 @@
 # Open-source hardware reference board
 
-These projects are reference material for StageForge hardware configuration,
+These projects are reference material for StageMesh hardware configuration,
 audio/video transport, lighting control, mapping, robotics, and safety
-research. They are not StageForge dependencies and do not by themselves
-qualify StageForge hardware support.
+research. They are not StageMesh dependencies and do not by themselves
+qualify StageMesh hardware support.
 
 ## Audio, realtime, and media
 
@@ -15,7 +15,7 @@ qualify StageForge hardware support.
 - [PipeWire](https://github.com/PipeWire) — modern Linux media graph and device-session reference
 - [FFmpeg](https://github.com/ffmpeg/ffmpeg) — media format, codec, and transport reference
 
-StageForge guidance: [FFmpeg interoperability](ffmpeg-interoperability.md).
+StageMesh guidance: [FFmpeg interoperability](ffmpeg-interoperability.md).
 
 ## Lighting, DMX, and visual control
 
@@ -27,7 +27,7 @@ StageForge guidance: [FFmpeg interoperability](ffmpeg-interoperability.md).
 - [OBS Studio](https://github.com/obsproject/obs-studio) — live audiovisual routing and capture reference
 - [CasparCG](https://github.com/casparcg) — broadcast graphics and playout reference
 
-StageForge guidance: [broadcast playout interoperability](broadcast-playout-interoperability.md).
+StageMesh guidance: [broadcast playout interoperability](broadcast-playout-interoperability.md).
 
 ## Mapping, robotics, and control
 
@@ -37,13 +37,13 @@ StageForge guidance: [broadcast playout interoperability](broadcast-playout-inte
 - [LinuxCNC](https://github.com/linuxcnc/linuxcnc) — deterministic machine-control reference
 - [paperManu/splash](https://github.com/paperManu/splash) — visual/control reference for further review
 
-StageForge guidance: [projection mapping interoperability](projection-mapping-interoperability.md).
+StageMesh guidance: [projection mapping interoperability](projection-mapping-interoperability.md).
 
 ## Pyro and safety research
 
 - [giuseppe-coco/FireShow](https://github.com/giuseppe-coco/FireShow) — pyro/show-control reference for safety and authorization review
 
-StageForge guidance: [pyrotechnic visualization and show safety](pyrotechnic-visualization-interoperability.md).
+StageMesh guidance: [pyrotechnic visualization and show safety](pyrotechnic-visualization-interoperability.md).
 
 Pyrotechnic or physical-actuation behavior must remain fail-closed, explicitly
 armed, independently authorized, and subject to applicable law and venue
@@ -54,7 +54,7 @@ not establish safe operation.
 
 1. Inspect each project’s current license before copying code or assets.
 2. Prefer protocol and architecture references over source-code copying.
-3. Keep StageForge’s explicit arming, identity, authorization, and audit
+3. Keep StageMesh’s explicit arming, identity, authorization, and audit
    boundaries intact.
 4. Record named hardware, OS, kernel, firmware, topology, and measurements
    before making a support claim.

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://stageforge.dev/schemas/le-uwb-hardware.schema.json",
-  "title": "StageForge LE ISO and UWB hardware status",
+  "$id": "https://stagemesh.dev/schemas/le-uwb-hardware.schema.json",
+  "title": "StageMesh LE ISO and UWB hardware status",
   "type": "object",
   "additionalProperties": false,
   "required": [

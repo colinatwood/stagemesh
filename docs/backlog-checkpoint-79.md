@@ -1,6 +1,6 @@
 # Checkpoint 79: native playback and Windows MIDI discovery
 
-[Master backlog](backlog/StageForge-Master-Backlog-Checkpoint-79.xlsx) remains
+[Master backlog](backlog/StageMesh-Master-Backlog-Checkpoint-79.xlsx) remains
 **25 open / 22 P0**: four software, 19 qualification, two decisions.
 No status or acceptance criterion was changed. PLUG-034 stays Done and licensed
 compatibility stays separate. Workbook checks preserved eight sheets, three
@@ -27,7 +27,7 @@ or paths are included in evidence.
 ## Hosted validation
 
 Code revision `34fd5cfa134ba2bb2fe011d2c50143e91c12812a` passed all six checks.
-[Native run 34925110894](https://github.com/colinatwood/stageforge/actions/runs/34925110894)
+[Native run 34925110894](https://github.com/colinatwood/stagemesh/actions/runs/34925110894)
 records test merge `456e4cd3e773d75eb8f17b57ce7a17eeffaccd08` and exact source and
 binary hashes. Five CTests per OS passed. Reports are archived in
 `docs/evidence/checkpoint-79/`.

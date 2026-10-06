@@ -5,15 +5,15 @@ import stat
 
 
 TOKEN_KEYS = frozenset({
-    'STAGEFORGE_API_TOKEN', 'STAGEFORGE_MONITOR_API_TOKEN',
-    'STAGEFORGE_ADMIN_API_TOKEN', 'STAGEFORGE_AUTH_PROXY_TOKEN',
-    'STAGEFORGE_ADAPTER_REPORT_TOKEN',
+    'STAGEMESH_API_TOKEN', 'STAGEMESH_MONITOR_API_TOKEN',
+    'STAGEMESH_ADMIN_API_TOKEN', 'STAGEMESH_AUTH_PROXY_TOKEN',
+    'STAGEMESH_ADAPTER_REPORT_TOKEN',
 })
 
 
 def credential_environment(environ=None):
     env = dict(os.environ if environ is None else environ)
-    path = env.get('STAGEFORGE_HTTP_CREDENTIAL_FILE', '')
+    path = env.get('STAGEMESH_HTTP_CREDENTIAL_FILE', '')
     if not path:
         return env
     try:
@@ -40,7 +40,7 @@ def credential_environment(environ=None):
         tokens = json.loads(data.decode('utf-8'), object_pairs_hook=unique_pairs)
         if not isinstance(tokens, dict) or not set(tokens) <= TOKEN_KEYS:
             raise ValueError('invalid keys')
-        if 'STAGEFORGE_API_TOKEN' not in tokens:
+        if 'STAGEMESH_API_TOKEN' not in tokens:
             raise ValueError('missing control credential')
         for token in tokens.values():
             if (not isinstance(token, str) or not 32 <= len(token) <= 512
@@ -53,5 +53,5 @@ def credential_environment(environ=None):
     for key in TOKEN_KEYS:
         env.pop(key, None)
     env.update(tokens)
-    env['STAGEFORGE_REQUIRE_API_TOKEN'] = '1'
+    env['STAGEMESH_REQUIRE_API_TOKEN'] = '1'
     return env

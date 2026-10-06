@@ -1,7 +1,7 @@
 # Media editing and recording interoperability
 
-Audacity is a useful reference for StageForge’s cross-platform recording and
-media-editing boundaries. StageForge does not copy Audacity code or claim
+Audacity is a useful reference for StageMesh’s cross-platform recording and
+media-editing boundaries. StageMesh does not copy Audacity code or claim
 Audacity project-file compatibility.
 
 ## Capabilities to reinforce
@@ -19,7 +19,7 @@ Audacity project-file compatibility.
 - Keep recording activation, monitoring, and physical input permission as
   separate operator-confirmed actions.
 
-## StageForge mapping
+## StageMesh mapping
 
 The existing DAW capture, media import, conversion, temporary-resource, and
 recording-publication paths are the foundation for these rules. The next
@@ -36,5 +36,5 @@ No step in this sequence should arm physical audio input or output implicitly.
 
 Reference: [Audacity source repository](https://github.com/audacity/audacity).
 Audacity’s repository currently documents a major Audacity 4 structural change;
-StageForge should therefore treat the project as a capability and workflow
+StageMesh should therefore treat the project as a capability and workflow
 reference, not as a stable source-layout dependency.

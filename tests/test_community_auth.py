@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'backend'))
 from admin_mail import AdminMailer
 from community_auth import CommunitySessionManager
 from community_governance import CommunityGovernance
-from runtime import StageForgeRuntime
+from runtime import StageMeshRuntime
 
 
 class CommunitySessionManagerTests(unittest.TestCase):
@@ -36,7 +36,7 @@ class CommunitySessionManagerTests(unittest.TestCase):
 
 class CommunityAccountAuthTests(unittest.TestCase):
     def test_old_accounts_migrate_to_generation_one_and_revocation_increments(self):
-        with tempfile.TemporaryDirectory() as tmp, patch.dict('os.environ', {'STAGEFORGE_ADMIN_EMAIL_MODE': 'outbox'}, clear=False):
+        with tempfile.TemporaryDirectory() as tmp, patch.dict('os.environ', {'STAGEMESH_ADMIN_EMAIL_MODE': 'outbox'}, clear=False):
             gov = CommunityGovernance(Path(tmp), AdminMailer(Path(tmp)))
             gov.upsert_account({'id': 'user-a', 'email': 'a@example.test'})
             # Simulate a pre-checkpoint account record that did not persist authGeneration.
@@ -49,7 +49,7 @@ class CommunityAccountAuthTests(unittest.TestCase):
             self.assertEqual(revoked['authGeneration'], 2)
 
     def test_email_or_active_state_change_revokes_existing_generation(self):
-        with tempfile.TemporaryDirectory() as tmp, patch.dict('os.environ', {'STAGEFORGE_ADMIN_EMAIL_MODE': 'outbox'}, clear=False):
+        with tempfile.TemporaryDirectory() as tmp, patch.dict('os.environ', {'STAGEMESH_ADMIN_EMAIL_MODE': 'outbox'}, clear=False):
             gov = CommunityGovernance(Path(tmp), AdminMailer(Path(tmp)))
             first = gov.upsert_account({'id': 'user-a', 'email': 'a@example.test'})
             self.assertEqual(first['authGeneration'], 1)
@@ -62,14 +62,14 @@ class CommunityAccountAuthTests(unittest.TestCase):
 
     def test_runtime_session_votes_without_magic_link_token_and_revocation_fences_old_session(self):
         with tempfile.TemporaryDirectory() as tmp, patch.dict(
-            'os.environ', {'STAGEMESH_NATIVE_ENGINE': 'off', 'STAGEFORGE_ADMIN_EMAIL_MODE': 'outbox'}, clear=False
+            'os.environ', {'STAGEMESH_NATIVE_ENGINE': 'off', 'STAGEMESH_ADMIN_EMAIL_MODE': 'outbox'}, clear=False
         ):
-            runtime = StageForgeRuntime(Path(tmp))
+            runtime = StageMeshRuntime(Path(tmp))
             try:
                 runtime.community_upsert_account({'id': 'user-a', 'email': 'a@example.test'})
                 runtime.community_create_proposal({'id': 'proposal-a', 'title': 'Session vote'})
                 runtime.community_issue_vote_emails(
-                    'proposal-a', {'userIds': ['user-a'], 'windowHours': 24, 'baseUrl': 'https://stageforge.test'}
+                    'proposal-a', {'userIds': ['user-a'], 'windowHours': 24, 'baseUrl': 'https://stagemesh.test'}
                 )
                 session = runtime.community_issue_session('user-a')
                 vote = runtime.community_cast_vote(
@@ -81,7 +81,7 @@ class CommunityAccountAuthTests(unittest.TestCase):
 
                 runtime.community_create_proposal({'id': 'proposal-b', 'title': 'Revoked session'})
                 runtime.community_issue_vote_emails(
-                    'proposal-b', {'userIds': ['user-a'], 'windowHours': 24, 'baseUrl': 'https://stageforge.test'}
+                    'proposal-b', {'userIds': ['user-a'], 'windowHours': 24, 'baseUrl': 'https://stagemesh.test'}
                 )
                 runtime.community_revoke_sessions('user-a')
                 with self.assertRaises(PermissionError):
@@ -93,9 +93,9 @@ class CommunityAccountAuthTests(unittest.TestCase):
 
     def test_session_vote_requires_exactly_one_active_account_invitation(self):
         with tempfile.TemporaryDirectory() as tmp, patch.dict(
-            'os.environ', {'STAGEMESH_NATIVE_ENGINE': 'off', 'STAGEFORGE_ADMIN_EMAIL_MODE': 'outbox'}, clear=False
+            'os.environ', {'STAGEMESH_NATIVE_ENGINE': 'off', 'STAGEMESH_ADMIN_EMAIL_MODE': 'outbox'}, clear=False
         ):
-            runtime = StageForgeRuntime(Path(tmp))
+            runtime = StageMeshRuntime(Path(tmp))
             try:
                 runtime.community_upsert_account({'id': 'user-a', 'email': 'a@example.test'})
                 runtime.community_create_proposal({'id': 'proposal-a', 'title': 'Invitation required'})
@@ -105,10 +105,10 @@ class CommunityAccountAuthTests(unittest.TestCase):
                         {'sessionToken': session['sessionToken'], 'proposalId': 'proposal-a', 'choice': 'yes'}, None
                     )
                 runtime.community_issue_vote_emails(
-                    'proposal-a', {'userIds': ['user-a'], 'windowHours': 24, 'baseUrl': 'https://stageforge.test'}
+                    'proposal-a', {'userIds': ['user-a'], 'windowHours': 24, 'baseUrl': 'https://stagemesh.test'}
                 )
                 runtime.community_issue_vote_emails(
-                    'proposal-a', {'userIds': ['user-a'], 'windowHours': 24, 'baseUrl': 'https://stageforge.test'}
+                    'proposal-a', {'userIds': ['user-a'], 'windowHours': 24, 'baseUrl': 'https://stagemesh.test'}
                 )
                 with self.assertRaises(PermissionError):
                     runtime.community_cast_vote(
