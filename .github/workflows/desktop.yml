@@ -309,6 +309,11 @@ jobs:
 
   release-candidate:
     name: Bind cross-platform release candidate
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -332,6 +337,11 @@ jobs:
           --version "$(python -c 'import json; print(json.load(open("desktop/package.json"))["version"])')"
           --commit "$GITHUB_SHA"
           --output desktop-release-index.json
+
+      - name: Attest release-candidate index
+        uses: actions/attest@v4
+        with:
+          subject-path: desktop-release-index.json
 
       - name: Upload release-candidate index
         uses: actions/upload-artifact@v4
