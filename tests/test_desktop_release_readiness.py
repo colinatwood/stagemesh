@@ -11,6 +11,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "desktop-release-readiness.py"
 INVENTORY_SCRIPT = ROOT / "scripts" / "desktop-dependency-inventory.py"
+SBOM_SCRIPT = ROOT / "scripts" / "desktop-sbom.py"
 MANIFEST_SCRIPT = ROOT / "scripts" / "desktop-artifact-manifest.py"
 VERSION_FILES = (
     "requirements-desktop.txt",
@@ -113,6 +114,13 @@ class DesktopReleaseReadinessTests(unittest.TestCase):
             "--version", "0.1.0",
         ], cwd=ROOT, capture_output=True, text=True)
         self.assertEqual(inventory_result.returncode, 0, inventory_result.stderr)
+        sbom = artifacts / "desktop-sbom.cdx.json"
+        sbom_result = subprocess.run([
+            sys.executable, str(SBOM_SCRIPT),
+            "--inventory", str(inventory),
+            "--output", str(sbom),
+        ], cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(sbom_result.returncode, 0, sbom_result.stderr)
         (artifacts / "installer").write_bytes(b"installer")
         manifest_result = subprocess.run([
             sys.executable, str(MANIFEST_SCRIPT),
@@ -122,25 +130,28 @@ class DesktopReleaseReadinessTests(unittest.TestCase):
             "--version", "0.1.0",
         ], cwd=ROOT, capture_output=True, text=True)
         self.assertEqual(manifest_result.returncode, 0, manifest_result.stderr)
-        return artifacts / "desktop-artifacts.json", inventory
+        return artifacts / "desktop-artifacts.json", inventory, sbom
 
     def test_dependency_inventory_is_validated_and_bound_to_manifest(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             self.fixture(root)
-            manifest, inventory = self.artifact_evidence(root)
-            report = load_script().evaluate(root, "v0.1.0", manifest, inventory)
+            manifest, inventory, sbom = self.artifact_evidence(root)
+            report = load_script().evaluate(root, "v0.1.0", manifest, inventory, sbom)
             self.assertTrue(report["passed"], report["blockers"])
             self.assertTrue(report["dependencyInventory"]["manifestBound"])
             self.assertGreater(report["dependencyInventory"]["componentCount"], 0)
+            self.assertTrue(report["sbom"]["inventoryBound"])
+            self.assertTrue(report["sbom"]["manifestBound"])
+            self.assertEqual(report["sbom"]["specVersion"], "1.7")
 
     def test_dependency_inventory_tamper_fails_manifest_binding(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             self.fixture(root)
-            manifest, inventory = self.artifact_evidence(root)
+            manifest, inventory, sbom = self.artifact_evidence(root)
             inventory.write_text(inventory.read_text(encoding="utf-8") + " ", encoding="utf-8")
-            report = load_script().evaluate(root, "v0.1.0", manifest, inventory)
+            report = load_script().evaluate(root, "v0.1.0", manifest, inventory, sbom)
             self.assertFalse(report["passed"])
             self.assertIn("digest does not match", " ".join(report["blockers"]))
 
@@ -148,11 +159,11 @@ class DesktopReleaseReadinessTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             self.fixture(root)
-            manifest, inventory = self.artifact_evidence(root)
+            manifest, inventory, sbom = self.artifact_evidence(root)
             document = json.loads(inventory.read_text(encoding="utf-8"))
             document["reviewBoundary"]["ownerLegalReviewComplete"] = True
             inventory.write_text(json.dumps(document), encoding="utf-8")
-            report = load_script().evaluate(root, "v0.1.0", manifest, inventory)
+            report = load_script().evaluate(root, "v0.1.0", manifest, inventory, sbom)
             self.assertFalse(report["passed"])
             self.assertIn("cannot claim", " ".join(report["blockers"]))
 
@@ -160,10 +171,35 @@ class DesktopReleaseReadinessTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             self.fixture(root)
-            manifest, inventory = self.artifact_evidence(root, "b" * 40)
-            report = load_script().evaluate(root, "v0.1.0", manifest, inventory)
+            manifest, inventory, sbom = self.artifact_evidence(root, "b" * 40)
+            report = load_script().evaluate(root, "v0.1.0", manifest, inventory, sbom)
             self.assertFalse(report["passed"])
             self.assertIn("sourceCommit does not match", " ".join(report["blockers"]))
+
+    def test_sbom_tamper_and_missing_sbom_fail_closed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.fixture(root)
+            manifest, inventory, sbom = self.artifact_evidence(root)
+            document = json.loads(sbom.read_text(encoding="utf-8"))
+            properties = document["metadata"]["component"]["properties"]
+            boundary = next(
+                item for item in properties
+                if item["name"] == "org.stagemesh:dependencyLicensesVerified"
+            )
+            boundary["value"] = "true"
+            sbom.write_text(json.dumps(document), encoding="utf-8")
+            report = load_script().evaluate(root, "v0.1.0", manifest, inventory, sbom)
+            self.assertFalse(report["passed"])
+            self.assertIn("review boundary", " ".join(report["blockers"]))
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.fixture(root)
+            manifest, inventory, _ = self.artifact_evidence(root)
+            report = load_script().evaluate(root, "v0.1.0", manifest, inventory)
+            self.assertFalse(report["passed"])
+            self.assertIn("requires a CycloneDX desktop SBOM", " ".join(report["blockers"]))
 
 
 if __name__ == "__main__":

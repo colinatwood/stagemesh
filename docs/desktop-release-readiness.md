@@ -109,8 +109,8 @@ until the download channel has been authenticated.
 
 Windows bundles also include `windows-clean-host.py`; macOS and Linux bundles
 include `posix-clean-host.py`. Every bundle includes `review-clean-host.py`.
-The collectors bind later clean-host evidence
-to the exact installer and source manifest. They require a supported target OS,
+The collectors bind later clean-host evidence to the exact installer and source
+manifest. They require a supported target OS,
 preserve the baseline/install/restart/real-upgrade/uninstall ordering, hash the
 runner identity and persistence marker, and keep qualification false even when
 all phases pass. See `desktop-installation.md` for target-specific commands.
@@ -123,18 +123,29 @@ product version before `desktop-artifacts.json` hashes the bundle. Generation
 fails if a lockfile is malformed, a Python build requirement is not exactly
 pinned, or duplicate package identifiers are present.
 
-This report is an engineering inventory, not a standard-compliant SBOM. Cargo
-and npm lockfiles can include build-only, optional, or target-specific packages,
-so an entry is not proof that package bytes are present in every installer.
-The report deliberately keeps payload inclusion, dependency-license review,
-and owner/legal approval false until separate evidence is completed.
+The inventory is an engineering source document rather than an SBOM. CI
+deterministically projects it into `desktop-sbom.cdx.json`, a CycloneDX 1.7
+JSON document using the official schema identifier. The SBOM records the
+StageMesh application, exact package URLs and available lockfile hashes, plus
+a dependency graph from the application to every declared locked component.
+It is generated before `desktop-artifacts.json`, so each platform manifest and
+offline verifier bind its exact bytes and SHA-256 digest.
 
-The release preflight parses that inventory and fails closed on malformed
+Cargo and npm lockfiles can include build-only, optional, or target-specific
+packages, so an SBOM entry is not proof that package bytes are present in every
+installer. Both source inventory and SBOM deliberately keep payload inclusion,
+dependency-license review, and owner/legal approval false until separate
+evidence is completed. CycloneDX 1.7 documentation and the reference JSON
+schema are published at <https://cyclonedx.org/docs/1.7/json/> and
+<https://cyclonedx.org/schema/bom-1.7.schema.json>.
+
+The release preflight parses the inventory and SBOM and fails closed on malformed
 components or counts, unsafe input paths, duplicate package identifiers, or any
-claim that its SBOM, payload, license, or legal-review boundaries are complete.
-For built bundles it also requires the inventory version and source commit to
-match the artifact manifest and verifies the manifest's exact byte count and
-SHA-256 entry for `desktop-dependencies.json`.
+claim that payload, license, or legal-review boundaries are complete. For built
+bundles it requires the inventory version and source commit to match the
+artifact manifest; regenerates the expected deterministic SBOM; and verifies
+the manifest's exact byte count and SHA-256 entries for both
+`desktop-dependencies.json` and `desktop-sbom.cdx.json`.
 
 ## Signing input preflight
 

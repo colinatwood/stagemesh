@@ -19,9 +19,11 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION_SCRIPT = Path(__file__).with_name("verify-desktop-version.py")
+SBOM_SCRIPT = Path(__file__).with_name("desktop-sbom.py")
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 REQUIRED_DISTRIBUTION_FILES = ("LICENSE", "THIRD_PARTY_NOTICES.md")
 DEPENDENCY_INVENTORY_NAME = "desktop-dependencies.json"
+SBOM_NAME = "desktop-sbom.cdx.json"
 REQUIRED_DEPENDENCY_INPUTS = {
     "desktop/package-lock.json",
     "desktop/src-tauri/Cargo.lock",
@@ -41,6 +43,15 @@ def version_module():
     spec = importlib.util.spec_from_file_location("verify_desktop_version", VERSION_SCRIPT)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load version verifier: {VERSION_SCRIPT}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def sbom_module():
+    spec = importlib.util.spec_from_file_location("desktop_sbom", SBOM_SCRIPT)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load desktop SBOM generator: {SBOM_SCRIPT}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -182,11 +193,87 @@ def _dependency_manifest_binding_error(
     return None
 
 
+def _sbom_error(
+    sbom: dict[str, Any],
+    inventory_path: Path,
+    version: str,
+    source_commit: str,
+) -> str | None:
+    if sbom.get("$schema") != "https://cyclonedx.org/schema/bom-1.7.schema.json":
+        return "desktop SBOM schema must be CycloneDX 1.7 JSON"
+    if sbom.get("bomFormat") != "CycloneDX" or sbom.get("specVersion") != "1.7":
+        return "desktop SBOM format/specVersion must be CycloneDX 1.7"
+    if sbom.get("version") != 1:
+        return "desktop SBOM document version must be 1"
+    metadata = sbom.get("metadata")
+    component = metadata.get("component") if isinstance(metadata, dict) else None
+    if not isinstance(component, dict):
+        return "desktop SBOM metadata component is missing"
+    if (
+        component.get("type") != "application"
+        or component.get("name") != "StageMesh"
+        or component.get("version") != version
+        or component.get("purl") != f"pkg:generic/stagemesh@{version}"
+    ):
+        return "desktop SBOM product identity does not match the release"
+    properties = component.get("properties")
+    if not isinstance(properties, list):
+        return "desktop SBOM review-boundary properties are missing"
+    property_map: dict[str, str] = {}
+    for item in properties:
+        if (
+            not isinstance(item, dict)
+            or not isinstance(item.get("name"), str)
+            or not isinstance(item.get("value"), str)
+            or item["name"] in property_map
+        ):
+            return "desktop SBOM review-boundary properties are invalid"
+        property_map[item["name"]] = item["value"]
+    required = {
+        "org.stagemesh:sourceCommit": source_commit,
+        "org.stagemesh:dependencyInventorySha256": _sha256(inventory_path),
+        "org.stagemesh:dependencyInventoryBytes": str(inventory_path.stat().st_size),
+        "org.stagemesh:payloadInclusionVerified": "false",
+        "org.stagemesh:dependencyLicensesVerified": "false",
+        "org.stagemesh:ownerLegalReviewComplete": "false",
+    }
+    if property_map != required:
+        return "desktop SBOM inventory binding or review boundary is invalid"
+    expected = sbom_module().build_sbom(inventory_path)
+    if sbom != expected:
+        return "desktop SBOM does not match the deterministic locked-inventory projection"
+    return None
+
+
+def _sbom_manifest_binding_error(
+    sbom_path: Path,
+    manifest_path: Path,
+    manifest: dict[str, Any],
+) -> str | None:
+    try:
+        relative = sbom_path.resolve().relative_to(manifest_path.resolve().parent).as_posix()
+    except ValueError:
+        return "desktop SBOM must be inside the artifact manifest directory"
+    if relative != SBOM_NAME:
+        return f"desktop SBOM must be named {SBOM_NAME}"
+    entries = [
+        item for item in manifest.get("files", [])
+        if isinstance(item, dict) and item.get("path") == relative
+    ]
+    if len(entries) != 1:
+        return "artifact manifest must contain exactly one desktop SBOM entry"
+    entry = entries[0]
+    if entry.get("bytes") != sbom_path.stat().st_size or entry.get("sha256") != _sha256(sbom_path):
+        return "artifact manifest desktop SBOM digest does not match"
+    return None
+
+
 def evaluate(
     root: Path,
     tag: str | None = None,
     manifest_path: Path | None = None,
     dependency_inventory_path: Path | None = None,
+    sbom_path: Path | None = None,
 ) -> dict[str, Any]:
     """Return a deterministic readiness report; ``passed`` covers software checks only."""
     root = root.resolve()
@@ -224,6 +311,7 @@ def evaluate(
             blockers.append(f"artifact manifest check failed: {exc}")
 
     dependency_report: dict[str, Any] | None = None
+    inventory_document: dict[str, Any] | None = None
     if manifest_path is not None and dependency_inventory_path is None:
         blockers.append("artifact readiness requires a dependency inventory")
     if dependency_inventory_path is not None:
@@ -232,6 +320,7 @@ def evaluate(
             inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
             if not isinstance(inventory, dict):
                 raise ValueError("dependency inventory must be a JSON object")
+            inventory_document = inventory
             dependency_report = {
                 "path": str(inventory_path),
                 "sourceCommit": inventory.get("sourceCommit"),
@@ -254,6 +343,52 @@ def evaluate(
         except (OSError, json.JSONDecodeError, ValueError) as exc:
             blockers.append(f"dependency inventory check failed: {exc}")
 
+    sbom_report: dict[str, Any] | None = None
+    if manifest_path is not None and sbom_path is None:
+        blockers.append("artifact readiness requires a CycloneDX desktop SBOM")
+    if sbom_path is not None and dependency_inventory_path is None:
+        blockers.append("desktop SBOM validation requires the dependency inventory")
+    if sbom_path is not None:
+        resolved_sbom = sbom_path.resolve()
+        try:
+            sbom = json.loads(resolved_sbom.read_text(encoding="utf-8"))
+            if not isinstance(sbom, dict):
+                raise ValueError("desktop SBOM must be a JSON object")
+            sbom_report = {
+                "path": str(resolved_sbom),
+                "format": sbom.get("bomFormat"),
+                "specVersion": sbom.get("specVersion"),
+                "componentCount": len(sbom.get("components", []))
+                if isinstance(sbom.get("components"), list) else None,
+                "inventoryBound": False,
+                "manifestBound": False,
+            }
+            if (
+                version_report is not None
+                and manifest_document is not None
+                and dependency_inventory_path is not None
+                and inventory_document is not None
+            ):
+                error = _sbom_error(
+                    sbom,
+                    dependency_inventory_path.resolve(),
+                    str(version_report["version"]),
+                    str(manifest_document.get("sourceCommit", "")),
+                )
+                if error:
+                    blockers.append(error)
+                else:
+                    sbom_report["inventoryBound"] = True
+                binding_error = _sbom_manifest_binding_error(
+                    resolved_sbom, manifest_path, manifest_document
+                )
+                if binding_error:
+                    blockers.append(binding_error)
+                else:
+                    sbom_report["manifestBound"] = True
+        except (OSError, json.JSONDecodeError, ValueError, RuntimeError) as exc:
+            blockers.append(f"desktop SBOM check failed: {exc}")
+
     passed = not blockers
     return {
         "schemaVersion": 1,
@@ -264,6 +399,7 @@ def evaluate(
         "distributionFilesPresent": not missing,
         "artifactManifest": manifest_report,
         "dependencyInventory": dependency_report,
+        "sbom": sbom_report,
         "readyForUnsignedTesting": passed,
         "readyForPublication": False,
         "blockers": blockers,
@@ -281,12 +417,14 @@ def main() -> int:
     parser.add_argument("--tag", default="")
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--dependency-inventory", type=Path)
+    parser.add_argument("--sbom", type=Path)
     args = parser.parse_args()
     report = evaluate(
         args.root,
         args.tag or None,
         args.manifest,
         args.dependency_inventory,
+        args.sbom,
     )
     print(json.dumps(report, indent=2, sort_keys=True))
     return 0 if report["passed"] else 1
