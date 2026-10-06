@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://upp.stageforge.dev/schema/technology-openness-policy-v1.json",
+  "$id": "https://upp.stagemesh.dev/schema/technology-openness-policy-v1.json",
   "title": "UPP Technology Openness Policy v1",
   "type": "object",
   "additionalProperties": true,

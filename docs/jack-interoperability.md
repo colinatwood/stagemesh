@@ -1,7 +1,7 @@
 # JACK interoperability direction
 
 JACK provides the reference model for a low-latency, graph-connected audio
-runtime. StageForge should use that model at an adapter boundary rather than
+runtime. StageMesh should use that model at an adapter boundary rather than
 making JACK a hidden runtime dependency.
 
 ## Adapter contract
@@ -14,7 +14,7 @@ An optional JACK adapter should:
 - publish connection and xrun status as read-only diagnostics;
 - stop safely when the JACK server or selected port disappears;
 - require explicit re-arm after device or server recovery;
-- preserve StageForge’s show-time clock and generation fencing.
+- preserve StageMesh’s show-time clock and generation fencing.
 
 JACK MIDI bridging should follow the same rule: incoming messages can become
 queued, validated show events, but cannot silently arm physical outputs or
@@ -34,7 +34,7 @@ Loopback evidence validates graph behavior only. It does not qualify physical
 latency, clock stability, converter quality, or stage hardware.
 
 The reference organization maintains JACK2, JACK1, example tools, MIDI
-bridging, and session-management projects. StageForge should inspect those
+bridging, and session-management projects. StageMesh should inspect those
 interfaces and licenses before implementing an adapter, without vendoring
 their source.
 

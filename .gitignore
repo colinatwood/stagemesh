@@ -6,4 +6,4 @@ build/
 desktop/src-tauri/binaries/
 .DS_Store
 
-.stageforge-witness/
+.stagemesh-witness/

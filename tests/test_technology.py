@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 from technology import evaluate_technology_extension, evaluate_technology_registry, normalize_technology_extension, negotiate_technology_capabilities
 from state import ShowState
-from runtime import StageForgeRuntime
+from runtime import StageMeshRuntime
 
 
 def implementation(impl_id, group, *, conformance=True, peers=()):
@@ -217,7 +217,7 @@ class TechnologyStateTests(unittest.TestCase):
 class TechnologyRuntimeTests(unittest.TestCase):
     def test_runtime_assessment_uses_verified_persisted_scale_receipt(self):
         with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEMESH_NATIVE_ENGINE": "off"}, clear=False):
-            runtime = StageForgeRuntime(Path(tmp))
+            runtime = StageMeshRuntime(Path(tmp))
             try:
                 runtime.state.patch_technology({"ecosystemParticipants": 5, "extensions": [standard_extension(groups=2)]})
                 receipt = runtime.technology_publish_conformance({"extensionId": "upp.community.motion-performance.v1"})
@@ -236,7 +236,7 @@ class TechnologyRuntimeTests(unittest.TestCase):
 
     def test_runtime_rejects_fake_or_stale_standard_receipt(self):
         with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEMESH_NATIVE_ENGINE": "off"}, clear=False):
-            runtime = StageForgeRuntime(Path(tmp))
+            runtime = StageMeshRuntime(Path(tmp))
             try:
                 ext = standard_extension(groups=2)
                 runtime.state.patch_technology({"ecosystemParticipants": 5, "extensions": [ext]})
@@ -256,7 +256,7 @@ class TechnologyRuntimeTests(unittest.TestCase):
 
     def test_core_receipt_must_match_current_scale_threshold(self):
         with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEMESH_NATIVE_ENGINE": "off"}, clear=False):
-            runtime = StageForgeRuntime(Path(tmp))
+            runtime = StageMeshRuntime(Path(tmp))
             try:
                 ext = standard_extension(groups=3); ext["requestedCore"] = True
                 runtime.state.patch_technology({"ecosystemParticipants": 5, "extensions": [ext]})

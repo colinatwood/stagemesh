@@ -6,13 +6,13 @@ from pathlib import Path
 from http.server import ThreadingHTTPServer
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'backend'))
-from dev_server import StageForgeHandler
+from dev_server import StageMeshHandler
 
 
 class FramingTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.server = ThreadingHTTPServer(('127.0.0.1', 0), StageForgeHandler)
+        cls.server = ThreadingHTTPServer(('127.0.0.1', 0), StageMeshHandler)
         cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.thread.start()
 
@@ -60,11 +60,11 @@ class FramingTests(unittest.TestCase):
         self.assertIn(b'400 Bad Request', reply)
 
     def test_duplicate_security_headers_are_rejected(self):
-        for name in ('Origin', 'Content-Type', 'X-StageForge-API-Token',
+        for name in ('Origin', 'Content-Type', 'X-StageMesh-API-Token',
                      'X-StageMesh-Desktop-Token',
-                     'X-StageForge-Admin-Token', 'X-StageForge-Adapter-Token',
-                     'X-StageForge-Authenticated-User', 'X-StageForge-Auth-Proxy-Token',
-                     'X-StageForge-Command-Id'):
+                     'X-StageMesh-Admin-Token', 'X-StageMesh-Adapter-Token',
+                     'X-StageMesh-Authenticated-User', 'X-StageMesh-Auth-Proxy-Token',
+                     'X-StageMesh-Command-Id'):
             with self.subTest(name=name):
                 fields = f'{name}: first\r\n{name}: second\r\n'.encode()
                 reply = self.exchange(b'GET / HTTP/1.1\r\nHost: localhost\r\n' + fields + b'\r\n')

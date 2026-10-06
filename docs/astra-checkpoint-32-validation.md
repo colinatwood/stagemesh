@@ -6,7 +6,7 @@ assignment, operator-versus-authority separation, unknown-user denial, specializ
 machine-route exemption, real HTTP allow/deny behavior, same-connection policy
 rotation, durable hash-linked audit records and tamper detection.
 
-The optional `STAGEFORGE_HTTP_AUTHORIZATION_FILE` is re-read per role-controlled
+The optional `STAGEMESH_HTTP_AUTHORIZATION_FILE` is re-read per role-controlled
 request and maps exact trusted-proxy user identities to fixed roles. `performer`
 can mutate only assigned player monitor/MIDI/notation routes; `operator` controls
 ordinary API mutations; `authority` controls witness/node/failover/planned-handoff

@@ -94,7 +94,7 @@ def main() -> int:
                         raise RuntimeError(f"runtime exited before readiness with {process.returncode}")
                     try:
                         health = request(port, "GET", "/healthz", {
-                            "X-StageForge-API-Token": api_token,
+                            "X-StageMesh-API-Token": api_token,
                         })
                         if health[0] == 200:
                             break
@@ -108,7 +108,7 @@ def main() -> int:
                     raise RuntimeError("runtime health payload is not healthy")
 
                 native_status, _, native_body = request(port, "GET", "/api/v1/native", {
-                    "X-StageForge-API-Token": api_token,
+                    "X-StageMesh-API-Token": api_token,
                 })
                 native_payload = json.loads(native_body)
                 if native_status != 200 or not native_payload.get("available"):
@@ -137,7 +137,7 @@ def main() -> int:
                     "/api/v1/desktop/shutdown",
                     {
                         "Content-Type": "application/json",
-                        "X-StageForge-API-Token": api_token,
+                        "X-StageMesh-API-Token": api_token,
                     },
                 )
                 shutdown_payload = json.loads(shutdown_body)

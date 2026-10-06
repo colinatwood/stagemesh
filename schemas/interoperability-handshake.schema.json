@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://upp.stageforge.dev/schema/interoperability-handshake-v1.json",
+  "$id": "https://upp.stagemesh.dev/schema/interoperability-handshake-v1.json",
   "title": "UPP interoperability handshake plan",
   "type": "object",
   "required": ["compatible", "protocolVersion", "profileSchemaVersion", "directCapabilities", "translatedCapabilities", "preservedUnknownCapabilities", "missingRequired", "unknownPreservation", "offlineCompatible", "physicalOutputsArmed"],

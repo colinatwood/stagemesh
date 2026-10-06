@@ -1,6 +1,6 @@
 # Geospatial interoperability
 
-StageForge may use geospatial data to plan, visualize, and qualify location-aware
+StageMesh may use geospatial data to plan, visualize, and qualify location-aware
 shows. This guidance is informed by USGS MapIO's grid-oriented handling of
 spatial data and its interoperability with common grid and raster ecosystems.
 
@@ -21,7 +21,7 @@ Every imported layer should retain, at minimum:
 - origin, bounds, cell spacing, dimensions, and units;
 - acquisition timestamp, source, version, and provenance;
 - nodata/uncertainty semantics and any resampling method;
-- the mapping from source coordinates to StageForge show-space coordinates.
+- the mapping from source coordinates to StageMesh show-space coordinates.
 
 Keep the source grid immutable. Derived layers should record their parent layer,
 transform, and processing version so that a rehearsal can be reproduced after a
@@ -52,7 +52,7 @@ an unavailable planning layer, never a best-effort physical command.
 5. Reopen a saved plan and verify that the same source versions and transforms
    reproduce the same planning coordinates.
 
-## StageForge implementation boundary
+## StageMesh implementation boundary
 
 The first implementation should expose read-only layer metadata, validation
 results, and preview overlays. Physical output drivers remain independently

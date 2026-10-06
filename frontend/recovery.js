@@ -41,4 +41,4 @@ function mountRecordingRecovery(doc, request) {
   });
 }
 if (typeof module !== 'undefined') module.exports = {mountRecordingRecovery};
-if (typeof document !== 'undefined') mountRecordingRecovery(document, globalThis.StageForgeUI.api);
+if (typeof document !== 'undefined') mountRecordingRecovery(document, globalThis.StageMeshUI.api);

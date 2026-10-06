@@ -1,1 +1,1 @@
-SUBSYSTEM=="tty", ENV{ID_STAGEFORGE_UWB}=="1", GROUP="stageforge", MODE="0660", TAG+="systemd"
+SUBSYSTEM=="tty", ENV{ID_STAGEMESH_UWB}=="1", GROUP="stagemesh", MODE="0660", TAG+="systemd"

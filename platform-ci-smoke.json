@@ -15,7 +15,7 @@
     "release": "11"
   },
   "nativeEngine": {
-    "pathBasename": "stageforge_engine.exe",
+    "pathBasename": "stagemesh_engine.exe",
     "sha256": "8d7f4d4d1309be583b09cbb7f4fbd8b8e20adcb27ee3ce53ad32a38a7a3a74ce"
   },
   "physicalHardwareQualified": false,

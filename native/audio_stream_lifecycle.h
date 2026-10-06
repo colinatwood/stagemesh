@@ -3,7 +3,7 @@
 #include "device_execution_fence.h"
 #include <cstdint>
 
-namespace stageforge {
+namespace stagemesh {
 
 enum class AudioStreamState {
     Closed,

@@ -1,10 +1,10 @@
-#include "stageforge/audio_graph.hpp"
+#include "stagemesh/audio_graph.hpp"
 
 #include <algorithm>
 #include <cmath>
 #include <thread>
 
-namespace stageforge {
+namespace stagemesh {
 
 AudioGraph::AudioGraph() noexcept {
     for (auto& matrix : route_slots_) for (auto& source : matrix) source.fill(0.0F);
@@ -73,4 +73,4 @@ void AudioGraph::process(std::span<const AudioSourceBlock> sources,std::span<Aud
     unpin_routes(route_slot);
 }
 AudioGraphOutputMeter AudioGraph::meter(std::uint8_t output) const noexcept {if(output>=audio_graph_max_outputs)return{};return{outputs_[output].peak.load(std::memory_order_acquire),outputs_[output].gain_reduction_db.load(std::memory_order_acquire)};}
-} // namespace stageforge
+} // namespace stagemesh

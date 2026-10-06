@@ -3,8 +3,8 @@
 `scripts/build-native.sh` is the single configure/build entry point for native
 and target-SDK builds. CMake generator, toolchain, and feature switches are
 passed after the script name; `STAGEMESH_BUILD_DIR` selects the output tree.
-The legacy `STAGEFORGE_BUILD_DIR` name remains accepted as a compatibility
-alias, as do the corresponding `*_BUILD_CONFIG` and `*_SKIP_TESTS` variables.
+`STAGEMESH_BUILD_CONFIG` selects a multi-configuration build and
+`STAGEMESH_SKIP_TESTS=1` explicitly skips host execution for cross-builds.
 
 Native builds run CTest by default:
 
@@ -23,7 +23,7 @@ STAGEMESH_BUILD_DIR=build-mingw STAGEMESH_SKIP_TESTS=1 \
   -DSTAGEMESH_BUILD_TESTS=ON
 ```
 
-`STAGEFORGE_BUILD_CONFIG` is available for multi-configuration generators such
+`STAGEMESH_BUILD_CONFIG` is available for multi-configuration generators such
 as Visual Studio (`Release`, for example). Native runtime tests remain required
 on a matching Windows or macOS runner; a successful cross-build is compile and
 link evidence only.

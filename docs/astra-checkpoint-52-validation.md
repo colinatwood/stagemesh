@@ -1,6 +1,6 @@
 # Astra checkpoint 52 validation — reviewed Focusrite Scarlett 4th Gen Windows package metadata
 
-Checkpoint 52 expands the deliberately small v2 driver catalog with three reviewed Windows x64 package-metadata records. This remains compatibility assistance only: a catalog match does not install a driver, qualify an interface or change StageForge hardware-support claims.
+Checkpoint 52 expands the deliberately small v2 driver catalog with three reviewed Windows x64 package-metadata records. This remains compatibility assistance only: a catalog match does not install a driver, qualify an interface or change StageMesh hardware-support claims.
 
 ## Added reviewed records
 
@@ -38,4 +38,4 @@ Validated on 2026-09-14 using the checkpoint-51 RT-qualified native engine:
 
 ## Remaining boundary
 
-The bundled catalog is still intentionally small. It does not replace Windows/macOS endpoint evidence adapters, installed-driver inspection, real driver installation, device testing or periodic vendor re-review. Package metadata can help an operator find the right software; it cannot prove audio timing, hotplug, StageForge compatibility or stage qualification.
+The bundled catalog is still intentionally small. It does not replace Windows/macOS endpoint evidence adapters, installed-driver inspection, real driver installation, device testing or periodic vendor re-review. Package metadata can help an operator find the right software; it cannot prove audio timing, hotplug, StageMesh compatibility or stage qualification.

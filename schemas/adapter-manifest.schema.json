@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://upp.stageforge.dev/schema/adapter-manifest-v1.json",
+  "$id": "https://upp.stagemesh.dev/schema/adapter-manifest-v1.json",
   "title": "UPP Adapter Manifest v1",
   "type": "object",
   "additionalProperties": true,

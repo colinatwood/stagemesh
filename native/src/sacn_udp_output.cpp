@@ -1,4 +1,4 @@
-#include "stageforge/sacn_udp_output.hpp"
+#include "stagemesh/sacn_udp_output.hpp"
 
 #include <algorithm>
 #include <cstring>
@@ -14,7 +14,7 @@
 #include <unistd.h>
 #endif
 
-namespace stageforge {
+namespace stagemesh {
 namespace {
 template <std::size_t N> void copy_text(std::array<char,N>& target,std::string_view source) noexcept {
     const auto size=std::min(source.size(),N-1);std::memcpy(target.data(),source.data(),size);target[size]='\0';
@@ -65,4 +65,4 @@ bool SacnUdpOutput::send(const SacnDataPacket& packet) noexcept {
     if(ok)packets_sent_.fetch_add(1);else send_errors_.fetch_add(1);return ok;
 }
 SacnUdpStatus SacnUdpOutput::status() const noexcept {SacnUdpStatus value{};value.configured=configured_.load();value.armed=armed_.load();value.target=target_;value.port=port_;value.packets_sent=packets_sent_.load();value.send_errors=send_errors_.load();return value;}
-} // namespace stageforge
+} // namespace stagemesh

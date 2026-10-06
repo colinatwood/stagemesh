@@ -23,7 +23,7 @@ class IndependentWitnessTests(unittest.TestCase):
             self._write_private_json(keyring, {
                 "version": 1,
                 "activeKeyId": "k1",
-                "keys": {"k1": f"stageforge-independent-witness-{name}-secret-0001"},
+                "keys": {"k1": f"stagemesh-independent-witness-{name}-secret-0001"},
             })
             self.entries.append({
                 "url": f"http://127.0.0.1:{8800 + index}",

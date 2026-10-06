@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 
-namespace stageforge {
+namespace stagemesh {
 struct DeviceSnapshot {
     unsigned device_count = 0;
     unsigned midi_endpoint_count = 0;

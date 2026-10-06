@@ -1,4 +1,4 @@
-#include "stageforge/alsa_audio_input.hpp"
+#include "stagemesh/alsa_audio_input.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -9,7 +9,7 @@
 #include <dlfcn.h>
 #endif
 
-namespace stageforge {
+namespace stagemesh {
 
 namespace {
 bool valid_config(const AudioDeviceConfig& config) noexcept {
@@ -223,4 +223,4 @@ void AlsaAudioInput::capture_loop() noexcept {
 #endif
 }
 
-} // namespace stageforge
+} // namespace stagemesh

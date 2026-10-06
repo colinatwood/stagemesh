@@ -11,7 +11,7 @@
 #include <unistd.h>
 #endif
 
-using namespace stageforge;
+using namespace stagemesh;
 namespace {
 void require(bool condition, const char* message) { if (!condition) throw std::runtime_error(message); }
 struct Context { std::atomic<std::uint64_t> calls{0}; };
@@ -32,9 +32,9 @@ void collect(NativePlaybackStream& stream, const DeviceExecutionFence& fence) {
 struct TopologyFixture {
     AudioDeviceID device = kAudioObjectUnknown;
     TopologyFixture() {
-        auto uid = CFStringCreateWithFormat(nullptr, nullptr, CFSTR("org.stageforge.playback-event.%d"), getpid());
+        auto uid = CFStringCreateWithFormat(nullptr, nullptr, CFSTR("org.stagemesh.playback-event.%d"), getpid());
         auto description = CFDictionaryCreateMutable(nullptr, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-        CFDictionarySetValue(description, CFSTR(kAudioAggregateDeviceNameKey), CFSTR("StageForge Playback Event"));
+        CFDictionarySetValue(description, CFSTR(kAudioAggregateDeviceNameKey), CFSTR("StageMesh Playback Event"));
         CFDictionarySetValue(description, CFSTR(kAudioAggregateDeviceUIDKey), uid);
         auto status = AudioHardwareCreateAggregateDevice(description, &device);
         CFRelease(description); CFRelease(uid);
@@ -82,7 +82,7 @@ int main() {
         std::uint64_t callbacks = 0, frames = 0;
         AudioPreflightDecision verified;
         if (capabilities.endpoint_present) {
-            const char* allowed = std::getenv("STAGEFORGE_ALLOW_SILENT_ENDPOINT_TEST");
+            const char* allowed = std::getenv("STAGEMESH_ALLOW_SILENT_ENDPOINT_TEST");
             if (!allowed || std::string(allowed) != "1") throw std::runtime_error("silent endpoint test requires explicit environment opt-in");
             DeviceMonitor monitor; monitor.start(); auto snapshot = monitor.snapshot();
             DeviceRecord selected; unsigned matches = 0;

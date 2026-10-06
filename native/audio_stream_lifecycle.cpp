@@ -1,7 +1,7 @@
 #include "audio_stream_lifecycle.h"
 #include <algorithm>
 
-namespace stageforge {
+namespace stagemesh {
 namespace {
 bool armed(const FenceObservation& fence) {
     return fence.state == ExecutionFenceState::Armed && fence.execution_allowed &&

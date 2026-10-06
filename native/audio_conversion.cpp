@@ -3,7 +3,7 @@
 #include <cmath>
 #include <cstring>
 
-namespace stageforge {
+namespace stagemesh {
 namespace {
 float clamp_sample(float value) noexcept { return std::clamp(value, -1.0F, 1.0F); }
 float read_sample(const std::uint8_t* p, AudioSampleFormat format) noexcept {
@@ -71,4 +71,4 @@ bool convert_audio_float(const float* input, std::uint32_t input_frames, std::ui
     }
     return true;
 }
-} // namespace stageforge
+} // namespace stagemesh

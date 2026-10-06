@@ -2,10 +2,10 @@
 
 QLC+ is a useful cross-platform reference for fixture definitions, DMX
 patching, Art-Net/sACN output, MIDI control, hotplug behavior, and live-show
-cue operation. StageForge does not copy QLC+ source or claim fixture-library
+cue operation. StageMesh does not copy QLC+ source or claim fixture-library
 compatibility from this note.
 
-## StageForge capabilities to reinforce
+## StageMesh capabilities to reinforce
 
 - Keep fixture profiles separate from show cues and physical output targets.
 - Validate channel footprints, universe/address bounds, and conflicting

@@ -5,7 +5,7 @@ dedicated show-control hardware. Its public organization also exposes console
 kernel and platform repositories, which are useful for studying appliance
 constraints and embedded deployment boundaries.
 
-## StageForge capabilities to reinforce
+## StageMesh capabilities to reinforce
 
 - Separate programming mode, rehearsal mode, and live output mode.
 - Make cue stacks, playbacks, priorities, overrides, and blackout state

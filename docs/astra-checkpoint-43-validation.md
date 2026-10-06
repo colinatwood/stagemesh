@@ -37,4 +37,4 @@ The bundled v2 catalog currently contains two architecture-specific records for 
 
 ## Remaining boundary
 
-The bundled set is intentionally tiny and is not a general device-compatibility database. Windows/macOS endpoint evidence adapters, additional reviewed vendor records, periodic re-review, real driver installation and physical device qualification remain separate work. A catalog match is package metadata evidence, not proof that StageForge or a particular device works correctly.
+The bundled set is intentionally tiny and is not a general device-compatibility database. Windows/macOS endpoint evidence adapters, additional reviewed vendor records, periodic re-review, real driver installation and physical device qualification remain separate work. A catalog match is package metadata evidence, not proof that StageMesh or a particular device works correctly.

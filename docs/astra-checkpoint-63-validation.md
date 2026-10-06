@@ -1,6 +1,6 @@
 # Astra checkpoint 63 validation — exact-build external qualification bundle
 
-Checkpoint 63 does not mark any external qualification gate complete. It defines the machine-readable handoff that those environments must use so evidence cannot accidentally be applied to a different StageForge build.
+Checkpoint 63 does not mark any external qualification gate complete. It defines the machine-readable handoff that those environments must use so evidence cannot accidentally be applied to a different StageMesh build.
 
 ## Build binding
 
@@ -27,7 +27,7 @@ The validator rejects foreign/tampered plan IDs, foreign build hashes, unknown t
 
 ## Installed tooling
 
-`stageforge-qualification-plan.py` is installed with the other qualification helpers and is checked by checkpoint 61's isolated-rootfs packaging qualifier. JSON Schemas define both plan and result envelopes.
+`stagemesh-qualification-plan.py` is installed with the other qualification helpers and is checked by checkpoint 61's isolated-rootfs packaging qualifier. JSON Schemas define both plan and result envelopes.
 
 ## Reference plan
 

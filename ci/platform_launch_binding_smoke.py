@@ -74,7 +74,7 @@ def main() -> int:
     if host == "Windows": report["checks"]["nativeLaunchBinding"] = windows_smoke()
     elif host == "Darwin": report["checks"]["nativeLaunchBinding"] = macos_smoke()
     else: report["checks"]["nativeLaunchBinding"] = {"qualified":False,"reason":"Linux uses the existing procfd binder"}
-    out = Path(os.environ.get("STAGEFORGE_LAUNCH_EVIDENCE", "platform-launch-binding-smoke.json"))
+    out = Path(os.environ.get("STAGEMESH_LAUNCH_EVIDENCE", "platform-launch-binding-smoke.json"))
     out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(out.read_text(encoding="utf-8")); return 0
 

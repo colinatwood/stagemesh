@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
 from handoff import HandoffExecutionRegistry, HandoffFacts, evaluate_handoff
 from replication import make_envelope
-from runtime import StageForgeRuntime
+from runtime import StageMeshRuntime
 from state import ShowState
 
 
@@ -132,7 +132,7 @@ class HandoffRuntimeTests(unittest.TestCase):
     def test_runtime_decision_uses_persisted_live_feed_declaration(self):
         env = {"STAGEMESH_NATIVE_ENGINE": "off"}
         with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", env, clear=False):
-            runtime = StageForgeRuntime(Path(tmp))
+            runtime = StageMeshRuntime(Path(tmp))
             try:
                 runtime.state.patch_handoff({
                     "liveInputs": [{"slot": 0, "mode": "network", "ready": True, "sourceId": "net-vocal"}]
@@ -158,7 +158,7 @@ class HandoffRuntimeTests(unittest.TestCase):
     def test_runtime_live_feed_execution_ack_enables_program_takeover(self):
         env = {"STAGEMESH_NATIVE_ENGINE": "off"}
         with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", env, clear=False):
-            runtime = StageForgeRuntime(Path(tmp))
+            runtime = StageMeshRuntime(Path(tmp))
             try:
                 runtime.state.patch_handoff({
                     "liveInputs": [{"slot": 0, "mode": "network", "ready": True, "sourceId": "net-vocal"}]
@@ -205,7 +205,7 @@ class HandoffRuntimeTests(unittest.TestCase):
     def test_execution_evidence_clears_when_replication_authority_changes(self):
         env = {"STAGEMESH_NATIVE_ENGINE": "off"}
         with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", env, clear=False):
-            runtime = StageForgeRuntime(Path(tmp))
+            runtime = StageMeshRuntime(Path(tmp))
             try:
                 runtime.state.patch_handoff({
                     "liveInputs": [{"slot": 0, "mode": "network", "ready": True, "sourceId": "net-vocal"}]

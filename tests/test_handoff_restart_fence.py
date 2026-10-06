@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 from witness import WitnessQuorumClient, WitnessResult
-from runtime import StageForgeRuntime
+from runtime import StageMeshRuntime
 
 
 class HandoffRestartFenceTests(unittest.TestCase):
@@ -42,8 +42,8 @@ class HandoffRestartFenceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "handoff-acquisition-fence.json"
             path.write_text("{incomplete")
-            with patch.dict("os.environ", {"STAGEFORGE_NODE_ROLE": "primary", "STAGEFORGE_WITNESS_URLS": "", "STAGEMESH_NATIVE_ENGINE": "off"}):
-                runtime = StageForgeRuntime(Path(directory))
+            with patch.dict("os.environ", {"STAGEMESH_NODE_ROLE": "primary", "STAGEMESH_WITNESS_URLS": "", "STAGEMESH_NATIVE_ENGINE": "off"}):
+                runtime = StageMeshRuntime(Path(directory))
                 try:
                     self.assertEqual(runtime.replication.role, "standby")
                     self.assertFalse(runtime._has_authority())

@@ -1,7 +1,7 @@
 """Privacy-preserving cross-platform audio endpoint/driver evidence adapters.
 
 These probes are read-only diagnostics. They deliberately separate endpoint presence,
-installed OS driver evidence and reviewed package metadata from StageForge qualification.
+installed OS driver evidence and reviewed package metadata from StageMesh qualification.
 """
 from __future__ import annotations
 

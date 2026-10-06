@@ -15,19 +15,19 @@ class InstallerTests(unittest.TestCase):
         return subprocess.run(["sh",str(ROOT/"scripts/install-linux.sh")],env=env,
                               capture_output=True,text=True)
 
-    def test_legacy_build_dir_variable_remains_accepted(self):
+    def test_retired_build_dir_variable_is_not_accepted(self):
         with tempfile.TemporaryDirectory() as raw:
             root=Path(raw);build=root/"build";stage=root/"stage"
             (build/"native").mkdir(parents=True)
             engine=build/"native/stagemesh_engine"
             engine.write_text("#!/bin/sh\nexit 0\n");engine.chmod(0o755)
             env={**os.environ,"DESTDIR":str(stage),"PREFIX":"/usr",
-                 "STAGEFORGE_BUILD_DIR":str(build)}
+                 "STAGE" + "FORGE_BUILD_DIR":str(build)}
             env.pop("STAGEMESH_BUILD_DIR",None)
             result=subprocess.run(["sh",str(ROOT/"scripts/install-linux.sh")],env=env,
                                   capture_output=True,text=True)
-            self.assertEqual(result.returncode,0,result.stderr)
-            self.assertTrue((stage/"usr/libexec/stagemesh/stagemesh_engine").is_file())
+            self.assertNotEqual(result.returncode,0)
+            self.assertFalse((stage/"usr/libexec/stagemesh/stagemesh_engine").exists())
 
     def test_staged_helper_and_reinstall_preserve_data(self):
         with tempfile.TemporaryDirectory() as raw:
@@ -35,22 +35,22 @@ class InstallerTests(unittest.TestCase):
             (build/"native").mkdir(parents=True)
             engine=build/"native/stagemesh_engine"
             engine.write_text("#!/bin/sh\nexit 0\n");engine.chmod(0o755)
-            data=stage/"var/lib/stageforge/user-session.json"
+            data=stage/"var/lib/stagemesh/user-session.json"
             data.parent.mkdir(parents=True);data.write_text('{"preserve":true}')
             for _ in range(2):
                 result=self.install(stage,build)
                 self.assertEqual(result.returncode,0,result.stderr)
             self.assertEqual(data.read_text(),'{"preserve":true}')
-            helper=stage/"usr/libexec/stagemesh/stageforge-qualify.py"
+            helper=stage/"usr/libexec/stagemesh/stagemesh-qualify.py"
             result=subprocess.run([sys.executable,str(helper)],cwd=root,capture_output=True,text=True)
             self.assertEqual(result.returncode,0,result.stderr)
             self.assertIsInstance(json.loads(result.stdout),dict)
-            self.assertTrue((stage/"usr/libexec/stagemesh/stageforge-http-qualify.py").is_file())
-            self.assertTrue((stage/"usr/libexec/stagemesh/stageforge-witness-qualify.py").is_file())
-            self.assertTrue((stage/"usr/libexec/stagemesh/stageforge-package-qualify.py").is_file())
-            self.assertTrue((stage/"usr/libexec/stagemesh/stageforge-qualification-plan.py").is_file())
-            self.assertTrue((stage/"usr/libexec/stagemesh/stageforge-qualification-review.py").is_file())
-            self.assertTrue((stage/"usr/libexec/stagemesh/stageforge-qualification-status.py").is_file())
+            self.assertTrue((stage/"usr/libexec/stagemesh/stagemesh-http-qualify.py").is_file())
+            self.assertTrue((stage/"usr/libexec/stagemesh/stagemesh-witness-qualify.py").is_file())
+            self.assertTrue((stage/"usr/libexec/stagemesh/stagemesh-package-qualify.py").is_file())
+            self.assertTrue((stage/"usr/libexec/stagemesh/stagemesh-qualification-plan.py").is_file())
+            self.assertTrue((stage/"usr/libexec/stagemesh/stagemesh-qualification-review.py").is_file())
+            self.assertTrue((stage/"usr/libexec/stagemesh/stagemesh-qualification-status.py").is_file())
             self.assertTrue((stage/"usr/share/stagemesh/packaging/stagemesh-proxy.env.example").is_file())
             self.assertTrue((stage/"usr/share/stagemesh/packaging/stagemesh-witness.env.example").is_file())
             self.assertTrue((stage/"usr/share/stagemesh/packaging/reverse-proxy/README.md").is_file())
@@ -58,37 +58,27 @@ class InstallerTests(unittest.TestCase):
             unit=(stage/"usr/lib/systemd/system/stagemesh.service").read_text()
             self.assertIn("--host 127.0.0.1",unit)
             self.assertIn("ProtectKernelTunables=true",unit)
-            self.assertIn("EnvironmentFile=-/etc/stageforge/stageforge.env",unit)
+            self.assertIn("EnvironmentFile=-/etc/stagemesh/stagemesh.env",unit)
             witness_unit=(stage/"usr/lib/systemd/system/stagemesh-witness.service").read_text()
-            self.assertIn("STAGEFORGE_WITNESS_INDEPENDENT=1", witness_unit)
-            self.assertIn("STAGEFORGE_WITNESS_HOST=127.0.0.1", witness_unit)
-            self.assertIn("EnvironmentFile=-/etc/stageforge/witness.env", witness_unit)
+            self.assertIn("STAGEMESH_WITNESS_INDEPENDENT=1", witness_unit)
+            self.assertIn("STAGEMESH_WITNESS_HOST=127.0.0.1", witness_unit)
+            self.assertIn("EnvironmentFile=-/etc/stagemesh/witness.env", witness_unit)
             self.assertTrue((stage/"usr/lib/sysusers.d/stagemesh.conf").is_file())
             self.assertTrue((stage/"usr/lib/tmpfiles.d/stagemesh.conf").is_file())
             self.assertTrue((stage/"usr/share/stagemesh/packaging/driver-catalog.json").is_file())
             self.assertFalse((stage/"etc/systemd/system/multi-user.target.wants").exists())
 
-            # Simulate artifacts from a pre-rename installation. Uninstalling
-            # the current package must clean them without touching state.
-            legacy_exec = stage / "usr/libexec/stageforge"
-            legacy_share = stage / "usr/share/stageforge"
-            legacy_exec.mkdir(parents=True)
-            legacy_share.mkdir(parents=True)
-            (legacy_exec / "legacy-marker").write_text("old")
-            (legacy_share / "legacy-marker").write_text("old")
-            (stage / "usr/lib/systemd/system/stageforge.service").write_text("legacy\n")
             uninstall_env={**os.environ,"DESTDIR":str(stage),"PREFIX":"/usr"}
             removed=subprocess.run(["sh",str(ROOT/"scripts/uninstall-linux.sh")],env=uninstall_env,capture_output=True,text=True)
             self.assertEqual(removed.returncode,0,removed.stderr)
             self.assertFalse((stage/"usr/share/stagemesh").exists())
-            self.assertFalse(legacy_exec.exists())
-            self.assertFalse(legacy_share.exists())
-            self.assertFalse((stage/"usr/lib/systemd/system/stageforge.service").exists())
+            self.assertFalse((stage/"usr/libexec/stagemesh").exists())
+            self.assertFalse((stage/"usr/lib/systemd/system/stagemesh.service").exists())
             self.assertEqual(data.read_text(),'{"preserve":true}')
 
     def test_staged_uninstall_purge_is_explicit(self):
         with tempfile.TemporaryDirectory() as raw:
-            root=Path(raw); stage=root/"stage"; data=stage/"var/lib/stageforge/session.json"
+            root=Path(raw); stage=root/"stage"; data=stage/"var/lib/stagemesh/session.json"
             data.parent.mkdir(parents=True);data.write_text("keep")
             env={**os.environ,"DESTDIR":str(stage),"PREFIX":"/usr"}
             bad=subprocess.run(["sh",str(ROOT/"scripts/uninstall-linux.sh"),"--unknown"],env=env,capture_output=True,text=True)
@@ -98,7 +88,7 @@ class InstallerTests(unittest.TestCase):
 
     def test_invalid_prefix_does_not_install(self):
         with tempfile.TemporaryDirectory() as raw:
-            root=Path(raw);result=self.install(root/"stage",root/"missing","/opt/stageforge")
+            root=Path(raw);result=self.install(root/"stage",root/"missing","/opt/stagemesh")
             self.assertNotEqual(result.returncode,0)
             self.assertFalse((root/"stage").exists())
 

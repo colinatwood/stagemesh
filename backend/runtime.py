@@ -89,7 +89,7 @@ def _physical_audio_execution(value: object) -> bool:
     return str(value or "").strip().lower() not in {"", "none", "null", "null-audio", "bridge-only"}
 
 
-class StageForgeRuntime:
+class StageMeshRuntime:
     """Composition root for state, persistence, adapters and command dedupe.
 
     The native engine is an execution follower during this development phase.
@@ -123,15 +123,15 @@ class StageForgeRuntime:
         self.venue_realization = RealizationEvidenceRegistry()
         self.venue_authority_leases = AuthorityLeaseRegistry()
         self.stage_templates = StageTemplateStore(data_dir / "stage-templates.json")
-        node_id = os.environ.get("STAGEFORGE_NODE_ID", "node-local")
-        node_role = os.environ.get("STAGEFORGE_NODE_ROLE", "primary")
+        node_id = os.environ.get("STAGEMESH_NODE_ID", "node-local")
+        node_role = os.environ.get("STAGEMESH_NODE_ROLE", "primary")
         self.replication = ReplicationTracker(node_id, node_role)
         self.interop_capabilities = CapabilityRegistry()
         self.interop_sessions = InteroperabilitySessionManager(node_id)
         self.security_store = SecurityStateStore(data_dir / "security-state.json")
         self.public_record = PublicRecordStore(
             data_dir / "public-record.jsonl", signer_id=node_id, signing_secret=self.security_store.root_key,
-            witness_policy_path=os.environ.get("STAGEFORGE_PUBLIC_RECORD_WITNESS_FILE", ""),
+            witness_policy_path=os.environ.get("STAGEMESH_PUBLIC_RECORD_WITNESS_FILE", ""),
         )
         self.community = CommunityGovernance(
             data_dir,
@@ -139,19 +139,19 @@ class StageForgeRuntime:
             public_record_append=self.public_record.append,
         )
         try:
-            community_session_ttl = int(os.environ.get("STAGEFORGE_COMMUNITY_SESSION_TTL_SECONDS", "900"))
+            community_session_ttl = int(os.environ.get("STAGEMESH_COMMUNITY_SESSION_TTL_SECONDS", "900"))
         except ValueError:
             community_session_ttl = 900
         self.community_sessions = CommunitySessionManager(
             self.security_store.root_key, ttl_seconds=community_session_ttl
         )
-        configured_interop_secret = os.environ.get("STAGEFORGE_INTEROP_SECRET", "").encode("utf-8")
+        configured_interop_secret = os.environ.get("STAGEMESH_INTEROP_SECRET", "").encode("utf-8")
         self._interop_secret = configured_interop_secret or self.security_store.root_key
         self._interop_sequence = 0
-        raw_replication_secret = os.environ.get("STAGEFORGE_REPLICATION_SECRET", "")
+        raw_replication_secret = os.environ.get("STAGEMESH_REPLICATION_SECRET", "")
         self._replication_secret = raw_replication_secret.encode("utf-8") if raw_replication_secret else None
         self._replication_keyring = RotatingHmacKeyring(
-            os.environ.get("STAGEFORGE_REPLICATION_KEYRING_FILE", ""), self._replication_secret
+            os.environ.get("STAGEMESH_REPLICATION_KEYRING_FILE", ""), self._replication_secret
         )
         self.adapters = AdapterRegistry()
         self.native = NativeEngineClient()
@@ -217,26 +217,26 @@ class StageForgeRuntime:
         }
         self._promotion_at: float | None = None
         self._promotion_at_ns: int | None = None
-        peer_url = os.environ.get("STAGEFORGE_PEER_URL", "").strip()
+        peer_url = os.environ.get("STAGEMESH_PEER_URL", "").strip()
         try:
-            peer_timeout = float(os.environ.get("STAGEFORGE_PEER_TIMEOUT_SECONDS", "0.75"))
+            peer_timeout = float(os.environ.get("STAGEMESH_PEER_TIMEOUT_SECONDS", "0.75"))
         except ValueError:
             peer_timeout = 0.75
         self._peer = ReplicationPushClient(peer_url, timeout_seconds=peer_timeout)
-        witness_topology_path = os.environ.get("STAGEFORGE_WITNESS_TOPOLOGY_FILE", "").strip()
+        witness_topology_path = os.environ.get("STAGEMESH_WITNESS_TOPOLOGY_FILE", "").strip()
         independent_topology = load_witness_topology(witness_topology_path) if witness_topology_path else None
         witness_urls = ([item["url"] for item in independent_topology["witnesses"]] if independent_topology else
-                        [item.strip() for item in os.environ.get("STAGEFORGE_WITNESS_URLS", "").split(",") if item.strip()])
-        raw_witness_secret = "" if independent_topology else os.environ.get("STAGEFORGE_WITNESS_SECRET", raw_replication_secret)
+                        [item.strip() for item in os.environ.get("STAGEMESH_WITNESS_URLS", "").split(",") if item.strip()])
+        raw_witness_secret = "" if independent_topology else os.environ.get("STAGEMESH_WITNESS_SECRET", raw_replication_secret)
         witness_secret = raw_witness_secret.encode("utf-8") if raw_witness_secret else b""
         witness_keyring_path = "" if independent_topology else os.environ.get(
-            "STAGEFORGE_WITNESS_KEYRING_FILE", os.environ.get("STAGEFORGE_REPLICATION_KEYRING_FILE", "")
+            "STAGEMESH_WITNESS_KEYRING_FILE", os.environ.get("STAGEMESH_REPLICATION_KEYRING_FILE", "")
         )
         witness_keyring = None if independent_topology else RotatingHmacKeyring(witness_keyring_path, witness_secret)
-        cluster_id = os.environ.get("STAGEFORGE_CLUSTER_ID", "stageforge-local")
+        cluster_id = os.environ.get("STAGEMESH_CLUSTER_ID", "stagemesh-local")
         try:
-            witness_ttl_ms = int(os.environ.get("STAGEFORGE_WITNESS_TTL_MS", "3000"))
-            witness_timeout = float(os.environ.get("STAGEFORGE_WITNESS_TIMEOUT_SECONDS", "0.5"))
+            witness_ttl_ms = int(os.environ.get("STAGEMESH_WITNESS_TTL_MS", "3000"))
+            witness_timeout = float(os.environ.get("STAGEMESH_WITNESS_TIMEOUT_SECONDS", "0.5"))
         except ValueError:
             witness_ttl_ms, witness_timeout = 3000, 0.5
         self._witness = WitnessQuorumClient(
@@ -246,12 +246,12 @@ class StageForgeRuntime:
         )
         if self._witness.status().get("acquisitionSuspended"):
             self.replication.set_role("standby")
-        self._auto_failover = os.environ.get("STAGEFORGE_AUTO_FAILOVER", "0").strip().lower() in {"1", "true", "yes", "on"}
+        self._auto_failover = os.environ.get("STAGEMESH_AUTO_FAILOVER", "0").strip().lower() in {"1", "true", "yes", "on"}
         try:
-            self._replication_interval = max(0.1, float(os.environ.get("STAGEFORGE_REPLICATION_INTERVAL_SECONDS", "0.5")))
-            self._replication_heartbeat = max(self._replication_interval, float(os.environ.get("STAGEFORGE_REPLICATION_HEARTBEAT_SECONDS", "2.0")))
-            self._failover_suspect_ms = max(100, int(os.environ.get("STAGEFORGE_FAILOVER_SUSPECT_MS", "2500")))
-            self._failover_promote_ms = max(self._failover_suspect_ms + 100, int(os.environ.get("STAGEFORGE_FAILOVER_PROMOTE_MS", "5000")))
+            self._replication_interval = max(0.1, float(os.environ.get("STAGEMESH_REPLICATION_INTERVAL_SECONDS", "0.5")))
+            self._replication_heartbeat = max(self._replication_interval, float(os.environ.get("STAGEMESH_REPLICATION_HEARTBEAT_SECONDS", "2.0")))
+            self._failover_suspect_ms = max(100, int(os.environ.get("STAGEMESH_FAILOVER_SUSPECT_MS", "2500")))
+            self._failover_promote_ms = max(self._failover_suspect_ms + 100, int(os.environ.get("STAGEMESH_FAILOVER_PROMOTE_MS", "5000")))
         except ValueError:
             self._replication_interval, self._replication_heartbeat = 0.5, 2.0
             self._failover_suspect_ms, self._failover_promote_ms = 2500, 5000
@@ -266,23 +266,23 @@ class StageForgeRuntime:
                 self._refresh_audio_devices(reselect=True)
                 self._configure_lighting_from_state()
                 self._refresh_midi_devices(rebind=True)
-                self._midi_thread = Thread(target=self._midi_loop, name="stageforge-midi-input", daemon=True)
+                self._midi_thread = Thread(target=self._midi_loop, name="stagemesh-midi-input", daemon=True)
                 self._midi_thread.start()
-                self._audio_thread = Thread(target=self._audio_hotplug_loop, name="stageforge-audio-hotplug", daemon=True)
+                self._audio_thread = Thread(target=self._audio_hotplug_loop, name="stagemesh-audio-hotplug", daemon=True)
                 self._audio_thread.start()
-                self._lighting_thread = Thread(target=self._lighting_loop, name="stageforge-lighting-dispatch", daemon=True)
+                self._lighting_thread = Thread(target=self._lighting_loop, name="stagemesh-lighting-dispatch", daemon=True)
                 self._lighting_thread.start()
         except RuntimeError:
             pass
         if self._peer.configured:
-            self._replication_thread = Thread(target=self._replication_loop, name="stageforge-replication", daemon=True)
+            self._replication_thread = Thread(target=self._replication_loop, name="stagemesh-replication", daemon=True)
             self._replication_thread.start()
         if self._witness.configured:
-            self._witness_thread = Thread(target=self._witness_loop, name="stageforge-witness-lease", daemon=True)
+            self._witness_thread = Thread(target=self._witness_loop, name="stagemesh-witness-lease", daemon=True)
             self._witness_thread.start()
-        self._adaptation_thread = Thread(target=self._adaptation_loop, name="stageforge-venue-adaptation", daemon=True)
+        self._adaptation_thread = Thread(target=self._adaptation_loop, name="stagemesh-venue-adaptation", daemon=True)
         self._adaptation_thread.start()
-        self._reconciliation_thread = Thread(target=self._reconciliation_loop, name="stageforge-venue-reconciliation", daemon=True)
+        self._reconciliation_thread = Thread(target=self._reconciliation_loop, name="stagemesh-venue-reconciliation", daemon=True)
         self._reconciliation_thread.start()
 
     def _has_authority(self) -> bool:
@@ -1591,7 +1591,7 @@ class StageForgeRuntime:
         command_id: str | None = None,
     ) -> tuple[dict[str, Any], bool]:
         if "policy" in data and not self.community.bootstrap_policy_mutation_allowed():
-            bootstrap_override = os.environ.get("STAGEFORGE_GOVERNANCE_BOOTSTRAP", "0").strip().lower() in {"1", "true", "yes", "on"}
+            bootstrap_override = os.environ.get("STAGEMESH_GOVERNANCE_BOOTSTRAP", "0").strip().lower() in {"1", "true", "yes", "on"}
             if not bootstrap_override:
                 raise PermissionError("technology openness policy changes require an adopted community proposal")
         return self.mutate(
@@ -1609,7 +1609,7 @@ class StageForgeRuntime:
         return self.community.upsert_account(data)
 
     def community_patch_policy(self, data: dict[str, Any]) -> dict[str, Any]:
-        bootstrap_override = os.environ.get("STAGEFORGE_GOVERNANCE_BOOTSTRAP", "0").strip().lower() in {"1", "true", "yes", "on"}
+        bootstrap_override = os.environ.get("STAGEMESH_GOVERNANCE_BOOTSTRAP", "0").strip().lower() in {"1", "true", "yes", "on"}
         if not self.community.bootstrap_policy_mutation_allowed() and not bootstrap_override:
             raise PermissionError("community governance policy is community-controlled; use an adopted community-governance-policy proposal")
         return self.community.patch_policy(data)
@@ -1654,7 +1654,7 @@ class StageForgeRuntime:
                 window_hours = int(window_hours)
             except (TypeError, ValueError) as exc:
                 raise ValueError("windowHours must be an integer") from exc
-        base_url = str(data.get("baseUrl") or os.environ.get("STAGEFORGE_PUBLIC_BASE_URL", "http://127.0.0.1:8787")).strip()
+        base_url = str(data.get("baseUrl") or os.environ.get("STAGEMESH_PUBLIC_BASE_URL", "http://127.0.0.1:8787")).strip()
         return self.community.issue_vote_emails(proposal_id, [str(x) for x in user_ids], window_hours=window_hours, base_url=base_url)
 
     def community_vote_context(self, token: str) -> dict[str, Any]:
@@ -1699,7 +1699,7 @@ class StageForgeRuntime:
             )
         if not token:
             raise ValueError("vote token is required")
-        allow_token_only = os.environ.get("STAGEFORGE_GOVERNANCE_TOKEN_ONLY", "0").strip().lower() in {"1", "true", "yes", "on"}
+        allow_token_only = os.environ.get("STAGEMESH_GOVERNANCE_TOKEN_ONLY", "0").strip().lower() in {"1", "true", "yes", "on"}
         return self.community.cast_vote(token, str(data.get("choice", "")), authenticated_user_id=authenticated_user_id, allow_token_only=allow_token_only)
 
     def community_tally(self, proposal_id: str, at: str | None = None) -> dict[str, Any]:
@@ -2593,7 +2593,7 @@ class StageForgeRuntime:
             "late": bool(plan["late"]),
             "queued": int(queued.get("queued", "0")),
             "physicalOutput": self._lighting_armed,
-            "transportAuthority": "stageforge",
+            "transportAuthority": "stagemesh",
         }
         if semantic:
             result["semantic"] = semantic
@@ -3404,7 +3404,7 @@ class StageForgeRuntime:
         ledger = self.repository.verify_ledger()
         return {
             "ok": bool(ledger.get("ok")),
-            "service": "stageforge-dev",
+            "service": "stagemesh-dev",
             "revision": snapshot["revision"],
             "ledger": ledger,
             "adapters": {
@@ -3441,7 +3441,7 @@ class StageForgeRuntime:
                     "sourceAgeNs": int(status.get("ageNs", "0")),
                     "projectedNs": int(status.get("projectedNs", "0")),
                     "observations": int(status.get("observations", "0")),
-                    "transportAuthority": "stageforge",
+                    "transportAuthority": "stagemesh",
                 }
             except (RuntimeError, ValueError):
                 pass
@@ -3455,7 +3455,7 @@ class StageForgeRuntime:
             "sourceAgeNs": 0,
             "projectedNs": now,
             "observations": 0,
-            "transportAuthority": "stageforge",
+            "transportAuthority": "stagemesh",
         }
 
     def set_clock_source(self, source: str) -> dict[str, Any]:
@@ -3483,7 +3483,7 @@ class StageForgeRuntime:
             "sourceAgeNs": int(status.get("ageNs", "0")),
             "projectedNs": int(status.get("projectedNs", "0")),
             "observations": int(status.get("observations", "0")),
-            "transportAuthority": "stageforge",
+            "transportAuthority": "stagemesh",
         }
 
     def transport_discipline_status(self) -> dict[str, Any]:

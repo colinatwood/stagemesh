@@ -4,7 +4,7 @@ from threading import RLock
 from unittest.mock import Mock,patch
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"backend"))
 from witness import WitnessLeaseStore,WitnessQuorumClient,WitnessResult,sign_request,verify_recovery_request
-from runtime import StageForgeRuntime
+from runtime import StageMeshRuntime
 
 def marker(path:Path)->dict:
  value={"documentType":"org.upp.handoff-acquisition-fence","protocolVersion":1,"clusterId":"show","sourceNodeId":"old","targetNodeId":"new","sourceEpoch":1,"targetEpoch":2,"transactionId":12,"ttlMs":3000}
@@ -42,7 +42,7 @@ class FencedNodeRecoveryTests(unittest.TestCase):
   class Replication:
    role="primary"
    def set_role(self,role):self.role=role
-  runtime=StageForgeRuntime.__new__(StageForgeRuntime);runtime._mutation_lock=RLock();runtime._fence_physical_outputs=Mock();runtime.replication=Replication();runtime._witness=Mock();runtime._witness.recover.return_value={"recovered":True,"recoveryId":"r","grants":2,"quorum":2,"acquisitionSuspended":False}
+  runtime=StageMeshRuntime.__new__(StageMeshRuntime);runtime._mutation_lock=RLock();runtime._fence_physical_outputs=Mock();runtime.replication=Replication();runtime._witness=Mock();runtime._witness.recover.return_value={"recovered":True,"recoveryId":"r","grants":2,"quorum":2,"acquisitionSuspended":False}
   result=runtime.recover_fenced_node({"acknowledgeStandbyRecovery":True,"recoveryId":"r"});runtime._fence_physical_outputs.assert_called_once();self.assertEqual(result["nodeRole"],"standby");self.assertFalse(result["physicalAuthority"]);self.assertFalse(result["physicalOutputsArmed"])
  def test_production_witness_handler_authorizes_exact_recovery(self):
   from http.server import ThreadingHTTPServer

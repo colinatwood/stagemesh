@@ -26,7 +26,7 @@ jobs:
         run: python -m pip install -r requirements-release.txt
       - name: Run software release gate
         env:
-          STAGEFORGE_PACKAGE_QUALIFY_SUDO: '1'
+          STAGEMESH_PACKAGE_QUALIFY_SUDO: '1'
         run: python scripts/release-check.py
       - name: Run native memory and undefined-behavior checks
         run: python scripts/sanitizer-check.py
@@ -65,15 +65,15 @@ jobs:
         if: runner.os == 'Windows'
         run: ctest --test-dir build -C Release --output-on-failure
         env:
-          STAGEFORGE_ALLOW_SILENT_ENDPOINT_TEST: '1'
-          STAGEFORGE_ALLOW_ENDPOINT_CAPTURE_TEST: '1'
-          STAGEFORGE_ALLOW_UNAVAILABLE_NATIVE_MIDI: '1'
+          STAGEMESH_ALLOW_SILENT_ENDPOINT_TEST: '1'
+          STAGEMESH_ALLOW_ENDPOINT_CAPTURE_TEST: '1'
+          STAGEMESH_ALLOW_UNAVAILABLE_NATIVE_MIDI: '1'
       - name: Run native tests without unavailable hosted macOS endpoint streams
         if: runner.os == 'macOS'
         run: ctest --test-dir build -C Release -E 'native_playback|native_capture' --output-on-failure
         env:
-          STAGEFORGE_ALLOW_SILENT_ENDPOINT_TEST: '1'
-          STAGEFORGE_ALLOW_ENDPOINT_CAPTURE_TEST: '1'
+          STAGEMESH_ALLOW_SILENT_ENDPOINT_TEST: '1'
+          STAGEMESH_ALLOW_ENDPOINT_CAPTURE_TEST: '1'
       - name: Run platform contract tests
         shell: bash
         run: |

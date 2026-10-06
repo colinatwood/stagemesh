@@ -341,7 +341,7 @@ class WitnessQuorumClient:
             self._endpoint_meta = {}
         if len(self._urls) != len(set(self._urls)):
             raise ValueError("duplicate witness URLs cannot count as independent votes")
-        self.cluster_id = cluster_id.strip()[:64] or "stageforge-local"
+        self.cluster_id = cluster_id.strip()[:64] or "stagemesh-local"
         self.node_id = node_id.strip()[:64] or "node-local"
         self.secret = secret
         self._keyring = keyring
@@ -458,7 +458,7 @@ class WitnessQuorumClient:
             url + "/api/v1/lease/acquire",
             data=json.dumps(body, separators=(",", ":")).encode("utf-8"),
             method="POST",
-            headers={"Content-Type": "application/json", "User-Agent": "StageForge-Witness/1"},
+            headers={"Content-Type": "application/json", "User-Agent": "StageMesh-Witness/1"},
         )
         try:
             with urlopen(request, timeout=self.timeout_seconds) as response:
@@ -556,7 +556,7 @@ class WitnessQuorumClient:
             url + "/api/v1/lease/transfer",
             data=json.dumps(body, separators=(",", ":")).encode("utf-8"),
             method="POST",
-            headers={"Content-Type": "application/json", "User-Agent": "StageForge-Witness/1"},
+            headers={"Content-Type": "application/json", "User-Agent": "StageMesh-Witness/1"},
         )
         try:
             with urlopen(request, timeout=self.timeout_seconds) as response:
@@ -632,7 +632,7 @@ class WitnessQuorumClient:
 
     def _recover_one(self,url:str,payload:dict[str,Any])->WitnessResult:
         auth=self._auth_for_url(url);unsigned={**payload,"nonce":secrets.token_hex(12)};body,secret,key_id=self._signed_body(unsigned,auth)
-        request=Request(url+"/api/v1/lease/recover",data=json.dumps(body,separators=(",",":")).encode("utf-8"),method="POST",headers={"Content-Type":"application/json","User-Agent":"StageForge-Witness/1"})
+        request=Request(url+"/api/v1/lease/recover",data=json.dumps(body,separators=(",",":")).encode("utf-8"),method="POST",headers={"Content-Type":"application/json","User-Agent":"StageMesh-Witness/1"})
         try:
             with urlopen(request,timeout=self.timeout_seconds) as response:raw=json.loads(response.read(16384).decode("utf-8"))
             raw=verify_response(raw,body,"recover",secret,expected_key_id=key_id)

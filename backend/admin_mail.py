@@ -22,18 +22,18 @@ class AdminMailer:
     """
 
     def __init__(self, data_dir: Path) -> None:
-        self.mode = os.environ.get('STAGEFORGE_ADMIN_EMAIL_MODE', 'outbox').strip().lower()
+        self.mode = os.environ.get('STAGEMESH_ADMIN_EMAIL_MODE', 'outbox').strip().lower()
         self.outbox_dir = data_dir / 'admin-email-outbox'
         self.outbox_dir.mkdir(parents=True, exist_ok=True)
-        self.from_address = os.environ.get('STAGEFORGE_ADMIN_EMAIL_FROM', 'admin@stageforge.local').strip()
-        self.smtp_host = os.environ.get('STAGEFORGE_SMTP_HOST', '').strip()
+        self.from_address = os.environ.get('STAGEMESH_ADMIN_EMAIL_FROM', 'admin@stagemesh.local').strip()
+        self.smtp_host = os.environ.get('STAGEMESH_SMTP_HOST', '').strip()
         try:
-            self.smtp_port = int(os.environ.get('STAGEFORGE_SMTP_PORT', '587'))
+            self.smtp_port = int(os.environ.get('STAGEMESH_SMTP_PORT', '587'))
         except ValueError:
             self.smtp_port = 587
-        self.smtp_user = os.environ.get('STAGEFORGE_SMTP_USER', '')
-        self.smtp_password = os.environ.get('STAGEFORGE_SMTP_PASSWORD', '')
-        self.smtp_tls = os.environ.get('STAGEFORGE_SMTP_TLS', '1').strip().lower() in {'1', 'true', 'yes', 'on'}
+        self.smtp_user = os.environ.get('STAGEMESH_SMTP_USER', '')
+        self.smtp_password = os.environ.get('STAGEMESH_SMTP_PASSWORD', '')
+        self.smtp_tls = os.environ.get('STAGEMESH_SMTP_TLS', '1').strip().lower() in {'1', 'true', 'yes', 'on'}
 
     def status(self) -> dict[str, Any]:
         return {
@@ -48,7 +48,7 @@ class AdminMailer:
         message['From'] = self.from_address
         message['To'] = recipient
         message['Subject'] = subject
-        message['Message-ID'] = f'<{message_id}@stageforge.local>'
+        message['Message-ID'] = f'<{message_id}@stagemesh.local>'
         message.set_content(text)
 
         if self.mode == 'outbox':
@@ -59,7 +59,7 @@ class AdminMailer:
         if self.mode != 'smtp':
             raise RuntimeError(f'unsupported admin email mode: {self.mode}')
         if not self.smtp_host:
-            raise RuntimeError('STAGEFORGE_SMTP_HOST is required for smtp admin email mode')
+            raise RuntimeError('STAGEMESH_SMTP_HOST is required for smtp admin email mode')
 
         if self.smtp_tls:
             smtp = smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=10)

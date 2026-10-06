@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 
 from reconciliation import RealizationEvidenceRegistry, evaluate_realization
-from runtime import StageForgeRuntime
+from runtime import StageMeshRuntime
 
 
 class VenueReconciliationTests(unittest.TestCase):
@@ -80,7 +80,7 @@ class VenueReconciliationTests(unittest.TestCase):
 
     def test_runtime_accepts_adapter_evidence_only_for_active_mapping(self):
         with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEMESH_NATIVE_ENGINE": "off"}, clear=False):
-            runtime = StageForgeRuntime(Path(tmp))
+            runtime = StageMeshRuntime(Path(tmp))
             try:
                 venue = {
                     "documentType": "org.upp.venue-profile", "schemaVersion": 1,
@@ -128,7 +128,7 @@ class VenueAuthorityLeaseTests(unittest.TestCase):
 
     def test_runtime_authority_lease_changes_reconciliation_expected_holder(self):
         with tempfile.TemporaryDirectory() as tmp, patch.dict("os.environ", {"STAGEMESH_NATIVE_ENGINE": "off"}, clear=False):
-            runtime = StageForgeRuntime(Path(tmp))
+            runtime = StageMeshRuntime(Path(tmp))
             try:
                 venue = {
                     "documentType": "org.upp.venue-profile", "schemaVersion": 1,

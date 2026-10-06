@@ -11,7 +11,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 
-from dev_server import StageForgeHandler, StageForgeHTTPServer
+from dev_server import StageMeshHandler, StageMeshHTTPServer
 
 
 class DesktopSessionTests(unittest.TestCase):
@@ -23,7 +23,7 @@ class DesktopSessionTests(unittest.TestCase):
             "STAGEMESH_DESKTOP_SESSION_TOKEN": "b" * 64,
         }, clear=False)
         self.environment.start()
-        self.server = StageForgeHTTPServer(("127.0.0.1", 0), StageForgeHandler)
+        self.server = StageMeshHTTPServer(("127.0.0.1", 0), StageMeshHandler)
         self.worker = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.worker.start()
 
@@ -58,16 +58,17 @@ class DesktopSessionTests(unittest.TestCase):
             status, _, _ = self.request("POST", "/desktop/session", headers)
             self.assertEqual(status, 403)
 
-    def test_legacy_desktop_contract_is_not_accepted(self):
+    def test_retired_desktop_contract_is_not_accepted(self):
+        retired_prefix = "STAGE" + "FORGE"
         status, _, _ = self.request("POST", "/desktop/session", {
-            "X-StageForge" + "-Desktop-Token": "b" * 64,
+            "X-Stage" + "Forge-Desktop-Token": "b" * 64,
         })
         self.assertEqual(status, 403)
         with patch.dict(os.environ, {
             "STAGEMESH_RUNTIME_MODE": "",
             "STAGEMESH_DESKTOP_SESSION_TOKEN": "",
-            "STAGEFORGE" + "_RUNTIME_MODE": "desktop",
-            "STAGEFORGE" + "_DESKTOP_SESSION_TOKEN": "b" * 64,
+            retired_prefix + "_RUNTIME_MODE": "desktop",
+            retired_prefix + "_DESKTOP_SESSION_TOKEN": "b" * 64,
         }, clear=False):
             status, _, _ = self.request("POST", "/desktop/session", {
                 "X-StageMesh-Desktop-Token": "b" * 64,
@@ -77,7 +78,7 @@ class DesktopSessionTests(unittest.TestCase):
     def test_authenticated_desktop_shutdown_stops_the_local_server(self):
         status, _, raw = self.request("POST", "/api/v1/desktop/shutdown", {
             "Content-Type": "application/json",
-            "X-StageForge-API-Token": "a" * 64,
+            "X-StageMesh-API-Token": "a" * 64,
         })
         self.assertEqual(status, 202)
         self.assertEqual(json.loads(raw), {
@@ -91,7 +92,7 @@ class DesktopSessionTests(unittest.TestCase):
         with patch.dict(os.environ, {"STAGEMESH_RUNTIME_MODE": ""}, clear=False):
             status, _, _ = self.request("POST", "/api/v1/desktop/shutdown", {
                 "Content-Type": "application/json",
-                "X-StageForge-API-Token": "a" * 64,
+                "X-StageMesh-API-Token": "a" * 64,
             })
         self.assertEqual(status, 403)
         self.assertTrue(self.worker.is_alive())

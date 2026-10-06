@@ -1,6 +1,6 @@
 # Astra checkpoint 60 validation — fail-closed Windows/macOS plugin launch attestation contract
 
-Checkpoint 60 removes the last StageForge behavior that could treat a non-Linux external plugin path plus SHA-256 digest as sufficient verification-to-launch binding. It does **not** claim Windows/macOS process launch is implemented or qualified from Linux.
+Checkpoint 60 removes the last StageMesh behavior that could treat a non-Linux external plugin path plus SHA-256 digest as sufficient verification-to-launch binding. It does **not** claim Windows/macOS process launch is implemented or qualified from Linux.
 
 ## Manifest contract
 
@@ -24,7 +24,7 @@ This evidence is not itself treated as a launch primitive. It is deliberately se
 
 ## Fail-closed runtime behavior
 
-On non-Linux hosts StageForge no longer executes an external adapter after a path-digest check. Until the Windows/macOS native binder exists, `IsolatedPluginHost` refuses external launch with an explicit launch-binding error. Builtin effects are unchanged. Linux external launch remains the checkpoint-51 file-descriptor binding.
+On non-Linux hosts StageMesh no longer executes an external adapter after a path-digest check. Until the Windows/macOS native binder exists, `IsolatedPluginHost` refuses external launch with an explicit launch-binding error. Builtin effects are unchanged. Linux external launch remains the checkpoint-51 file-descriptor binding.
 
 ## Validation
 

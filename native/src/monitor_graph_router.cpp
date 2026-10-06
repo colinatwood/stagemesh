@@ -1,8 +1,8 @@
-#include "stageforge/monitor_graph_router.hpp"
+#include "stagemesh/monitor_graph_router.hpp"
 
 #include <algorithm>
 
-namespace stageforge {
+namespace stagemesh {
 
 namespace {
 float percent_gain(float value) noexcept {
@@ -60,4 +60,4 @@ bool MonitorGraphRouter::sync(std::string_view player_id, const MonitorBus& bus,
     return true;
 }
 
-} // namespace stageforge
+} // namespace stagemesh

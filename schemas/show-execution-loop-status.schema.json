@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://stageforge.dev/schemas/show-execution-loop-status.schema.json",
+  "$id": "https://stagemesh.dev/schemas/show-execution-loop-status.schema.json",
   "title": "UPP Show Execution Loop Status",
   "type": "object",
   "required": ["running", "cycles", "dispatched", "pending", "lastShowTimeNs"],

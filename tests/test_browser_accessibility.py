@@ -3,7 +3,7 @@ from pathlib import Path
 import unittest
 
 ROOT=Path(__file__).resolve().parents[1]
-spec=importlib.util.spec_from_file_location("browser_qualification",ROOT/"scripts/stageforge-browser-qualification.py")
+spec=importlib.util.spec_from_file_location("browser_qualification",ROOT/"scripts/stagemesh-browser-qualification.py")
 module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
 analyze_accessibility_tree=module.analyze_accessibility_tree
 

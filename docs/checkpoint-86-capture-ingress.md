@@ -2,8 +2,8 @@
 
 The engine's ALSA capture callback and DAW record queue previously shared an
 inlined handoff in `engine_main.cpp`. That handoff is now factored into
-`stageforge::submit_capture_packet` in
-`native/include/stageforge/capture_ingress.hpp`. The function consumes borrowed
+`stagemesh::submit_capture_packet` in
+`native/include/stagemesh/capture_ingress.hpp`. The function consumes borrowed
 interleaved float samples synchronously, writes to the existing fanout ring,
 splits bounded DAW recording blocks, sanitizes non-finite samples and records
 native discontinuities as sequence gaps. It does not retain or allocate sample

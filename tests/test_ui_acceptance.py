@@ -71,9 +71,9 @@ class UiAccessibilityContractTests(unittest.TestCase):
 class ServedUiAcceptanceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        from backend.dev_server import StageForgeHandler
+        from backend.dev_server import StageMeshHandler
 
-        cls.server = ThreadingHTTPServer(("127.0.0.1", 0), StageForgeHandler)
+        cls.server = ThreadingHTTPServer(("127.0.0.1", 0), StageMeshHandler)
         cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.thread.start()
         cls.base = f"http://127.0.0.1:{cls.server.server_port}"

@@ -1,10 +1,10 @@
-#include "stageforge/core_state.hpp"
+#include "stagemesh/core_state.hpp"
 
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
 
-namespace stageforge {
+namespace stagemesh {
 
 CoreControlState::CoreControlState(double sample_rate, double bpm)
     : transport_(sample_rate, bpm) {
@@ -317,4 +317,4 @@ void CoreControlState::reset_draft_locked() noexcept {
     draft_ = SnapshotDraft{};
 }
 
-} // namespace stageforge
+} // namespace stagemesh

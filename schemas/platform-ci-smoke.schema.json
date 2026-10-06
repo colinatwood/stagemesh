@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://stageforge.local/schemas/platform-ci-smoke.schema.json",
-  "title": "StageForge platform CI smoke evidence",
+  "$id": "https://stagemesh.local/schemas/platform-ci-smoke.schema.json",
+  "title": "StageMesh platform CI smoke evidence",
   "type": "object",
   "required": ["documentType", "schemaVersion", "host", "python", "nativeEngine", "physicalOutputsArmed", "physicalHardwareQualified", "platformExecutionQualified", "checks"],
   "properties": {

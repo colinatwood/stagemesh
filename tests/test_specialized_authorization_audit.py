@@ -11,10 +11,10 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 
-from dev_server import StageForgeHandler, StageForgeHTTPServer
+from dev_server import StageMeshHandler, StageMeshHTTPServer
 from persistence import StateRepository
 from replication import make_envelope
-from runtime import StageForgeRuntime
+from runtime import StageMeshRuntime
 
 
 class SpecializedAuthorizationAuditHttpTests(unittest.TestCase):
@@ -33,18 +33,18 @@ class SpecializedAuthorizationAuditHttpTests(unittest.TestCase):
 
     def env(self, **extra):
         result = {
-            "STAGEFORGE_REQUIRE_API_TOKEN": "1",
-            "STAGEFORGE_API_TOKEN": self.api,
-            "STAGEFORGE_ADMIN_API_TOKEN": self.admin,
-            "STAGEFORGE_ADAPTER_REPORT_TOKEN": self.adapter,
-            "STAGEFORGE_AUTH_PROXY_TOKEN": self.proxy,
-            "STAGEFORGE_HTTP_AUTHORIZATION_FILE": str(self.policy),
+            "STAGEMESH_REQUIRE_API_TOKEN": "1",
+            "STAGEMESH_API_TOKEN": self.api,
+            "STAGEMESH_ADMIN_API_TOKEN": self.admin,
+            "STAGEMESH_ADAPTER_REPORT_TOKEN": self.adapter,
+            "STAGEMESH_AUTH_PROXY_TOKEN": self.proxy,
+            "STAGEMESH_HTTP_AUTHORIZATION_FILE": str(self.policy),
         }
         result.update(extra)
         return result
 
     def request(self, path, body=None, headers=None, method="POST"):
-        server = StageForgeHTTPServer(("127.0.0.1", 0), StageForgeHandler)
+        server = StageMeshHTTPServer(("127.0.0.1", 0), StageMeshHandler)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         conn = http.client.HTTPConnection(*server.server_address, timeout=3)
@@ -52,7 +52,7 @@ class SpecializedAuthorizationAuditHttpTests(unittest.TestCase):
         request_headers = {
             "Content-Type": "application/json",
             "Content-Length": str(len(payload.encode())),
-            "X-StageForge-API-Token": self.api,
+            "X-StageMesh-API-Token": self.api,
         }
         request_headers.update(headers or {})
         try:
@@ -72,9 +72,9 @@ class SpecializedAuthorizationAuditHttpTests(unittest.TestCase):
         with patch.dict(os.environ, self.env(), clear=True), \
              patch("dev_server.RUNTIME.repository.append_authorization_audit", side_effect=self.repository.append_authorization_audit), \
              patch("dev_server.RUNTIME.community_upsert_account", return_value={"ok": True}) as action:
-            status, _ = self.request("/api/v1/community/accounts", headers={"X-StageForge-Admin-Token": self.admin})
+            status, _ = self.request("/api/v1/community/accounts", headers={"X-StageMesh-Admin-Token": self.admin})
             self.assertEqual(status, 200)
-            status, _ = self.request("/api/v1/community/accounts", headers={"X-StageForge-Admin-Token": "wrong"})
+            status, _ = self.request("/api/v1/community/accounts", headers={"X-StageMesh-Admin-Token": "wrong"})
             self.assertEqual(status, 403)
         self.assertEqual(action.call_count, 1)
         events = self.events()
@@ -87,9 +87,9 @@ class SpecializedAuthorizationAuditHttpTests(unittest.TestCase):
         with patch.dict(os.environ, self.env(), clear=True), \
              patch("dev_server.RUNTIME.repository.append_authorization_audit", side_effect=self.repository.append_authorization_audit), \
              patch("dev_server.RUNTIME.report_shadow_prebuffer", return_value={"ok": True}) as action:
-            status, _ = self.request("/api/v1/handoff/execution/shadow", headers={"X-StageForge-Adapter-Token": self.adapter})
+            status, _ = self.request("/api/v1/handoff/execution/shadow", headers={"X-StageMesh-Adapter-Token": self.adapter})
             self.assertEqual(status, 200)
-            status, _ = self.request("/api/v1/handoff/execution/shadow", headers={"X-StageForge-Adapter-Token": "wrong"})
+            status, _ = self.request("/api/v1/handoff/execution/shadow", headers={"X-StageMesh-Adapter-Token": "wrong"})
             self.assertEqual(status, 403)
         self.assertEqual(action.call_count, 1)
         events = self.events()
@@ -97,10 +97,10 @@ class SpecializedAuthorizationAuditHttpTests(unittest.TestCase):
         self.assertTrue(all(event["credentialClass"] == "adapter-token" for event in events))
 
     def test_human_admin_role_does_not_inherit_adapter_credential(self):
-        env = self.env(STAGEFORGE_ADAPTER_REPORT_TOKEN="")
+        env = self.env(STAGEMESH_ADAPTER_REPORT_TOKEN="")
         headers = {
-            "X-StageForge-Auth-Proxy-Token": self.proxy,
-            "X-StageForge-Authenticated-User": "human-admin",
+            "X-StageMesh-Auth-Proxy-Token": self.proxy,
+            "X-StageMesh-Authenticated-User": "human-admin",
         }
         with patch.dict(os.environ, env, clear=True), \
              patch("dev_server.RUNTIME.repository.append_authorization_audit", side_effect=self.repository.append_authorization_audit), \
@@ -131,7 +131,7 @@ class SpecializedAuthorizationAuditHttpTests(unittest.TestCase):
         with patch.dict(os.environ, self.env(), clear=True), \
              patch("dev_server.RUNTIME.repository.append_authorization_audit", side_effect=OSError("disk full")), \
              patch("dev_server.RUNTIME.community_upsert_account") as action:
-            status, body = self.request("/api/v1/community/accounts", headers={"X-StageForge-Admin-Token": self.admin})
+            status, body = self.request("/api/v1/community/accounts", headers={"X-StageMesh-Admin-Token": self.admin})
         self.assertEqual(status, 503)
         self.assertIn("authorization audit unavailable", body["error"])
         action.assert_not_called()
@@ -140,8 +140,8 @@ class SpecializedAuthorizationAuditHttpTests(unittest.TestCase):
 class MachineAuthorizationRuntimeTests(unittest.TestCase):
     def test_replication_hook_runs_after_hmac_verification_before_mutation(self):
         secret = "r" * 40
-        with tempfile.TemporaryDirectory() as raw, patch.dict(os.environ, {"STAGEFORGE_REPLICATION_SECRET": secret}, clear=True):
-            runtime = StageForgeRuntime(Path(raw))
+        with tempfile.TemporaryDirectory() as raw, patch.dict(os.environ, {"STAGEMESH_REPLICATION_SECRET": secret}, clear=True):
+            runtime = StageMeshRuntime(Path(raw))
             try:
                 runtime.replication.set_role("standby")
                 snapshot = runtime.state.replication_snapshot()

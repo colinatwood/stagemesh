@@ -1,6 +1,6 @@
 # Checkpoint 84 source consolidation
 
-Input: StageForge-Astra-Backlog-Checkpoint-69.zip, supplied by the owner.
+Input: StageMesh-Astra-Backlog-Checkpoint-69.zip, supplied by the owner.
 SHA-256: 023cbaefef19f07fc95acf7119c8cfa40cc047267727e2bc5ed64fb49df7a10c.
 The archive has 592 files. Paths and symlink attributes were checked before
 separate extraction. This digest identifies the received file; it is not an

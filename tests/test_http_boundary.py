@@ -15,7 +15,7 @@ class HttpBoundaryTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             validate_http_boundary(headers, "127.0.0.1", "/api/v1/state", "GET", {})
         validate_http_boundary(headers, "127.0.0.1", "/api/v1/state", "GET",
-                               {"STAGEFORGE_ALLOWED_ORIGINS": "https://localhost:8787"})
+                               {"STAGEMESH_ALLOWED_ORIGINS": "https://localhost:8787"})
 
     def test_authorities_and_origins_reject_url_components(self):
         for host in ("user@localhost", "localhost/path", "localhost?query", "localhost#fragment"):
@@ -35,23 +35,23 @@ class HttpBoundaryTests(unittest.TestCase):
 
     def test_remote_api_requires_configured_constant_time_token_path(self):
         request={"Host":"stage.internal","Content-Type":"application/json"}
-        env={"STAGEFORGE_ALLOWED_HOSTS":"stage.internal","STAGEFORGE_API_TOKEN":"secret"}
+        env={"STAGEMESH_ALLOWED_HOSTS":"stage.internal","STAGEMESH_API_TOKEN":"secret"}
         with self.assertRaisesRegex(PermissionError,"authentication"):validate_http_boundary(request,"10.0.0.8","/api/v1/profile","POST",env)
-        validate_http_boundary({**request,"X-StageForge-API-Token":"secret"},"10.0.0.8","/api/v1/profile","POST",env)
+        validate_http_boundary({**request,"X-StageMesh-API-Token":"secret"},"10.0.0.8","/api/v1/profile","POST",env)
 
     def test_remote_static_content_does_not_receive_api_authority(self):
-        validate_http_boundary({"Host":"stage.internal"},"10.0.0.8","/app.js","GET",{"STAGEFORGE_ALLOWED_HOSTS":"stage.internal"})
+        validate_http_boundary({"Host":"stage.internal"},"10.0.0.8","/app.js","GET",{"STAGEMESH_ALLOWED_HOSTS":"stage.internal"})
 
     def test_proxy_mode_can_require_token_even_from_loopback(self):
-        env={"STAGEFORGE_REQUIRE_API_TOKEN":"1","STAGEFORGE_API_TOKEN":"secret"}
+        env={"STAGEMESH_REQUIRE_API_TOKEN":"1","STAGEMESH_API_TOKEN":"secret"}
         with self.assertRaisesRegex(PermissionError,"authentication"):validate_http_boundary({"Host":"localhost"},"127.0.0.1","/api/v1/state","GET",env)
-        validate_http_boundary({"Host":"localhost","X-StageForge-API-Token":"secret"},"127.0.0.1","/api/v1/state","GET",env)
+        validate_http_boundary({"Host":"localhost","X-StageMesh-API-Token":"secret"},"127.0.0.1","/api/v1/state","GET",env)
 
     def test_mutation_rejects_non_json_content_type(self):
         with self.assertRaisesRegex(ValueError,"Content-Type"):validate_http_boundary({"Host":"localhost:8787","Content-Type":"text/plain"},"127.0.0.1","/api/v1/profile","POST",{})
 
     def test_non_loopback_startup_requires_host_allowlist_and_token(self):
-        env=os.environ.copy();env.pop("STAGEFORGE_ALLOWED_HOSTS",None);env.pop("STAGEFORGE_API_TOKEN",None)
+        env=os.environ.copy();env.pop("STAGEMESH_ALLOWED_HOSTS",None);env.pop("STAGEMESH_API_TOKEN",None)
         result=subprocess.run([sys.executable,str(ROOT/"backend/dev_server.py"),"--host","0.0.0.0","--port","0"],cwd=ROOT,env=env,capture_output=True,text=True,timeout=5)
         self.assertEqual(result.returncode,2);self.assertIn("non-loopback binding requires",result.stderr)
 

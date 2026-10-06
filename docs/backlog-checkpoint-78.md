@@ -1,6 +1,6 @@
 # Checkpoint 78: guarded stream lifecycle and manual software rendering
 
-[Current master workbook](backlog/StageForge-Master-Backlog-Checkpoint-78.xlsx).
+[Current master workbook](backlog/StageMesh-Master-Backlog-Checkpoint-78.xlsx).
 Code revision: `ec7bd4e4dc2977ac578048a8a95509a14ebcc1cd` (PR #13).
 
 The lifecycle guard connects an exact preflight decision to one device execution
@@ -15,7 +15,7 @@ stop native I/O and acknowledge completion themselves.
 
 ## Hosted evidence
 
-[Native CI run 34904550438](https://github.com/colinatwood/stageforge/actions/runs/34904550438)
+[Native CI run 34904550438](https://github.com/colinatwood/stagemesh/actions/runs/34904550438)
 passed four native CTests per OS. All six PR checks passed for the code revision.
 Evidence records test merge `00dae0d1647d718fa38cc319482ac591816355f2`, executable
 hashes and native source hashes. All source hashes match the committed code,

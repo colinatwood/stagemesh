@@ -1,10 +1,10 @@
 # Audiovisual scene-graph interoperability
 
 OBS Studio is a reference for capture, compositing, encoding, recording, and
-streaming. StageForge can use the same separation between sources, scenes,
+streaming. StageMesh can use the same separation between sources, scenes,
 transitions, outputs, and recording sessions without adopting OBS internals.
 
-## StageForge capabilities to reinforce
+## StageMesh capabilities to reinforce
 
 - Keep source acquisition, scene composition, output routing, and recording as
   separate lifecycle stages.

@@ -1,68 +1,68 @@
-#include "stageforge/audio_device.hpp"
-#include "stageforge/audio_device_manager.hpp"
-#include "stageforge/audio_graph.hpp"
-#include "stageforge/alsa_audio_output.hpp"
-#include "stageforge/alsa_audio_input.hpp"
-#include "stageforge/audio_input_ring.hpp"
-#include "stageforge/audio_fanout_ring.hpp"
-#include "stageforge/adaptive_drift_resampler.hpp"
-#include "stageforge/artnet_udp_output.hpp"
-#include "stageforge/artnet.hpp"
-#include "stageforge/sacn_udp_output.hpp"
-#include "stageforge/sacn.hpp"
-#include "stageforge/automation_state.hpp"
-#include "stageforge/parameter_registry.hpp"
-#include "stageforge/cue_action_graph.hpp"
-#include "stageforge/runtime_show.hpp"
-#include "stageforge/routing_transaction.hpp"
-#include "stageforge/core_journal.hpp"
-#include "stageforge/shadow_render_planner.hpp"
-#include "stageforge/shadow_prebuffer.hpp"
-#include "stageforge/planned_handoff.hpp"
-#include "stageforge/effect_chain.hpp"
-#include "stageforge/effect_delay_transaction.hpp"
-#include "stageforge/canonical_audio.hpp"
-#include "stageforge/le_uwb_hub.hpp"
-#include "stageforge/le_uwb_hardware_manager.hpp"
-#include "stageforge/user_profile.hpp"
-#include "stageforge/interoperability_handshake.hpp"
-#include "stageforge/authenticated_interop_session.hpp"
-#include "stageforge/profile_projection.hpp"
-#include "stageforge/session_channel.hpp"
-#include "stageforge/daw_playback_queue.hpp"
-#include "stageforge/daw_recording_queue.hpp"
-#include "stageforge/lighting_scheduler.hpp"
-#include "stageforge/clock_discipline.hpp"
-#include "stageforge/core_state.hpp"
-#include "stageforge/latency_resolver.hpp"
-#include "stageforge/midi_scheduler.hpp"
-#include "stageforge/show_event_dispatcher.hpp"
-#include "stageforge/show_execution_loop.hpp"
-#include "stageforge/cue_state.hpp"
-#include "stageforge/midi_input.hpp"
-#include "stageforge/midi_input_owner.hpp"
-#include "stageforge/midi_learn_router.hpp"
-#include "stageforge/midi_mapped_action_dispatcher.hpp"
-#include "stageforge/midi_clock.hpp"
-#include "stageforge/sampler_voice_engine.hpp"
-#include "stageforge/streaming_voice_engine.hpp"
-#include "stageforge/plugin_delay_graph.hpp"
-#include "stageforge/realtime_audit.hpp"
-#include "stageforge/realtime_qualification.hpp"
-#include "stageforge/capture_ingress_audit.hpp"
-#include "stageforge/capture_ingress.hpp"
-#include "stageforge/lighting_ingress_audit.hpp"
-#include "stageforge/monitor_bus.hpp"
-#include "stageforge/monitor_graph_router.hpp"
-#include "stageforge/notation_quantizer.hpp"
-#include "stageforge/transport_clock.hpp"
-#include "stageforge/transport_discipline.hpp"
+#include "stagemesh/audio_device.hpp"
+#include "stagemesh/audio_device_manager.hpp"
+#include "stagemesh/audio_graph.hpp"
+#include "stagemesh/alsa_audio_output.hpp"
+#include "stagemesh/alsa_audio_input.hpp"
+#include "stagemesh/audio_input_ring.hpp"
+#include "stagemesh/audio_fanout_ring.hpp"
+#include "stagemesh/adaptive_drift_resampler.hpp"
+#include "stagemesh/artnet_udp_output.hpp"
+#include "stagemesh/artnet.hpp"
+#include "stagemesh/sacn_udp_output.hpp"
+#include "stagemesh/sacn.hpp"
+#include "stagemesh/automation_state.hpp"
+#include "stagemesh/parameter_registry.hpp"
+#include "stagemesh/cue_action_graph.hpp"
+#include "stagemesh/runtime_show.hpp"
+#include "stagemesh/routing_transaction.hpp"
+#include "stagemesh/core_journal.hpp"
+#include "stagemesh/shadow_render_planner.hpp"
+#include "stagemesh/shadow_prebuffer.hpp"
+#include "stagemesh/planned_handoff.hpp"
+#include "stagemesh/effect_chain.hpp"
+#include "stagemesh/effect_delay_transaction.hpp"
+#include "stagemesh/canonical_audio.hpp"
+#include "stagemesh/le_uwb_hub.hpp"
+#include "stagemesh/le_uwb_hardware_manager.hpp"
+#include "stagemesh/user_profile.hpp"
+#include "stagemesh/interoperability_handshake.hpp"
+#include "stagemesh/authenticated_interop_session.hpp"
+#include "stagemesh/profile_projection.hpp"
+#include "stagemesh/session_channel.hpp"
+#include "stagemesh/daw_playback_queue.hpp"
+#include "stagemesh/daw_recording_queue.hpp"
+#include "stagemesh/lighting_scheduler.hpp"
+#include "stagemesh/clock_discipline.hpp"
+#include "stagemesh/core_state.hpp"
+#include "stagemesh/latency_resolver.hpp"
+#include "stagemesh/midi_scheduler.hpp"
+#include "stagemesh/show_event_dispatcher.hpp"
+#include "stagemesh/show_execution_loop.hpp"
+#include "stagemesh/cue_state.hpp"
+#include "stagemesh/midi_input.hpp"
+#include "stagemesh/midi_input_owner.hpp"
+#include "stagemesh/midi_learn_router.hpp"
+#include "stagemesh/midi_mapped_action_dispatcher.hpp"
+#include "stagemesh/midi_clock.hpp"
+#include "stagemesh/sampler_voice_engine.hpp"
+#include "stagemesh/streaming_voice_engine.hpp"
+#include "stagemesh/plugin_delay_graph.hpp"
+#include "stagemesh/realtime_audit.hpp"
+#include "stagemesh/realtime_qualification.hpp"
+#include "stagemesh/capture_ingress_audit.hpp"
+#include "stagemesh/capture_ingress.hpp"
+#include "stagemesh/lighting_ingress_audit.hpp"
+#include "stagemesh/monitor_bus.hpp"
+#include "stagemesh/monitor_graph_router.hpp"
+#include "stagemesh/notation_quantizer.hpp"
+#include "stagemesh/transport_clock.hpp"
+#include "stagemesh/transport_discipline.hpp"
 #if defined(_WIN32) || defined(__APPLE__)
 #include "native_capture.h"
 #include "native_capture_service.h"
 #include "native_playback.h"
 #include "native_playback_service.h"
-#include "stageforge/capture_service_owner.hpp"
+#include "stagemesh/capture_service_owner.hpp"
 #endif
 
 #include <algorithm>
@@ -92,7 +92,7 @@ constexpr std::string_view kNativeCaptureOwnerIntegrated{"0"};
 #endif
 constexpr std::size_t kAudioInputSlots = 4;
 constexpr std::size_t kAudioOutputSlots = 4;
-using EngineEffectDelayTransaction=stageforge::EffectDelayTransaction<kAudioOutputSlots,16,65536>;
+using EngineEffectDelayTransaction=stagemesh::EffectDelayTransaction<kAudioOutputSlots,16,65536>;
 constexpr std::size_t kSamplerAssetFrames = 65536;
 
 struct EngineSamplerAsset {
@@ -104,22 +104,22 @@ struct EngineSamplerAsset {
     std::array<float,kSamplerAssetFrames> left{},right{};
 };
 
-using EngineInputRing = stageforge::AudioFanoutRing<32768, kAudioOutputSlots>;
+using EngineInputRing = stagemesh::AudioFanoutRing<32768, kAudioOutputSlots>;
 
 struct EngineAudioInputState {
     EngineInputRing ring{};
     std::atomic<std::uint8_t> source{24};
     std::atomic<bool> enabled{false};
-    std::atomic<double> sample_rate{stageforge::canonical_audio_sample_rate};
-    stageforge::DawRecordingQueue<8,256,64>* daw_recording{nullptr};
+    std::atomic<double> sample_rate{stagemesh::canonical_audio_sample_rate};
+    stagemesh::DawRecordingQueue<8,256,64>* daw_recording{nullptr};
     std::uint8_t recording_track{0};
     std::atomic<std::uint64_t> recording_sequence{0},recording_frame{0},recording_generation{0};
-    stageforge::CaptureIngressAudit audit{};
+    stagemesh::CaptureIngressAudit audit{};
 };
 
-using EngineShowLoop = stageforge::ShowExecutionLoop<2048, 4096>;
+using EngineShowLoop = stagemesh::ShowExecutionLoop<2048, 4096>;
 
-bool submit_midi_mapped_event(void* raw, const stageforge::ShowEvent& event) noexcept {
+bool submit_midi_mapped_event(void* raw, const stagemesh::ShowEvent& event) noexcept {
     auto* loop = static_cast<EngineShowLoop*>(raw);
     return loop && loop->submit(event);
 }
@@ -131,31 +131,31 @@ std::uint64_t stable_token_id(std::string_view value) noexcept {
 }
 
 struct EngineShowDispatchContext {
-    stageforge::CoreControlState* core{nullptr};
-    stageforge::SpscQueue<stageforge::MidiEvent, 1024>* midi_ingress{nullptr};
-    stageforge::SpscQueue<stageforge::LightingEvent, 2048>* lighting_ingress{nullptr};
-    stageforge::CoreCueState* cues{nullptr};
-    stageforge::CoreAutomationState<256>* automation{nullptr};
-    stageforge::CoreCueActionGraph<128>* cue_graph{nullptr};
+    stagemesh::CoreControlState* core{nullptr};
+    stagemesh::SpscQueue<stagemesh::MidiEvent, 1024>* midi_ingress{nullptr};
+    stagemesh::SpscQueue<stagemesh::LightingEvent, 2048>* lighting_ingress{nullptr};
+    stagemesh::CoreCueState* cues{nullptr};
+    stagemesh::CoreAutomationState<256>* automation{nullptr};
+    stagemesh::CoreCueActionGraph<128>* cue_graph{nullptr};
     EngineShowLoop* show_loop{nullptr};
-    stageforge::CoreJournal<4096>* journal{nullptr};
-    stageforge::SpscQueue<stageforge::ShowEvent, 256>* cue_events{nullptr};
-    stageforge::SpscQueue<stageforge::ShowEvent, 256>* automation_events{nullptr};
-    stageforge::SamplerVoiceEngine<64,32,1025>* sampler{nullptr};
-    stageforge::LightingIngressAudit* lighting_audit{nullptr};
+    stagemesh::CoreJournal<4096>* journal{nullptr};
+    stagemesh::SpscQueue<stagemesh::ShowEvent, 256>* cue_events{nullptr};
+    stagemesh::SpscQueue<stagemesh::ShowEvent, 256>* automation_events{nullptr};
+    stagemesh::SamplerVoiceEngine<64,32,1025>* sampler{nullptr};
+    stagemesh::LightingIngressAudit* lighting_audit{nullptr};
 };
 
 struct EngineParameterEndpointContext {
     enum class Kind : std::uint8_t { none=0, audio_master=1, audio_route=2, monitor_master=3, monitor_channel=4, lighting=5 };
     Kind kind{Kind::none};
-    stageforge::AudioGraph* graph{nullptr};
-    stageforge::CoreControlState* core{nullptr};
-    stageforge::MonitorGraphRouter* monitor_router{nullptr};
-    std::array<stageforge::DmxUniverseState, 16>* dmx{nullptr};
+    stagemesh::AudioGraph* graph{nullptr};
+    stagemesh::CoreControlState* core{nullptr};
+    stagemesh::MonitorGraphRouter* monitor_router{nullptr};
+    std::array<stagemesh::DmxUniverseState, 16>* dmx{nullptr};
     std::array<char, 64> player{};
     std::uint8_t source{0};
     std::uint8_t output{0};
-    stageforge::MonitorChannel monitor_channel{stageforge::MonitorChannel::self};
+    stagemesh::MonitorChannel monitor_channel{stagemesh::MonitorChannel::self};
     std::uint16_t universe{0};
     std::uint16_t channel{1};
 };
@@ -193,10 +193,10 @@ void apply_engine_parameter(void* raw, float value) noexcept {
 }
 
 struct EngineCoreTickContext {
-    stageforge::CoreAutomationState<256>* automation{nullptr};
-    stageforge::CoreParameterRegistry<256>* parameters{nullptr};
-    stageforge::CoreRuntimeShow* runtime_show{nullptr};
-    stageforge::CoreJournal<4096>* journal{nullptr};
+    stagemesh::CoreAutomationState<256>* automation{nullptr};
+    stagemesh::CoreParameterRegistry<256>* parameters{nullptr};
+    stagemesh::CoreRuntimeShow* runtime_show{nullptr};
+    stagemesh::CoreJournal<4096>* journal{nullptr};
 };
 
 void route_show_tick(void* raw, std::uint64_t show_ns) noexcept {
@@ -205,63 +205,63 @@ void route_show_tick(void* raw, std::uint64_t show_ns) noexcept {
     if (ctx->automation && ctx->parameters) ctx->parameters->apply_control(*ctx->automation, show_ns);
     if (ctx->runtime_show && ctx->runtime_show->activate_if_due(show_ns)) {
         const auto snapshot = ctx->runtime_show->snapshot();
-        if (ctx->journal) (void)ctx->journal->append(stageforge::CoreJournalKind::runtime_swap, show_ns, 0, snapshot.generation, snapshot.source_revision);
+        if (ctx->journal) (void)ctx->journal->append(stagemesh::CoreJournalKind::runtime_swap, show_ns, 0, snapshot.generation, snapshot.source_revision);
     }
 }
 
-bool route_show_event(void* raw, const stageforge::ShowEvent& event, bool) noexcept {
+bool route_show_event(void* raw, const stagemesh::ShowEvent& event, bool) noexcept {
     auto* context = static_cast<EngineShowDispatchContext*>(raw);
     if (!context || !context->core || !context->midi_ingress || !context->lighting_ingress || !context->cues ||
         !context->automation || !context->cue_graph || !context->journal || !context->cue_events || !context->automation_events) return false;
     switch (event.type) {
-        case stageforge::ShowEventType::transport: {
-            const auto action = static_cast<stageforge::CoreTransportAction>(event.payload.transport.action);
+        case stagemesh::ShowEventType::transport: {
+            const auto action = static_cast<stagemesh::CoreTransportAction>(event.payload.transport.action);
             const auto result = context->core->mutate_transport_scoped(
-                stageforge::CoreCommandDomain::show_event,
-                event.event_id, stageforge::core_any_revision, action, event.payload.transport.value);
-            const bool ok = result.status == stageforge::CoreMutationStatus::applied || result.status == stageforge::CoreMutationStatus::duplicate;
-            if (ok) (void)context->journal->append(stageforge::CoreJournalKind::transport, event.show_time_ns, event.event_id, 0, result.revision);
+                stagemesh::CoreCommandDomain::show_event,
+                event.event_id, stagemesh::core_any_revision, action, event.payload.transport.value);
+            const bool ok = result.status == stagemesh::CoreMutationStatus::applied || result.status == stagemesh::CoreMutationStatus::duplicate;
+            if (ok) (void)context->journal->append(stagemesh::CoreJournalKind::transport, event.show_time_ns, event.event_id, 0, result.revision);
             return ok;
         }
-        case stageforge::ShowEventType::midi: {
-            const bool ok = context->midi_ingress->try_push(stageforge::MidiEvent{
+        case stagemesh::ShowEventType::midi: {
+            const bool ok = context->midi_ingress->try_push(stagemesh::MidiEvent{
                 event.event_id, event.show_time_ns, event.payload.midi.status,
                 event.payload.midi.data1, event.payload.midi.data2});
-            if (ok) (void)context->journal->append(stageforge::CoreJournalKind::midi, event.show_time_ns, event.event_id, event.payload.midi.port, 0);
+            if (ok) (void)context->journal->append(stagemesh::CoreJournalKind::midi, event.show_time_ns, event.event_id, event.payload.midi.port, 0);
             return ok;
         }
-        case stageforge::ShowEventType::lighting: {
-            const bool ok = context->lighting_ingress->try_push(stageforge::LightingEvent{
+        case stagemesh::ShowEventType::lighting: {
+            const bool ok = context->lighting_ingress->try_push(stagemesh::LightingEvent{
                 event.event_id, event.show_time_ns, event.payload.lighting.universe,
                 event.payload.lighting.channel, event.payload.lighting.value});
             if(context->lighting_audit)context->lighting_audit->note_handoff(ok);
-            if (ok) (void)context->journal->append(stageforge::CoreJournalKind::lighting, event.show_time_ns, event.event_id, event.payload.lighting.universe, 0);
+            if (ok) (void)context->journal->append(stagemesh::CoreJournalKind::lighting, event.show_time_ns, event.event_id, event.payload.lighting.universe, 0);
             return ok;
         }
-        case stageforge::ShowEventType::cue: {
+        case stagemesh::ShowEventType::cue: {
             context->cues->apply(event);
-            (void)context->journal->append(stageforge::CoreJournalKind::cue, event.show_time_ns, event.event_id, event.payload.cue.cue_id, context->cues->snapshot().transitions);
+            (void)context->journal->append(stagemesh::CoreJournalKind::cue, event.show_time_ns, event.event_id, event.payload.cue.cue_id, context->cues->snapshot().transitions);
             if (context->show_loop) {
                 (void)context->cue_graph->expand(event.payload.cue.cue_id, event.event_id, event.show_time_ns,
-                    [&](const stageforge::ShowEvent& derived) noexcept { return context->show_loop->schedule_derived(derived); });
+                    [&](const stagemesh::ShowEvent& derived) noexcept { return context->show_loop->schedule_derived(derived); });
             }
             return context->cue_events->try_push(event);
         }
-        case stageforge::ShowEventType::automation: {
+        case stagemesh::ShowEventType::automation: {
             const auto applied = context->automation->apply(event);
             if (!applied.applied()) return false;
-            (void)context->journal->append(stageforge::CoreJournalKind::automation, event.show_time_ns, event.event_id,
+            (void)context->journal->append(stagemesh::CoreJournalKind::automation, event.show_time_ns, event.event_id,
                                            event.payload.automation.parameter_id, applied.revision);
             (void)context->automation_events->try_push(event); // compatibility observation queue only
             return true;
         }
-        case stageforge::ShowEventType::sampler: {
+        case stagemesh::ShowEventType::sampler: {
             if(!context->sampler)return false;
-            stageforge::SamplerCommandKind action=stageforge::SamplerCommandKind::trigger;
-            if(event.payload.sampler.action==stageforge::ShowSamplerAction::stop_sample)action=stageforge::SamplerCommandKind::stop_sample;
-            else if(event.payload.sampler.action==stageforge::ShowSamplerAction::stop_all)action=stageforge::SamplerCommandKind::stop_all;
+            stagemesh::SamplerCommandKind action=stagemesh::SamplerCommandKind::trigger;
+            if(event.payload.sampler.action==stagemesh::ShowSamplerAction::stop_sample)action=stagemesh::SamplerCommandKind::stop_sample;
+            else if(event.payload.sampler.action==stagemesh::ShowSamplerAction::stop_all)action=stagemesh::SamplerCommandKind::stop_all;
             const bool ok=context->sampler->submit({action,event.event_id,event.payload.sampler.sample_id,event.payload.sampler.velocity,event.payload.sampler.note});
-            if(ok)(void)context->journal->append(stageforge::CoreJournalKind::sampler,event.show_time_ns,event.event_id,event.payload.sampler.sample_id,0);
+            if(ok)(void)context->journal->append(stagemesh::CoreJournalKind::sampler,event.show_time_ns,event.event_id,event.payload.sampler.sample_id,0);
             return ok;
         }
     }
@@ -269,17 +269,17 @@ bool route_show_event(void* raw, const stageforge::ShowEvent& event, bool) noexc
 }
 
 struct EngineAudioRenderContext {
-    stageforge::AudioGraph* graph{nullptr};
-    stageforge::TransportClock* clock{nullptr};
-    stageforge::CoreAutomationState<256>* automation{nullptr};
-    stageforge::CoreParameterRegistry<256>* parameters{nullptr};
-    stageforge::CoreEffectChain<16>* effects{nullptr};
+    stagemesh::AudioGraph* graph{nullptr};
+    stagemesh::TransportClock* clock{nullptr};
+    stagemesh::CoreAutomationState<256>* automation{nullptr};
+    stagemesh::CoreParameterRegistry<256>* parameters{nullptr};
+    stagemesh::CoreEffectChain<16>* effects{nullptr};
     EngineEffectDelayTransaction* effect_delay_transaction{nullptr};
     std::uint8_t delay_path{0};
-    stageforge::DawPlaybackQueue<8192,32>* daw_playback{nullptr};
-    stageforge::SamplerVoiceEngine<64,32,1025>* sampler{nullptr};
-    stageforge::StreamingVoiceEngine<16,256,9>* streaming_voices{nullptr};
-    stageforge::RealtimeAudit* realtime_audit{nullptr};
+    stagemesh::DawPlaybackQueue<8192,32>* daw_playback{nullptr};
+    stagemesh::SamplerVoiceEngine<64,32,1025>* sampler{nullptr};
+    stagemesh::StreamingVoiceEngine<16,256,9>* streaming_voices{nullptr};
+    stagemesh::RealtimeAudit* realtime_audit{nullptr};
     std::array<EngineAudioInputState*, kAudioInputSlots> inputs{};
     std::uint8_t reader{0};
     std::atomic<std::uint8_t> output{0};
@@ -297,7 +297,7 @@ struct EngineAudioRenderContext {
     std::atomic<std::uint64_t> first_render_show_ns{0};
     std::atomic<std::uint64_t> last_render_show_ns{0};
     std::atomic<std::uint64_t> last_block_end_show_ns{0};
-    stageforge::AdaptiveDriftController drift_controller{};
+    stagemesh::AdaptiveDriftController drift_controller{};
     double canonical_frame_fraction{0.0};
     std::array<double, kAudioInputSlots> input_frame_fraction{};
     std::array<float, 8192> left{};
@@ -317,11 +317,11 @@ struct EngineAudioRenderContext {
 };
 
 void capture_audio_packet(void* raw, const float* interleaved, std::uint32_t frames,
-                          std::uint32_t channels, const stageforge::CapturePacketInfo& info) noexcept {
+                          std::uint32_t channels, const stagemesh::CapturePacketInfo& info) noexcept {
     const auto started=std::chrono::steady_clock::now();
     auto* state = static_cast<EngineAudioInputState*>(raw);
     if (!state)return;
-    const auto result=stageforge::submit_capture_packet(
+    const auto result=stagemesh::submit_capture_packet(
         state->ring,state->daw_recording,state->recording_track,state->recording_sequence,
         state->recording_frame,state->recording_generation,interleaved,frames,channels,info);
     const auto duration=static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now()-started).count());
@@ -329,18 +329,18 @@ void capture_audio_packet(void* raw, const float* interleaved, std::uint32_t fra
 }
 
 void capture_audio(void* raw, const float* interleaved, std::uint32_t frames, std::uint32_t channels) noexcept {
-    capture_audio_packet(raw,interleaved,frames,channels,stageforge::CapturePacketInfo{});
+    capture_audio_packet(raw,interleaved,frames,channels,stagemesh::CapturePacketInfo{});
 }
 
 #if defined(_WIN32) || defined(__APPLE__)
 void capture_native_audio(const float* interleaved, std::uint32_t frames,
-                          std::uint32_t channels, const stageforge::CapturePacketInfo& info,
+                          std::uint32_t channels, const stagemesh::CapturePacketInfo& info,
                           void* raw) noexcept {
     capture_audio_packet(raw,interleaved,frames,channels,info);
 }
 #endif
 
-struct EngineEffectProcessContext { stageforge::CoreEffectChain<16>* chain; std::uint64_t show_ns; };
+struct EngineEffectProcessContext { stagemesh::CoreEffectChain<16>* chain; std::uint64_t show_ns; };
 void process_output_effects(void* raw, std::uint8_t, float* left, float* right, std::size_t frames) noexcept {
     auto* context=static_cast<EngineEffectProcessContext*>(raw);if(!context||!context->chain)return;
     float* channels[2]{left,right};(void)context->chain->process(channels,2,static_cast<std::uint32_t>(frames),context->show_ns);
@@ -354,10 +354,10 @@ void render_audio(void* raw, float* interleaved, std::uint32_t frames, std::uint
         }
         return;
     }
-    stageforge::RealtimeQualificationScope qualification_scope(context->realtime_audit);
+    stagemesh::RealtimeQualificationScope qualification_scope(context->realtime_audit);
     const auto callback_begin_ns=static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());
     const double sink_rate=context->expected_sample_rate.load(std::memory_order_relaxed);
-    const double internal_exact=sink_rate>0.0?static_cast<double>(frames)*stageforge::canonical_audio_sample_rate/sink_rate+context->canonical_frame_fraction:0.0;
+    const double internal_exact=sink_rate>0.0?static_cast<double>(frames)*stagemesh::canonical_audio_sample_rate/sink_rate+context->canonical_frame_fraction:0.0;
     const auto internal_frames=internal_exact>0.0?static_cast<std::uint32_t>(std::floor(internal_exact)):0U;
     context->canonical_frame_fraction=internal_exact-static_cast<double>(internal_frames);
     if(internal_frames==0||internal_frames>context->left.size()){
@@ -374,7 +374,7 @@ void render_audio(void* raw, float* interleaved, std::uint32_t frames, std::uint
         std::uint64_t expected_zero = 0;
         context->first_render_show_ns.compare_exchange_strong(expected_zero, show_ns, std::memory_order_relaxed);
         context->last_render_show_ns.store(show_ns, std::memory_order_relaxed);
-        const auto block_ns = static_cast<std::uint64_t>((static_cast<double>(internal_frames) / stageforge::canonical_audio_sample_rate) * 1'000'000'000.0);
+        const auto block_ns = static_cast<std::uint64_t>((static_cast<double>(internal_frames) / stagemesh::canonical_audio_sample_rate) * 1'000'000'000.0);
         context->last_block_end_show_ns.store(show_ns + block_ns, std::memory_order_relaxed);
     }
     std::uint64_t start_ns = context->drift_start_ns.load(std::memory_order_relaxed);
@@ -420,8 +420,8 @@ void render_audio(void* raw, float* interleaved, std::uint32_t frames, std::uint
     context->compensated_blocks.store(context->drift_controller.compensated_blocks(), std::memory_order_relaxed);
 
     const std::uint8_t output_id = context->output.load(std::memory_order_acquire);
-    stageforge::AudioOutputBlock output{output_id, context->left.data(), context->right.data()};
-    std::array<stageforge::AudioSourceBlock, kAudioInputSlots+2> sources{};
+    stagemesh::AudioOutputBlock output{output_id, context->left.data(), context->right.data()};
+    std::array<stagemesh::AudioSourceBlock, kAudioInputSlots+2> sources{};
     std::size_t source_count = 0;
     if(context->daw_playback){context->daw_playback->render(context->playback_left.data(),context->playback_right.data(),internal_frames);sources[source_count++]={23,context->playback_left.data(),context->playback_right.data()};}
     if(context->sampler){context->sampler->render(context->sampler_left.data(),context->sampler_right.data(),internal_frames);sources[source_count++]={22,context->sampler_left.data(),context->sampler_right.data()};}
@@ -430,7 +430,7 @@ void render_audio(void* raw, float* interleaved, std::uint32_t frames, std::uint
         auto* input = context->inputs[slot];
         if (!input || !input->enabled.load(std::memory_order_acquire)) continue;
         const double input_rate=input->sample_rate.load(std::memory_order_acquire);
-        const double input_exact=static_cast<double>(source_frames)*input_rate/stageforge::canonical_audio_sample_rate+context->input_frame_fraction[slot];
+        const double input_exact=static_cast<double>(source_frames)*input_rate/stagemesh::canonical_audio_sample_rate+context->input_frame_fraction[slot];
         const auto input_frames=static_cast<std::uint32_t>(std::floor(input_exact));
         context->input_frame_fraction[slot]=input_exact-static_cast<double>(input_frames);
         if(input_frames==0||input_frames>context->raw_input_left[slot].size()){
@@ -443,11 +443,11 @@ void render_audio(void* raw, float* interleaved, std::uint32_t frames, std::uint
             input->ring.pop_planar(context->reader, context->input_left[slot].data(), context->input_right[slot].data(), internal_frames);
         } else {
             input->ring.pop_planar(context->reader, context->raw_input_left[slot].data(), context->raw_input_right[slot].data(), input_frames);
-            stageforge::resample_planar_sinc(
+            stagemesh::resample_planar_sinc(
                 context->raw_input_left[slot].data(), context->raw_input_right[slot].data(), input_frames,
                 context->input_left[slot].data(), context->input_right[slot].data(), internal_frames);
         }
-        sources[source_count++] = stageforge::AudioSourceBlock{
+        sources[source_count++] = stagemesh::AudioSourceBlock{
             input->source.load(std::memory_order_acquire),
             context->input_left[slot].data(),
             context->input_right[slot].data()};
@@ -457,11 +457,11 @@ void render_audio(void* raw, float* interleaved, std::uint32_t frames, std::uint
     // to shed processing or provides a latency-preserving bypass transition.
     // Skipping the whole chain could remove essential processing from the show.
     const bool transaction_pinned=!context->effect_delay_transaction||context->effect_delay_transaction->begin(context->delay_path,render_show_ns);
-    context->graph->process(std::span<const stageforge::AudioSourceBlock>(sources.data(), source_count), std::span<stageforge::AudioOutputBlock>(&output, 1), internal_frames,
+    context->graph->process(std::span<const stagemesh::AudioSourceBlock>(sources.data(), source_count), std::span<stagemesh::AudioOutputBlock>(&output, 1), internal_frames,
                             context->effects ? &process_output_effects : nullptr, &effect_context);
     if(context->effect_delay_transaction&&transaction_pinned)(void)context->effect_delay_transaction->end(context->delay_path,context->left.data(),context->right.data(),internal_frames);
     if(internal_frames==frames){std::copy_n(context->left.data(),frames,context->sink_left.data());std::copy_n(context->right.data(),frames,context->sink_right.data());}
-    else{stageforge::resample_planar_sinc(context->left.data(),context->right.data(),internal_frames,context->sink_left.data(),context->sink_right.data(),frames);}
+    else{stagemesh::resample_planar_sinc(context->left.data(),context->right.data(),internal_frames,context->sink_left.data(),context->sink_right.data(),frames);}
     for (std::uint32_t frame = 0; frame < frames; ++frame) {
         const std::size_t base = static_cast<std::size_t>(frame) * channels;
         float left= context->sink_left[frame],right=context->sink_right[frame];std::uint64_t invalid=0;if(!std::isfinite(left)){left=0;invalid++;}if(!std::isfinite(right)){right=0;invalid++;}if(invalid&&context->realtime_audit)context->realtime_audit->note_nonfinite(invalid);
@@ -478,7 +478,7 @@ void render_audio(void* raw, float* interleaved, std::uint32_t frames, std::uint
             for (std::uint32_t channel = 2; channel < channels; ++channel) interleaved[base + channel] = 0.0F;
         }
     }
-    if(context->realtime_audit){const auto callback_end_ns=static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());const double deadline_rate=sink_rate>0?sink_rate:stageforge::canonical_audio_sample_rate;const auto deadline_ns=static_cast<std::uint64_t>(static_cast<double>(frames)/deadline_rate*1'000'000'000.0);context->realtime_audit->finish(callback_end_ns-callback_begin_ns,deadline_ns);}
+    if(context->realtime_audit){const auto callback_end_ns=static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());const double deadline_rate=sink_rate>0?sink_rate:stagemesh::canonical_audio_sample_rate;const auto deadline_ns=static_cast<std::uint64_t>(static_cast<double>(frames)/deadline_rate*1'000'000'000.0);context->realtime_audit->finish(callback_end_ns-callback_begin_ns,deadline_ns);}
 }
 
 #if defined(_WIN32) || defined(__APPLE__)
@@ -561,16 +561,16 @@ std::string token_safe(std::string_view value) {
     return result;
 }
 
-std::string_view clock_state_name(stageforge::ClockDisciplineState state) {
+std::string_view clock_state_name(stagemesh::ClockDisciplineState state) {
     switch (state) {
-        case stageforge::ClockDisciplineState::free_running: return "free";
-        case stageforge::ClockDisciplineState::locked: return "locked";
-        case stageforge::ClockDisciplineState::holdover: return "holdover";
+        case stagemesh::ClockDisciplineState::free_running: return "free";
+        case stagemesh::ClockDisciplineState::locked: return "locked";
+        case stagemesh::ClockDisciplineState::holdover: return "holdover";
     }
     return "free";
 }
 
-void write_time(const stageforge::TransportClock& clock) {
+void write_time(const stagemesh::TransportClock& clock) {
     const auto snapshot = clock.snapshot();
     std::cout << "OK running=" << (clock.running() ? 1 : 0)
               << " seconds=" << std::fixed << std::setprecision(6) << snapshot.show_seconds
@@ -579,22 +579,22 @@ void write_time(const stageforge::TransportClock& clock) {
               << " monotonicNs=" << snapshot.monotonic_ns << '\n' << std::flush;
 }
 
-struct EngineMidiClockSink {stageforge::MidiScheduler<1024>* scheduler{nullptr};};
+struct EngineMidiClockSink {stagemesh::MidiScheduler<1024>* scheduler{nullptr};};
 bool schedule_midi_clock_pulse(void* raw,std::uint64_t sequence,std::uint64_t show_ns) noexcept {
     auto* context=static_cast<EngineMidiClockSink*>(raw);
     return context&&context->scheduler&&context->scheduler->schedule({0xD000000000000000ULL|sequence,show_ns,0xF8,0,0});
 }
 
-void write_monitor(std::string_view player_id, const stageforge::MonitorBus& bus) {
+void write_monitor(std::string_view player_id, const stagemesh::MonitorBus& bus) {
     const auto snapshot = bus.snapshot();
     std::cout << "OK player=" << player_id
               << " master=" << snapshot.master
-              << " self=" << snapshot.levels[static_cast<std::size_t>(stageforge::MonitorChannel::self)]
-              << " vocals=" << snapshot.levels[static_cast<std::size_t>(stageforge::MonitorChannel::vocals)]
-              << " band=" << snapshot.levels[static_cast<std::size_t>(stageforge::MonitorChannel::band)]
-              << " click=" << snapshot.levels[static_cast<std::size_t>(stageforge::MonitorChannel::click)]
-              << " talkback=" << snapshot.levels[static_cast<std::size_t>(stageforge::MonitorChannel::talkback)]
-              << " ambient=" << snapshot.levels[static_cast<std::size_t>(stageforge::MonitorChannel::ambient)]
+              << " self=" << snapshot.levels[static_cast<std::size_t>(stagemesh::MonitorChannel::self)]
+              << " vocals=" << snapshot.levels[static_cast<std::size_t>(stagemesh::MonitorChannel::vocals)]
+              << " band=" << snapshot.levels[static_cast<std::size_t>(stagemesh::MonitorChannel::band)]
+              << " click=" << snapshot.levels[static_cast<std::size_t>(stagemesh::MonitorChannel::click)]
+              << " talkback=" << snapshot.levels[static_cast<std::size_t>(stagemesh::MonitorChannel::talkback)]
+              << " ambient=" << snapshot.levels[static_cast<std::size_t>(stagemesh::MonitorChannel::ambient)]
               << " muted=" << (snapshot.muted ? 1 : 0) << '\n' << std::flush;
 }
 
@@ -606,66 +606,66 @@ int main(int argc, char** argv) {
         return 2;
     }
 
-    const char* expected_ipc_token_env = std::getenv("STAGEFORGE_IPC_TOKEN");
+    const char* expected_ipc_token_env = std::getenv("STAGEMESH_IPC_TOKEN");
     const std::string expected_ipc_token = expected_ipc_token_env ? expected_ipc_token_env : "";
     bool ipc_authenticated = expected_ipc_token.empty();
 
-    stageforge::CoreControlState core(stageforge::canonical_audio_sample_rate, 120.0);
+    stagemesh::CoreControlState core(stagemesh::canonical_audio_sample_rate, 120.0);
     auto& clock = core.transport();
-    stageforge::ClockDiscipline clock_discipline;
-    stageforge::TransportDiscipline transport_discipline;
-    stageforge::MidiClock24Ppqn midi_clock;
+    stagemesh::ClockDiscipline clock_discipline;
+    stagemesh::TransportDiscipline transport_discipline;
+    stagemesh::MidiClock24Ppqn midi_clock;
     std::string clock_source{"local"};
     auto& monitors = core.monitors();
-    stageforge::MonitorGraphRouter monitor_router;
-    stageforge::MidiScheduler<1024> midi;
+    stagemesh::MonitorGraphRouter monitor_router;
+    stagemesh::MidiScheduler<1024> midi;
     EngineMidiClockSink midi_clock_sink{&midi};
-    stageforge::LightingScheduler<2048> lighting;
-    stageforge::SpscQueue<stageforge::MidiEvent, 1024> midi_event_ingress;
-    stageforge::SpscQueue<stageforge::LightingEvent, 2048> lighting_event_ingress;
-    stageforge::CoreCueState cue_state;
-    stageforge::CoreAutomationState<256> automation_state;
-    stageforge::CoreParameterRegistry<256> parameter_registry;
-    stageforge::CoreCueActionGraph<128> cue_graph;
-    stageforge::CoreRuntimeShow runtime_show;
-    stageforge::CoreRoutingState<128> routing_state;
-    stageforge::CoreJournal<4096> core_journal;
-    stageforge::CoreShadowRenderPlanner<64> shadow_planner;
-    stageforge::CoreShadowPrebuffer<64> shadow_prebuffer;
-    stageforge::CorePlannedHandoff planned_handoff;
-    stageforge::LeUwbHub<64> le_uwb_hub;
-    stageforge::LeUwbHardwareManager<64> le_uwb_hardware(le_uwb_hub);
-    stageforge::UserProfileCustomization<128> user_profile;
-    stageforge::InteroperabilityHandshake<64,32> interoperability;
-    stageforge::AuthenticatedInteropSession interop_session;
-    stageforge::SessionChannelGuard<64> session_channel;
-    static stageforge::DawPlaybackQueue<8192,32> daw_playback;
-    static stageforge::DawRecordingQueue<8,256,64> daw_recording;
-    static stageforge::SamplerVoiceEngine<64,32,1025> sampler;
-    static stageforge::StreamingVoiceEngine<16,256,9> streaming_voices;
+    stagemesh::LightingScheduler<2048> lighting;
+    stagemesh::SpscQueue<stagemesh::MidiEvent, 1024> midi_event_ingress;
+    stagemesh::SpscQueue<stagemesh::LightingEvent, 2048> lighting_event_ingress;
+    stagemesh::CoreCueState cue_state;
+    stagemesh::CoreAutomationState<256> automation_state;
+    stagemesh::CoreParameterRegistry<256> parameter_registry;
+    stagemesh::CoreCueActionGraph<128> cue_graph;
+    stagemesh::CoreRuntimeShow runtime_show;
+    stagemesh::CoreRoutingState<128> routing_state;
+    stagemesh::CoreJournal<4096> core_journal;
+    stagemesh::CoreShadowRenderPlanner<64> shadow_planner;
+    stagemesh::CoreShadowPrebuffer<64> shadow_prebuffer;
+    stagemesh::CorePlannedHandoff planned_handoff;
+    stagemesh::LeUwbHub<64> le_uwb_hub;
+    stagemesh::LeUwbHardwareManager<64> le_uwb_hardware(le_uwb_hub);
+    stagemesh::UserProfileCustomization<128> user_profile;
+    stagemesh::InteroperabilityHandshake<64,32> interoperability;
+    stagemesh::AuthenticatedInteropSession interop_session;
+    stagemesh::SessionChannelGuard<64> session_channel;
+    static stagemesh::DawPlaybackQueue<8192,32> daw_playback;
+    static stagemesh::DawRecordingQueue<8,256,64> daw_recording;
+    static stagemesh::SamplerVoiceEngine<64,32,1025> sampler;
+    static stagemesh::StreamingVoiceEngine<16,256,9> streaming_voices;
     static std::array<EngineSamplerAsset,32> sampler_assets{};
     EngineSamplerAsset* staged_sampler_asset=nullptr;
     std::array<std::uint64_t,64> staged_channel_capabilities{};std::size_t staged_channel_capability_count=0;
     std::uint64_t staged_channel_high=0,staged_channel_low=0,staged_channel_epoch=0;
-    stageforge::HandshakeOffer<64> staged_local_offer{},staged_remote_offer{};
-    stageforge::SpscQueue<stageforge::ShowEvent, 256> cue_events;
-    stageforge::SpscQueue<stageforge::ShowEvent, 256> automation_events;
-    stageforge::LightingIngressAudit lighting_ingress_audit;
+    stagemesh::HandshakeOffer<64> staged_local_offer{},staged_remote_offer{};
+    stagemesh::SpscQueue<stagemesh::ShowEvent, 256> cue_events;
+    stagemesh::SpscQueue<stagemesh::ShowEvent, 256> automation_events;
+    stagemesh::LightingIngressAudit lighting_ingress_audit;
     EngineShowDispatchContext show_dispatch_context{&core, &midi_event_ingress, &lighting_event_ingress, &cue_state, &automation_state, &cue_graph, nullptr, &core_journal, &cue_events, &automation_events,&sampler,&lighting_ingress_audit};
     EngineCoreTickContext core_tick_context{&automation_state, &parameter_registry, &runtime_show, &core_journal};
     EngineShowLoop show_loop(clock, &route_show_event, &show_dispatch_context, &route_show_tick, &core_tick_context);
     show_dispatch_context.show_loop = &show_loop;
-    stageforge::MidiLearnRouter<512,1024> midi_mapping;
+    stagemesh::MidiLearnRouter<512,1024> midi_mapping;
     midi_mapping.configure_master(120.0,0,0x0AB5);
-    stageforge::MidiMappedActionDispatcher midi_action_dispatcher(&submit_midi_mapped_event,&show_loop,stable_token_id("midi-learn"));
-    stageforge::SpscQueue<stageforge::CapturedMidiInput,2049> midi_observer_queue;
-    std::array<stageforge::DmxUniverseState, 16> dmx_universes{};
+    stagemesh::MidiMappedActionDispatcher midi_action_dispatcher(&submit_midi_mapped_event,&show_loop,stable_token_id("midi-learn"));
+    stagemesh::SpscQueue<stagemesh::CapturedMidiInput,2049> midi_observer_queue;
+    std::array<stagemesh::DmxUniverseState, 16> dmx_universes{};
     std::array<EngineParameterEndpointContext, 256> parameter_endpoint_contexts{};
     std::size_t parameter_endpoint_context_count = 0;
     std::array<std::uint8_t, 16> artnet_sequences{};
-    stageforge::ArtNetUdpOutput artnet_output;
+    stagemesh::ArtNetUdpOutput artnet_output;
     std::array<std::uint8_t, 16> sacn_sequences{};
-    stageforge::SacnUdpOutput sacn_output;
+    stagemesh::SacnUdpOutput sacn_output;
     std::array<std::uint8_t, 16> sacn_cid{};
     {
         std::random_device random;
@@ -676,16 +676,16 @@ int main(int argc, char** argv) {
     enum class LightingNetworkProtocol : std::uint8_t { artnet = 0, sacn = 1 };
     LightingNetworkProtocol lighting_network_protocol = LightingNetworkProtocol::artnet;
     std::uint16_t sacn_universe_base = 1;
-    stageforge::MidiInputOwner midi_inputs;
-    stageforge::AudioDeviceManager audio_devices;
+    stagemesh::MidiInputOwner midi_inputs;
+    stagemesh::AudioDeviceManager audio_devices;
     audio_devices.scan();
     std::array<std::string, kAudioOutputSlots> selected_audio_outputs{};
     selected_audio_outputs[0] = "null-audio";
-    stageforge::NullAudioDevice audio;
-    stageforge::AudioGraph audio_graph;
-    std::array<stageforge::CoreEffectChain<16>, kAudioOutputSlots> effect_chains{};
+    stagemesh::NullAudioDevice audio;
+    stagemesh::AudioGraph audio_graph;
+    std::array<stagemesh::CoreEffectChain<16>, kAudioOutputSlots> effect_chains{};
     static EngineEffectDelayTransaction effect_delay_transaction(effect_chains);
-    std::array<stageforge::RealtimeAudit,kAudioOutputSlots> realtime_audits{};
+    std::array<stagemesh::RealtimeAudit,kAudioOutputSlots> realtime_audits{};
     std::array<EngineAudioInputState, kAudioInputSlots> audio_inputs{};
     std::array<EngineAudioRenderContext, kAudioOutputSlots> audio_render_contexts{};
     for (std::size_t output_slot = 0; output_slot < kAudioOutputSlots; ++output_slot) {
@@ -711,11 +711,11 @@ int main(int argc, char** argv) {
         audio_inputs[slot].daw_recording=&daw_recording;
         audio_inputs[slot].recording_track=static_cast<std::uint8_t>(slot);
     }
-    std::array<stageforge::AlsaAudioOutput, kAudioOutputSlots> alsa_outputs{};
-    std::array<stageforge::AlsaAudioInput, kAudioInputSlots> alsa_inputs{};
+    std::array<stagemesh::AlsaAudioOutput, kAudioOutputSlots> alsa_outputs{};
+    std::array<stagemesh::AlsaAudioInput, kAudioInputSlots> alsa_inputs{};
 #if defined(_WIN32) || defined(__APPLE__)
-    using NativeInputOwner = stageforge::CaptureServiceOwner<stageforge::NativeCaptureService>;
-    using NativeOutputOwner = stageforge::CaptureServiceOwner<stageforge::NativePlaybackService>;
+    using NativeInputOwner = stagemesh::CaptureServiceOwner<stagemesh::NativeCaptureService>;
+    using NativeOutputOwner = stagemesh::CaptureServiceOwner<stagemesh::NativePlaybackService>;
     std::array<std::unique_ptr<NativeInputOwner>, kAudioInputSlots> native_inputs{};
     std::array<std::unique_ptr<NativeOutputOwner>, kAudioOutputSlots> native_outputs{};
 #endif
@@ -730,15 +730,15 @@ int main(int argc, char** argv) {
     audio_graph.set_route_gain(22, 0, 1.0F);
     audio_graph.set_output_master(0, 1.0F);
     audio_graph.set_limiter_ceiling_db(0, -1.0F);
-    audio.open({stageforge::canonical_audio_sample_rate, 0, 2, 256});
+    audio.open({stagemesh::canonical_audio_sample_rate, 0, 2, 256});
     audio.start();
 
     std::uint64_t next_core_command_id = 1;
     std::vector<std::string> staged_monitor_players;
     std::uint64_t staged_cue_graph_id = 0;
-    std::array<stageforge::CueAction, 32> staged_cue_actions{};
+    std::array<stagemesh::CueAction, 32> staged_cue_actions{};
     std::size_t staged_cue_action_count = 0;
-    std::array<stageforge::AudioRouteChange, 128> staged_audio_route_changes{};
+    std::array<stagemesh::AudioRouteChange, 128> staged_audio_route_changes{};
     std::size_t staged_audio_route_change_count = 0;
 
     auto allocate_parameter_context = [&]() noexcept -> EngineParameterEndpointContext* {
@@ -748,7 +748,7 @@ int main(int argc, char** argv) {
 
     auto ingest_midi_domain = [&]() noexcept {
         std::size_t count = 0;
-        stageforge::MidiEvent event{};
+        stagemesh::MidiEvent event{};
         while (midi_event_ingress.try_pop(event)) {
             if (!midi.schedule(event)) break;
             ++count;
@@ -758,7 +758,7 @@ int main(int argc, char** argv) {
     auto ingest_lighting_domain = [&]() noexcept {
         const auto started=std::chrono::steady_clock::now();
         std::size_t count = 0;
-        stageforge::LightingEvent event{};
+        stagemesh::LightingEvent event{};
         while (lighting_event_ingress.try_pop(event)) {
             if (!lighting.schedule(event)) break;
             ++count;
@@ -767,12 +767,12 @@ int main(int argc, char** argv) {
     };
     auto route_captured_midi = [&]() noexcept {
         std::size_t captured = 0, mapped = 0;
-        stageforge::CapturedMidiInput input{};
+        stagemesh::CapturedMidiInput input{};
         while (midi_inputs.pop(input)) {
             ++captured;
             (void)midi_observer_queue.try_push(input);
             midi_mapping.process(stable_token_id(input.device_id.data()),input.message.status,input.message.data1,input.message.data2,input.message.show_time_ns);
-            stageforge::MidiMappedAction action{};
+            stagemesh::MidiMappedAction action{};
             while (midi_mapping.pop(action)) {
                 if (midi_action_dispatcher.dispatch(action,core.metrics().revision)) ++mapped;
             }
@@ -809,7 +809,7 @@ int main(int argc, char** argv) {
             continue;
         }
         if (command == "HELLO") {
-            ok(std::string("engineVersion=") + std::string(kEngineVersion) + " protocol=1 coreControl=1 showEvents=1 showLoop=1 cueState=1 automationState=1 parameterRegistry=1 cueActions=1 runtimeShow=1 routingTx=1 coreJournal=1 shadowPlanner=1 shadowPrebuffer=1 plannedHandoff=1 effectChain=1 canonicalAudio=1 physicalPcmConversion=1 captureIngress=1 nativeCaptureOwner=" + std::string(kNativeCaptureOwnerIntegrated) + " leUwbHub=1 leIsoHardware=1 uwbHardwareBridge=1 userProfile=1 interoperabilityHandshake=1 authenticatedInteropSession=1 profileProjection=1 hardwareBench=1 sessionChannel=1 localIpc=1 persistentSecurity=1 isolatedPluginHost=1 platformQualification=1 realtimeAudit=1 realtimeQualification=" + std::string(stageforge::RealtimeAudit::qualification_enabled()?"1":"0") + " ingressAudit=1 dawSession=1 dawRenderPlan=1 dawMedia=1 dawEditHistory=1 dawRenderer=1 dawRecording=1 dawTempoMap=1 dawMediaLibrary=1 dawPluginCatalog=1 dawRecovery=1 dawStreamRenderer=1 dawPlaybackPrefetch=1 dawRecordingSpool=1 dawPlaybackQueue=1 dawMultitrackCapture=1 dawArrangementProducer=1 dawPcmBlockTransfer=1 dawCaptureDrain=1 dawPunchLoopCapture=1 pluginDelayCompensation=1 pluginDelayGraph=1 midiLearnMapping=1 masterMusicalSync=1 nativeMidiPerformance=1 samplerVoiceEngine=1 transportDiscipline=1 midiClock24Ppqn=1 engineRate=192000 sampleFormat=float32");
+            ok(std::string("engineVersion=") + std::string(kEngineVersion) + " protocol=1 coreControl=1 showEvents=1 showLoop=1 cueState=1 automationState=1 parameterRegistry=1 cueActions=1 runtimeShow=1 routingTx=1 coreJournal=1 shadowPlanner=1 shadowPrebuffer=1 plannedHandoff=1 effectChain=1 canonicalAudio=1 physicalPcmConversion=1 captureIngress=1 nativeCaptureOwner=" + std::string(kNativeCaptureOwnerIntegrated) + " leUwbHub=1 leIsoHardware=1 uwbHardwareBridge=1 userProfile=1 interoperabilityHandshake=1 authenticatedInteropSession=1 profileProjection=1 hardwareBench=1 sessionChannel=1 localIpc=1 persistentSecurity=1 isolatedPluginHost=1 platformQualification=1 realtimeAudit=1 realtimeQualification=" + std::string(stagemesh::RealtimeAudit::qualification_enabled()?"1":"0") + " ingressAudit=1 dawSession=1 dawRenderPlan=1 dawMedia=1 dawEditHistory=1 dawRenderer=1 dawRecording=1 dawTempoMap=1 dawMediaLibrary=1 dawPluginCatalog=1 dawRecovery=1 dawStreamRenderer=1 dawPlaybackPrefetch=1 dawRecordingSpool=1 dawPlaybackQueue=1 dawMultitrackCapture=1 dawArrangementProducer=1 dawPcmBlockTransfer=1 dawCaptureDrain=1 dawPunchLoopCapture=1 pluginDelayCompensation=1 pluginDelayGraph=1 midiLearnMapping=1 masterMusicalSync=1 nativeMidiPerformance=1 samplerVoiceEngine=1 transportDiscipline=1 midiClock24Ppqn=1 engineRate=192000 sampleFormat=float32");
             continue;
         }
         if (command == "PING") {
@@ -835,22 +835,22 @@ int main(int argc, char** argv) {
         }
         if(command=="SAMPLER_LOAD_COMMIT"&&parts.size()==1){
             if(!staged_sampler_asset||staged_sampler_asset->written_frames!=staged_sampler_asset->total_frames){error("state","sampler asset incomplete");continue;}
-            const stageforge::SamplerSampleDescriptor descriptor{staged_sampler_asset->sample_id,staged_sampler_asset->left.data(),staged_sampler_asset->right.data(),staged_sampler_asset->total_frames,
+            const stagemesh::SamplerSampleDescriptor descriptor{staged_sampler_asset->sample_id,staged_sampler_asset->left.data(),staged_sampler_asset->right.data(),staged_sampler_asset->total_frames,
                 staged_sampler_asset->loop_begin,staged_sampler_asset->loop_end,staged_sampler_asset->crossfade_frames,staged_sampler_asset->choke_group,staged_sampler_asset->looped};
             if(!sampler.register_sample(descriptor)){error("conflict","sampler asset refused");continue;}staged_sampler_asset->staging=false;staged_sampler_asset->published=true;staged_sampler_asset=nullptr;ok("committed=1 physicalOutputsArmed=0");
             continue;
         }
         if(command=="SAMPLER_TRIGGER"&&parts.size()==6){
-            stageforge::ShowEvent event{};unsigned int note=0;float velocity=0;
+            stagemesh::ShowEvent event{};unsigned int note=0;float velocity=0;
             if(!parse_number(parts[1],event.event_id)||!parse_number(parts[2],event.show_time_ns)||!parse_number(parts[3],event.payload.sampler.sample_id)||
                !parse_number(parts[4],velocity)||!parse_number(parts[5],note)||note>127||!std::isfinite(velocity)){error("argument","invalid sampler trigger");continue;}
-            event.type=stageforge::ShowEventType::sampler;event.priority=SF_PRIORITY_SHOW;event.revision=core.metrics().revision;event.payload.sampler.velocity=velocity;event.payload.sampler.note=static_cast<std::uint8_t>(note);event.payload.sampler.action=stageforge::ShowSamplerAction::trigger;
+            event.type=stagemesh::ShowEventType::sampler;event.priority=SF_PRIORITY_SHOW;event.revision=core.metrics().revision;event.payload.sampler.velocity=velocity;event.payload.sampler.note=static_cast<std::uint8_t>(note);event.payload.sampler.action=stagemesh::ShowSamplerAction::trigger;
             if(!show_loop.submit(event)){error("busy","sampler trigger ingress full");continue;}ok("queued=1 physicalOutputsArmed=0");
             continue;
         }
         if(command=="SAMPLER_STOP"&&(parts.size()==3||parts.size()==4)){
-            stageforge::ShowEvent event{};if(!parse_number(parts[1],event.event_id)||!parse_number(parts[2],event.show_time_ns)||(parts.size()==4&&!parse_number(parts[3],event.payload.sampler.sample_id))){error("argument","invalid sampler stop");continue;}
-            event.type=stageforge::ShowEventType::sampler;event.priority=SF_PRIORITY_SHOW;event.revision=core.metrics().revision;event.payload.sampler.action=parts.size()==3?stageforge::ShowSamplerAction::stop_all:stageforge::ShowSamplerAction::stop_sample;
+            stagemesh::ShowEvent event{};if(!parse_number(parts[1],event.event_id)||!parse_number(parts[2],event.show_time_ns)||(parts.size()==4&&!parse_number(parts[3],event.payload.sampler.sample_id))){error("argument","invalid sampler stop");continue;}
+            event.type=stagemesh::ShowEventType::sampler;event.priority=SF_PRIORITY_SHOW;event.revision=core.metrics().revision;event.payload.sampler.action=parts.size()==3?stagemesh::ShowSamplerAction::stop_all:stagemesh::ShowSamplerAction::stop_sample;
             if(!show_loop.submit(event)){error("busy","sampler stop ingress full");continue;}ok("queued=1 physicalOutputsArmed=0");
             continue;
         }
@@ -863,7 +863,7 @@ int main(int argc, char** argv) {
         if(command=="STREAM_VOICE_START"&&parts.size()==5){unsigned int slot=0,loop=0;std::uint64_t generation=0;float gain=0;if(!parse_number(parts[1],slot)||!parse_number(parts[2],generation)||!parse_number(parts[3],gain)||!parse_number(parts[4],loop)||slot>=16||loop>1||!streaming_voices.start(slot,generation,gain,loop!=0)){error("argument","streaming voice start refused");continue;}ok("queued=1 physicalOutputsArmed=0");
             continue;
         }
-        if(command=="STREAM_VOICE_BLOCK"&&parts.size()==7){unsigned int slot=0,frames=0,terminal=0;stageforge::StreamingVoiceBlock<256>block{};if(!parse_number(parts[1],slot)||!parse_number(parts[2],block.generation)||!parse_number(parts[3],block.sequence)||!parse_number(parts[4],frames)||!parse_number(parts[5],terminal)||slot>=16||frames==0||frames>256||terminal>1||!decode_hex_pcm(parts[6],block.left.data(),block.right.data(),frames)){error("argument","invalid streaming voice block");continue;}block.frames=frames;block.terminal=terminal!=0;if(!streaming_voices.push(slot,block)){error("busy","streaming voice feed full");continue;}ok("queued=1 physicalOutputsArmed=0");
+        if(command=="STREAM_VOICE_BLOCK"&&parts.size()==7){unsigned int slot=0,frames=0,terminal=0;stagemesh::StreamingVoiceBlock<256>block{};if(!parse_number(parts[1],slot)||!parse_number(parts[2],block.generation)||!parse_number(parts[3],block.sequence)||!parse_number(parts[4],frames)||!parse_number(parts[5],terminal)||slot>=16||frames==0||frames>256||terminal>1||!decode_hex_pcm(parts[6],block.left.data(),block.right.data(),frames)){error("argument","invalid streaming voice block");continue;}block.frames=frames;block.terminal=terminal!=0;if(!streaming_voices.push(slot,block)){error("busy","streaming voice feed full");continue;}ok("queued=1 physicalOutputsArmed=0");
             continue;
         }
         if(command=="STREAM_VOICE_STOP"&&parts.size()==3){unsigned int slot=0;std::uint64_t generation=0;if(!parse_number(parts[1],slot)||!parse_number(parts[2],generation)||!streaming_voices.stop(slot,generation)){error("argument","streaming voice stop refused");continue;}ok("queued=1 physicalOutputsArmed=0");
@@ -878,10 +878,10 @@ int main(int argc, char** argv) {
         if(command=="STREAM_VOICE_STATUS"&&parts.size()==1){const auto status=streaming_voices.status();std::cout<<"OK activeVoices="<<status.active_voices<<" activeMask="<<status.active_mask<<" queuedBlocks="<<status.queued_blocks<<" starts="<<status.starts<<" stops="<<status.stops<<" renderedFrames="<<status.rendered_frames<<" starvedBlocks="<<status.starved_blocks<<" staleBlocks="<<status.stale_blocks<<" discontinuities="<<status.discontinuities<<" completedVoices="<<status.completed_voices<<" overflows="<<status.queue_overflows<<" diskIoInAudioCallback=0 physicalOutputsArmed=0\n"<<std::flush;
             continue;
         }
-        if(command=="DAW_PLAYBACK_PUSH"&&parts.size()==6){std::uint64_t generation=0,start=0;std::uint32_t frames=0;float left=0,right=0;if(!parse_number(parts[1],generation)||!parse_number(parts[2],start)||!parse_number(parts[3],frames)||!parse_number(parts[4],left)||!parse_number(parts[5],right)||frames>8192){error("argument","invalid playback block");continue;}stageforge::DawPlaybackQueue<8192,32>::Block block{};block.generation=generation;block.start_frame=start;block.frames=frames;std::fill_n(block.left.data(),frames,left);std::fill_n(block.right.data(),frames,right);if(!daw_playback.push(block)){error("busy","playback queue refused block");continue;}ok("queued=1 physicalOutputsArmed=0");
+        if(command=="DAW_PLAYBACK_PUSH"&&parts.size()==6){std::uint64_t generation=0,start=0;std::uint32_t frames=0;float left=0,right=0;if(!parse_number(parts[1],generation)||!parse_number(parts[2],start)||!parse_number(parts[3],frames)||!parse_number(parts[4],left)||!parse_number(parts[5],right)||frames>8192){error("argument","invalid playback block");continue;}stagemesh::DawPlaybackQueue<8192,32>::Block block{};block.generation=generation;block.start_frame=start;block.frames=frames;std::fill_n(block.left.data(),frames,left);std::fill_n(block.right.data(),frames,right);if(!daw_playback.push(block)){error("busy","playback queue refused block");continue;}ok("queued=1 physicalOutputsArmed=0");
             continue;
         }
-        if(command=="DAW_PLAYBACK_PCM"&&parts.size()==5){std::uint64_t generation=0,start=0;std::uint32_t frames=0;if(!parse_number(parts[1],generation)||!parse_number(parts[2],start)||!parse_number(parts[3],frames)||frames==0||frames>256){error("argument","invalid PCM block");continue;}stageforge::DawPlaybackQueue<8192,32>::Block block{};block.generation=generation;block.start_frame=start;block.frames=frames;if(!decode_hex_pcm(parts[4],block.left.data(),block.right.data(),frames)){error("argument","invalid PCM payload");continue;}if(!daw_playback.push(block)){error("busy","playback queue refused PCM block");continue;}ok("queued=1 pcm=1 physicalOutputsArmed=0");
+        if(command=="DAW_PLAYBACK_PCM"&&parts.size()==5){std::uint64_t generation=0,start=0;std::uint32_t frames=0;if(!parse_number(parts[1],generation)||!parse_number(parts[2],start)||!parse_number(parts[3],frames)||frames==0||frames>256){error("argument","invalid PCM block");continue;}stagemesh::DawPlaybackQueue<8192,32>::Block block{};block.generation=generation;block.start_frame=start;block.frames=frames;if(!decode_hex_pcm(parts[4],block.left.data(),block.right.data(),frames)){error("argument","invalid PCM payload");continue;}if(!daw_playback.push(block)){error("busy","playback queue refused PCM block");continue;}ok("queued=1 pcm=1 physicalOutputsArmed=0");
             continue;
         }
         if(command=="DAW_PLAYBACK_START"){daw_playback.start();ok("running=1 physicalOutputsArmed=0");
@@ -911,7 +911,7 @@ int main(int argc, char** argv) {
         if(command=="DAW_RECORD_STATUS"&&parts.size()==2){unsigned int track=0;if(!parse_number(parts[1],track)||track>=8){error("argument","invalid record track");continue;}const auto s=daw_recording.status(track);std::cout<<"OK generation="<<s.generation<<" submitted="<<s.submitted<<" written="<<s.written<<" dropped="<<s.dropped<<" stale="<<s.stale<<" sequenceGaps="<<s.sequence_gaps<<" queued="<<s.queued<<" armed="<<(s.armed?1:0)<<" physicalOutputsArmed=0\n"<<std::flush;
             continue;
         }
-        if(command=="DAW_RECORD_POP"&&parts.size()==2){unsigned int track=0;if(!parse_number(parts[1],track)||track>=8){error("argument","invalid record track");continue;}stageforge::DawRecordingQueue<8,256,64>::Block block{};if(!daw_recording.pop(track,block)){error("empty","record queue empty");continue;}std::cout<<"OK generation="<<block.generation<<" sequence="<<block.sequence<<" showFrame="<<block.show_frame<<" frames="<<block.frames<<" pcm="<<encode_hex_pcm(block.left.data(),block.right.data(),block.frames)<<" physicalOutputsArmed=0\n"<<std::flush;
+        if(command=="DAW_RECORD_POP"&&parts.size()==2){unsigned int track=0;if(!parse_number(parts[1],track)||track>=8){error("argument","invalid record track");continue;}stagemesh::DawRecordingQueue<8,256,64>::Block block{};if(!daw_recording.pop(track,block)){error("empty","record queue empty");continue;}std::cout<<"OK generation="<<block.generation<<" sequence="<<block.sequence<<" showFrame="<<block.show_frame<<" frames="<<block.frames<<" pcm="<<encode_hex_pcm(block.left.data(),block.right.data(),block.frames)<<" physicalOutputsArmed=0\n"<<std::flush;
             continue;
         }
         if (command == "PROFILE_CONFIG" && parts.size() == 3) {
@@ -921,10 +921,10 @@ int main(int argc, char** argv) {
             continue;
         }
         if (command == "PROFILE_SET" && parts.size() == 7) {
-            stageforge::ProfilePreference preference{};unsigned int layer=0,type=0;
+            stagemesh::ProfilePreference preference{};unsigned int layer=0,type=0;
             if(!parse_number(parts[1],preference.namespace_id)||!parse_number(parts[2],preference.key_id)||!parse_number(parts[3],layer)||
                !parse_number(parts[4],preference.revision)||!parse_number(parts[5],type)||layer>4||type>3){error("argument","invalid profile preference");continue;}
-            preference.layer=static_cast<stageforge::ProfileLayer>(layer);preference.type=static_cast<stageforge::ProfileValueType>(type);
+            preference.layer=static_cast<stagemesh::ProfileLayer>(layer);preference.type=static_cast<stagemesh::ProfileValueType>(type);
             bool parsed=false;
             if(type<=1){parsed=parse_number(parts[6],preference.integer_value);if(type==0&&(preference.integer_value<0||preference.integer_value>1))parsed=false;}
             else if(type==2)parsed=parse_number(parts[6],preference.scalar_value);
@@ -934,7 +934,7 @@ int main(int argc, char** argv) {
             continue;
         }
         if (command == "PROFILE_GET" && parts.size() == 3) {
-            std::uint64_t namespace_id=0,key_id=0;stageforge::ProfilePreference preference{};
+            std::uint64_t namespace_id=0,key_id=0;stagemesh::ProfilePreference preference{};
             if(!parse_number(parts[1],namespace_id)||!parse_number(parts[2],key_id)||!user_profile.resolve(namespace_id,key_id,preference)){error("not_found","profile preference unavailable");continue;}
             std::cout<<"OK namespaceId="<<preference.namespace_id<<" keyId="<<preference.key_id<<" layer="<<static_cast<unsigned int>(preference.layer)
                      <<" type="<<static_cast<unsigned int>(preference.type)<<" revision="<<preference.revision<<" integer="<<preference.integer_value
@@ -943,7 +943,7 @@ int main(int argc, char** argv) {
         }
         if (command == "PROFILE_CLEAR_LAYER" && parts.size() == 2) {
             unsigned int layer=0;if(!parse_number(parts[1],layer)||layer>4){error("argument","invalid profile layer");continue;}
-            ok(std::string("removed=")+std::to_string(user_profile.clear_layer(static_cast<stageforge::ProfileLayer>(layer)))+" physicalOutputsArmed=0");
+            ok(std::string("removed=")+std::to_string(user_profile.clear_layer(static_cast<stagemesh::ProfileLayer>(layer)))+" physicalOutputsArmed=0");
             continue;
         }
         if (command == "PROFILE_STATUS" && parts.size() == 1) {
@@ -953,7 +953,7 @@ int main(int argc, char** argv) {
             continue;
         }
         if ((command == "INTEROP_LOCAL_BEGIN"||command == "INTEROP_REMOTE_BEGIN") && parts.size() == 8) {
-            stageforge::HandshakeOffer<64> offer{};unsigned int preserve=0,offline=0;
+            stagemesh::HandshakeOffer<64> offer{};unsigned int preserve=0,offline=0;
             if(!parse_number(parts[1],offer.participant_id)||!parse_number(parts[2],offer.protocol_min)||!parse_number(parts[3],offer.protocol_max)||
                !parse_number(parts[4],offer.profile_schema_min)||!parse_number(parts[5],offer.profile_schema_max)||!parse_number(parts[6],preserve)||
                !parse_number(parts[7],offline)||preserve>1||offline>1){error("argument","invalid interoperability offer");continue;}
@@ -973,7 +973,7 @@ int main(int argc, char** argv) {
             continue;
         }
         if (command == "INTEROP_ADAPTER" && parts.size() == 4) {
-            stageforge::HandshakeAdapter adapter{};unsigned int quality=0;
+            stagemesh::HandshakeAdapter adapter{};unsigned int quality=0;
             if(!parse_number(parts[1],adapter.from)||!parse_number(parts[2],adapter.to)||!parse_number(parts[3],quality)||quality==0||quality>100){error("argument","invalid interoperability adapter");continue;}
             adapter.quality=static_cast<std::uint8_t>(quality);if(!interoperability.add_adapter(adapter)){error("busy","interoperability adapter refused");continue;}ok("adapterRegistered=1");
             continue;
@@ -1037,13 +1037,13 @@ int main(int argc, char** argv) {
             continue;
         }
         if (command == "CHANNEL_OUT" && parts.size() == 3) {
-            std::uint64_t capability=0;std::uint32_t size=0;stageforge::SessionFrameHeader frame{};
+            std::uint64_t capability=0;std::uint32_t size=0;stagemesh::SessionFrameHeader frame{};
             if(!parse_number(parts[1],capability)||!parse_number(parts[2],size)||!session_channel.next_outbound(capability,size,frame)){error("permission","outbound session frame refused");continue;}
             std::cout<<"OK keyEpoch="<<frame.key_epoch<<" sequence="<<frame.sequence<<" capabilityId="<<frame.capability_id<<" payloadSize="<<frame.payload_size<<" physicalOutputsArmed=0\n"<<std::flush;
             continue;
         }
         if (command == "CHANNEL_IN" && parts.size() == 8) {
-            stageforge::SessionFrameHeader frame{};unsigned int verified=0;
+            stagemesh::SessionFrameHeader frame{};unsigned int verified=0;
             if(!parse_number(parts[1],frame.session_id_high)||!parse_number(parts[2],frame.session_id_low)||!parse_number(parts[3],frame.key_epoch)||!parse_number(parts[4],frame.sequence)||!parse_number(parts[5],frame.capability_id)||!parse_number(parts[6],frame.payload_size)||!parse_number(parts[7],verified)||verified>1||!session_channel.authorize_inbound(frame,verified!=0)){error("permission","inbound session frame refused");continue;}ok("accepted=1 physicalOutputsArmed=0");
             continue;
         }
@@ -1093,15 +1093,15 @@ int main(int argc, char** argv) {
             continue;
         }
         if (command == "CORE_SYNC_MONITOR" && parts.size() == 10) {
-            stageforge::MonitorBusSnapshot snapshot{};
+            stagemesh::MonitorBusSnapshot snapshot{};
             int muted = 0;
             if (!parse_number(parts[2], snapshot.master) ||
-                !parse_number(parts[3], snapshot.levels[static_cast<std::size_t>(stageforge::MonitorChannel::self)]) ||
-                !parse_number(parts[4], snapshot.levels[static_cast<std::size_t>(stageforge::MonitorChannel::vocals)]) ||
-                !parse_number(parts[5], snapshot.levels[static_cast<std::size_t>(stageforge::MonitorChannel::band)]) ||
-                !parse_number(parts[6], snapshot.levels[static_cast<std::size_t>(stageforge::MonitorChannel::click)]) ||
-                !parse_number(parts[7], snapshot.levels[static_cast<std::size_t>(stageforge::MonitorChannel::talkback)]) ||
-                !parse_number(parts[8], snapshot.levels[static_cast<std::size_t>(stageforge::MonitorChannel::ambient)]) ||
+                !parse_number(parts[3], snapshot.levels[static_cast<std::size_t>(stagemesh::MonitorChannel::self)]) ||
+                !parse_number(parts[4], snapshot.levels[static_cast<std::size_t>(stagemesh::MonitorChannel::vocals)]) ||
+                !parse_number(parts[5], snapshot.levels[static_cast<std::size_t>(stagemesh::MonitorChannel::band)]) ||
+                !parse_number(parts[6], snapshot.levels[static_cast<std::size_t>(stagemesh::MonitorChannel::click)]) ||
+                !parse_number(parts[7], snapshot.levels[static_cast<std::size_t>(stagemesh::MonitorChannel::talkback)]) ||
+                !parse_number(parts[8], snapshot.levels[static_cast<std::size_t>(stagemesh::MonitorChannel::ambient)]) ||
                 !parse_number(parts[9], muted)) {
                 error("argument", "invalid staged monitor"); continue;
             }
@@ -1114,19 +1114,19 @@ int main(int argc, char** argv) {
         }
         if (command == "CORE_SYNC_COMMIT") {
             const auto result = core.commit_snapshot();
-            if (result.status == stageforge::CoreMutationStatus::applied || result.status == stageforge::CoreMutationStatus::duplicate) {
+            if (result.status == stagemesh::CoreMutationStatus::applied || result.status == stagemesh::CoreMutationStatus::duplicate) {
                 for (const auto& player_id : staged_monitor_players) {
                     if (auto* bus = monitors.find(player_id)) monitor_router.sync(player_id, *bus, audio_graph);
                 }
                 staged_monitor_players.clear();
                 show_loop.wake();
-                std::cout << "OK state=" << stageforge::core_mutation_status_name(result.status)
+                std::cout << "OK state=" << stagemesh::core_mutation_status_name(result.status)
                           << " revision=" << result.revision
                           << " externalRevision=" << result.external_revision
                           << " transportRevision=" << result.resource_revision << '\n' << std::flush;
             } else {
                 staged_monitor_players.clear();
-                error("conflict", stageforge::core_mutation_status_name(result.status));
+                error("conflict", stagemesh::core_mutation_status_name(result.status));
             }
             continue;
         }
@@ -1221,14 +1221,14 @@ int main(int argc, char** argv) {
             continue;
         }
         if (command == "TRANSPORT" && parts.size() == 2) {
-            stageforge::CoreTransportAction action{};
-            if (parts[1] == "play") action = stageforge::CoreTransportAction::play;
-            else if (parts[1] == "pause") action = stageforge::CoreTransportAction::pause;
-            else if (parts[1] == "stop") action = stageforge::CoreTransportAction::stop;
-            else if (parts[1] == "rewind") action = stageforge::CoreTransportAction::rewind;
+            stagemesh::CoreTransportAction action{};
+            if (parts[1] == "play") action = stagemesh::CoreTransportAction::play;
+            else if (parts[1] == "pause") action = stagemesh::CoreTransportAction::pause;
+            else if (parts[1] == "stop") action = stagemesh::CoreTransportAction::stop;
+            else if (parts[1] == "rewind") action = stagemesh::CoreTransportAction::rewind;
             else { error("argument", "unknown transport action"); continue; }
-            const auto result = core.mutate_transport(next_core_command_id++, stageforge::core_any_revision, action);
-            if (!result.applied()) { error("core", stageforge::core_mutation_status_name(result.status)); continue; }
+            const auto result = core.mutate_transport(next_core_command_id++, stagemesh::core_any_revision, action);
+            if (!result.applied()) { error("core", stagemesh::core_mutation_status_name(result.status)); continue; }
             show_loop.wake();
             write_time(clock);
             continue;
@@ -1236,8 +1236,8 @@ int main(int argc, char** argv) {
         if (command == "SET_BPM" && parts.size() == 2) {
             double bpm = 0.0;
             if (!parse_number(parts[1], bpm)) { error("argument", "invalid bpm"); continue; }
-            const auto result = core.mutate_transport(next_core_command_id++, stageforge::core_any_revision, stageforge::CoreTransportAction::set_bpm, bpm);
-            if (!result.applied()) { error("core", stageforge::core_mutation_status_name(result.status)); continue; }
+            const auto result = core.mutate_transport(next_core_command_id++, stagemesh::core_any_revision, stagemesh::CoreTransportAction::set_bpm, bpm);
+            if (!result.applied()) { error("core", stagemesh::core_mutation_status_name(result.status)); continue; }
             show_loop.wake();
             write_time(clock);
             continue;
@@ -1245,8 +1245,8 @@ int main(int argc, char** argv) {
         if (command == "SEEK" && parts.size() == 2) {
             double seconds = 0.0;
             if (!parse_number(parts[1], seconds)) { error("argument", "invalid seconds"); continue; }
-            const auto result = core.mutate_transport(next_core_command_id++, stageforge::core_any_revision, stageforge::CoreTransportAction::seek_seconds, seconds);
-            if (!result.applied()) { error("core", stageforge::core_mutation_status_name(result.status)); continue; }
+            const auto result = core.mutate_transport(next_core_command_id++, stagemesh::core_any_revision, stagemesh::CoreTransportAction::seek_seconds, seconds);
+            if (!result.applied()) { error("core", stagemesh::core_mutation_status_name(result.status)); continue; }
             show_loop.wake();
             write_time(clock);
             continue;
@@ -1330,13 +1330,13 @@ int main(int argc, char** argv) {
             std::string sample_format{"FLOAT_LE"};
             if (!parse_number(parts[base], sample_rate) || !parse_number(parts[base + 1], buffer_frames) || !parse_number(parts[base + 2], channels) || !parse_number(parts[base + 3], source_index) ||
                 sample_rate < 8000.0 || sample_rate > 384000.0 || buffer_frames < 16 || buffer_frames > 8192 ||
-                channels < 1 || channels > 32 || source_index >= stageforge::audio_graph_max_sources) {
+                channels < 1 || channels > 32 || source_index >= stagemesh::audio_graph_max_sources) {
                 error("argument", "invalid audio input activation configuration"); continue;
             }
             if(parts.size()>=7&&(!parse_number(parts[6],conversion_flags)||conversion_flags>7)){error("argument","invalid audio conversion flags");continue;}
             if(parts.size()==8) sample_format=parts[7];
-            stageforge::CanonicalAudioSampleFormat requested_input_format{};
-            if(!stageforge::canonical_audio_sample_format_from_name(sample_format,requested_input_format)){error("argument","invalid audio input sample format");continue;}
+            stagemesh::CanonicalAudioSampleFormat requested_input_format{};
+            if(!stagemesh::canonical_audio_sample_format_from_name(sample_format,requested_input_format)){error("argument","invalid audio input sample format");continue;}
             if(sample_format!="FLOAT_LE"&&(conversion_flags&4U)==0){error("argument","integer audio input requires sample-format conversion permission");continue;}
             if(channels!=2&&(conversion_flags&2U)==0){error("argument","audio input channel conversion permission is required");continue;}
 #if defined(_WIN32) || defined(__APPLE__)
@@ -1353,8 +1353,8 @@ int main(int argc, char** argv) {
                 if (sample_rate != static_cast<unsigned>(sample_rate) || sample_format != "FLOAT_LE") {
                     error("unsupported", "native capture requires integral rate and float32 client format"); continue;
                 }
-                stageforge::AudioRequest request;
-                request.direction = stageforge::AudioDirection::Capture;
+                stagemesh::AudioRequest request;
+                request.direction = stagemesh::AudioDirection::Capture;
                 request.sample_rate_hz = static_cast<unsigned>(sample_rate);
                 request.period_frames = buffer_frames; request.channels = channels;
                 request.allow_rate_conversion = (conversion_flags & 1U) != 0;
@@ -1363,7 +1363,7 @@ int main(int argc, char** argv) {
                 audio_inputs[slot].source.store(static_cast<std::uint8_t>(source_index), std::memory_order_release);
                 try {
                     auto owner = std::make_unique<NativeInputOwner>([&audio_inputs, slot] {
-                        return std::make_unique<stageforge::NativeCaptureService>(capture_native_audio, &audio_inputs[slot]);
+                        return std::make_unique<stagemesh::NativeCaptureService>(capture_native_audio, &audio_inputs[slot]);
                     });
                     const std::string token = device->backend_address.data();
                     if (!owner->execute([request, token](auto& service) { return service.activate_endpoint(request, token); })) {
@@ -1386,13 +1386,13 @@ int main(int argc, char** argv) {
             if (!device || std::string_view(device->backend.data()) != "alsa" || !device->input || !device->connected) {
                 error("unsupported", "selected input has no installed capture adapter"); continue;
             }
-            stageforge::AudioDeviceConfig config{sample_rate, channels, 0, buffer_frames};
+            stagemesh::AudioDeviceConfig config{sample_rate, channels, 0, buffer_frames};
             if (!alsa_inputs[slot].open(device->backend_address.data(), config, capture_audio, &audio_inputs[slot], sample_format)) {
                 const std::string message = alsa_inputs[slot].last_error().empty() ? "unable to start ALSA input" : std::string(alsa_inputs[slot].last_error());
                 alsa_inputs[slot].close(); error("audio", message); continue;
             }
             const auto actual_input=alsa_inputs[slot].status().config;
-            const bool rate_conversion=actual_input.sample_rate!=stageforge::canonical_audio_sample_rate;
+            const bool rate_conversion=actual_input.sample_rate!=stagemesh::canonical_audio_sample_rate;
             const bool channel_conversion=actual_input.input_channels!=2;
             const bool format_conversion=alsa_inputs[slot].sample_format()!="FLOAT_LE";
             if((rate_conversion&&(conversion_flags&1U)==0)||(channel_conversion&&(conversion_flags&2U)==0)||(format_conversion&&(conversion_flags&4U)==0)||!alsa_inputs[slot].start()){
@@ -1470,7 +1470,7 @@ int main(int argc, char** argv) {
                 base = 2;
             }
             unsigned int output = 0; float gain = 0.0F;
-            if (!parse_number(parts[base], output) || !parse_number(parts[base + 1], gain) || output >= stageforge::audio_graph_max_outputs) {
+            if (!parse_number(parts[base], output) || !parse_number(parts[base + 1], gain) || output >= stagemesh::audio_graph_max_outputs) {
                 error("argument", "invalid audio input route"); continue;
             }
             const auto source = audio_inputs[slot].source.load(std::memory_order_acquire);
@@ -1497,7 +1497,7 @@ int main(int argc, char** argv) {
                 max_ppm < 0.0 || max_ppm > 10000.0 || queue_gain_ppm < 0.0 || queue_gain_ppm > 10000.0) {
                 error("argument", "invalid audio drift configuration"); continue;
             }
-            if (alsa_outputs[slot].status().state == stageforge::AudioDeviceState::running) {
+            if (alsa_outputs[slot].status().state == stagemesh::AudioDeviceState::running) {
                 error("busy", "audio drift configuration requires stopped output"); continue;
             }
             auto& context = audio_render_contexts[slot];
@@ -1523,14 +1523,14 @@ int main(int argc, char** argv) {
             std::string sample_format{"FLOAT_LE"};
             if (!parse_number(parts[base], sample_rate) || !parse_number(parts[base + 1], buffer_frames) || !parse_number(parts[base + 2], output_index) ||
                 sample_rate < 8000.0 || sample_rate > 384000.0 || buffer_frames < 16 || buffer_frames > 8192 ||
-                output_index >= stageforge::audio_graph_max_outputs ||
-                static_cast<double>(buffer_frames)*stageforge::canonical_audio_sample_rate/sample_rate>8192.0) {
+                output_index >= stagemesh::audio_graph_max_outputs ||
+                static_cast<double>(buffer_frames)*stagemesh::canonical_audio_sample_rate/sample_rate>8192.0) {
                 error("argument", "invalid audio activation configuration"); continue;
             }
             if(parts.size()>=6&&(!parse_number(parts[5],conversion_flags)||conversion_flags>7)){error("argument","invalid audio conversion flags");continue;}
             if(parts.size()==8){sample_format=parts[6];if(!parse_number(parts[7],channels)||channels<1||channels>32){error("argument","invalid audio output channel count");continue;}}
-            stageforge::CanonicalAudioSampleFormat requested_output_format{};
-            if(!stageforge::canonical_audio_sample_format_from_name(sample_format,requested_output_format)){error("argument","invalid audio output sample format");continue;}
+            stagemesh::CanonicalAudioSampleFormat requested_output_format{};
+            if(!stagemesh::canonical_audio_sample_format_from_name(sample_format,requested_output_format)){error("argument","invalid audio output sample format");continue;}
             if(sample_format!="FLOAT_LE"&&(conversion_flags&4U)==0){error("argument","integer audio output requires sample-format conversion permission");continue;}
             if(channels!=2&&(conversion_flags&2U)==0){error("argument","audio output channel conversion permission is required");continue;}
 #if defined(_WIN32) || defined(__APPLE__)
@@ -1568,8 +1568,8 @@ int main(int argc, char** argv) {
                     for (auto& input : audio_inputs) input.ring.set_reader_active(slot, false);
                     error("unsupported", "native playback requires integral rate and float32 client format"); continue;
                 }
-                stageforge::AudioRequest request;
-                request.direction = stageforge::AudioDirection::Playback;
+                stagemesh::AudioRequest request;
+                request.direction = stagemesh::AudioDirection::Playback;
                 request.sample_rate_hz = static_cast<unsigned>(sample_rate);
                 request.period_frames = buffer_frames; request.channels = channels;
                 request.allow_rate_conversion = (conversion_flags & 1U) != 0;
@@ -1578,7 +1578,7 @@ int main(int argc, char** argv) {
                 request.allow_format_conversion = (conversion_flags & 4U) != 0;
                 try {
                     auto owner = std::make_unique<NativeOutputOwner>([&audio_render_contexts, slot] {
-                        return std::make_unique<stageforge::NativePlaybackService>(render_native_audio, &audio_render_contexts[slot]);
+                        return std::make_unique<stagemesh::NativePlaybackService>(render_native_audio, &audio_render_contexts[slot]);
                     });
                     const std::string token = device->backend_address.data();
                     if (!owner->execute([request, token](auto& service) { return service.activate_endpoint(request, token); })) {
@@ -1605,7 +1605,7 @@ int main(int argc, char** argv) {
                 for (auto& input : audio_inputs) input.ring.set_reader_active(slot, false);
                 error("unsupported", "selected device has no installed playback adapter"); continue;
             }
-            stageforge::AudioDeviceConfig config{sample_rate, 0, channels, buffer_frames};
+            stagemesh::AudioDeviceConfig config{sample_rate, 0, channels, buffer_frames};
             if (!alsa_outputs[slot].open(device->backend_address.data(), config, render_audio, &audio_render_contexts[slot], sample_format)) {
                 const std::string message = alsa_outputs[slot].last_error().empty() ? "unable to start ALSA output" : std::string(alsa_outputs[slot].last_error());
                 alsa_outputs[slot].close();
@@ -1613,10 +1613,10 @@ int main(int argc, char** argv) {
                 error("audio", message); continue;
             }
             const auto actual_output=alsa_outputs[slot].status().config;
-            const bool rate_conversion=actual_output.sample_rate!=stageforge::canonical_audio_sample_rate;
+            const bool rate_conversion=actual_output.sample_rate!=stagemesh::canonical_audio_sample_rate;
             const bool channel_conversion=actual_output.output_channels!=2;
             const bool format_conversion=alsa_outputs[slot].sample_format()!="FLOAT_LE";
-            if((rate_conversion&&(conversion_flags&1U)==0)||(channel_conversion&&(conversion_flags&2U)==0)||(format_conversion&&(conversion_flags&4U)==0)||static_cast<double>(actual_output.frames_per_buffer)*stageforge::canonical_audio_sample_rate/actual_output.sample_rate>8192.0||!alsa_outputs[slot].start()){
+            if((rate_conversion&&(conversion_flags&1U)==0)||(channel_conversion&&(conversion_flags&2U)==0)||(format_conversion&&(conversion_flags&4U)==0)||static_cast<double>(actual_output.frames_per_buffer)*stagemesh::canonical_audio_sample_rate/actual_output.sample_rate>8192.0||!alsa_outputs[slot].start()){
                 alsa_outputs[slot].close();for(auto& input:audio_inputs)input.ring.set_reader_active(slot,false);error("audio","configured ALSA output parameters exceed engine bounds");continue;
             }
             audio_render_contexts[slot].expected_sample_rate.store(actual_output.sample_rate,std::memory_order_relaxed);
@@ -1700,7 +1700,7 @@ int main(int argc, char** argv) {
             std::cout << "OK slot=" << slot
                       << " execution=" << execution_audio_backends[slot]
                       << " selected=" << (selected_audio_outputs[slot].empty() ? "none" : selected_audio_outputs[slot])
-                      << " state=" << static_cast<int>(alsa ? stream.state : (slot == 0 ? audio.status().state : stageforge::AudioDeviceState::closed))
+                      << " state=" << static_cast<int>(alsa ? stream.state : (slot == 0 ? audio.status().state : stagemesh::AudioDeviceState::closed))
                       << " callbacks=" << (alsa ? stream.callback_count : (slot == 0 ? audio.status().callback_count : 0))
                       << " xruns=" << (alsa ? stream.xruns : 0)
                       << " requestedRate=" << (alsa ? requested.sample_rate : (slot == 0 ? audio.status().config.sample_rate : 0.0))
@@ -1737,7 +1737,7 @@ int main(int argc, char** argv) {
             unsigned int source = 0, output = 0;
             float gain = 0.0F;
             if (!parse_number(parts[1], source) || !parse_number(parts[2], output) || !parse_number(parts[3], gain) ||
-                source >= stageforge::audio_graph_max_sources || output >= stageforge::audio_graph_max_outputs) {
+                source >= stagemesh::audio_graph_max_sources || output >= stagemesh::audio_graph_max_outputs) {
                 error("argument", "invalid audio route"); continue;
             }
             audio_graph.set_route_gain(static_cast<std::uint8_t>(source), static_cast<std::uint8_t>(output), gain);
@@ -1750,7 +1750,7 @@ int main(int argc, char** argv) {
             unsigned int output = 0;
             float master = 0.0F, ceiling = 0.0F;
             if (!parse_number(parts[1], output) || !parse_number(parts[2], master) || !parse_number(parts[3], ceiling) ||
-                output >= stageforge::audio_graph_max_outputs) {
+                output >= stagemesh::audio_graph_max_outputs) {
                 error("argument", "invalid audio output"); continue;
             }
             audio_graph.set_output_master(static_cast<std::uint8_t>(output), master);
@@ -1806,7 +1806,7 @@ int main(int argc, char** argv) {
                      <<" uwbValidFrames="<<uwb.valid_frames<<" uwbInvalidFrames="<<uwb.invalid_frames
                      <<" uwbResyncBytes="<<uwb.resync_bytes<<" physicalOutputsArmed=0";
             if(parts.size()==2){
-                std::uint64_t node_id=0;stageforge::LeIsoHardwareStatus le{};
+                std::uint64_t node_id=0;stagemesh::LeIsoHardwareStatus le{};
                 if(!parse_number(parts[1],node_id)||!le_uwb_hardware.le_status(node_id,le)){std::cout<<'\n'<<std::flush;continue;}
                 std::cout<<" nodeId="<<node_id<<" leOpen="<<(le.open?1:0)<<" leConnecting="<<(le.connecting?1:0)
                          <<" leSocketConnected="<<(le.connected?1:0)<<" leReceivedSdus="<<le.received_sdus
@@ -1822,7 +1822,7 @@ int main(int argc, char** argv) {
                !parse_number(parts[4],fresh)||!parse_number(parts[5],holdover)||!parse_number(parts[6],max_clock)||
                !parse_number(parts[7],max_jitter)||!parse_number(parts[8],max_range)||!parse_number(parts[9],max_drift)||
                !parse_number(parts[10],require_auth)||require_auth>1){error("argument","invalid LE-UWB hub policy");continue;}
-            stageforge::LeUwbHubPolicy policy{};policy.target_presentation_lead_ns=target_lead;policy.max_end_to_end_ns=max_end_to_end;
+            stagemesh::LeUwbHubPolicy policy{};policy.target_presentation_lead_ns=target_lead;policy.max_end_to_end_ns=max_end_to_end;
             policy.fresh_observation_ns=fresh;policy.holdover_ns=holdover;policy.max_clock_uncertainty_ns=max_clock;
             policy.max_jitter_ns=max_jitter;policy.max_range_uncertainty_mm=max_range;policy.max_drift_ppm=max_drift;
             policy.require_authenticated_observations=require_auth!=0;
@@ -1834,7 +1834,7 @@ int main(int argc, char** argv) {
             std::uint64_t node_id=0,presentation_delay=0;unsigned int stream_id=0,role=0,required=0;
             if(!parse_number(parts[1],node_id)||!parse_number(parts[2],stream_id)||!parse_number(parts[3],role)||
                !parse_number(parts[4],presentation_delay)||!parse_number(parts[5],required)||role>4||required>1||
-               !le_uwb_hub.register_node({node_id,stream_id,static_cast<stageforge::LeUwbNodeRole>(role),presentation_delay,required!=0})){
+               !le_uwb_hub.register_node({node_id,stream_id,static_cast<stagemesh::LeUwbNodeRole>(role),presentation_delay,required!=0})){
                 error("argument","invalid LE-UWB node");continue;}
             ok(std::string("nodeId=")+std::to_string(node_id)+" registered=1 physicalOutputsArmed=0");
             continue;
@@ -1882,7 +1882,7 @@ int main(int argc, char** argv) {
             continue;
         }
         if (command == "HUB_STATUS" && parts.size() == 2) {
-            std::uint64_t node_id=0;stageforge::LeUwbNodeStatus status{};
+            std::uint64_t node_id=0;stagemesh::LeUwbNodeStatus status{};
             if(!parse_number(parts[1],node_id)||!le_uwb_hub.status(node_id,status)){error("not_found","LE-UWB node unavailable");continue;}
             std::cout<<"OK nodeId="<<status.descriptor.node_id<<" streamId="<<status.descriptor.le_stream_id
                      <<" role="<<static_cast<unsigned int>(status.descriptor.role)<<" state="<<static_cast<unsigned int>(status.state)
@@ -1941,8 +1941,8 @@ int main(int argc, char** argv) {
         if (command == "MONITOR_SET" && parts.size() == 4) {
             double value = 0.0;
             if (!parse_number(parts[3], value)) { error("argument", "invalid monitor value"); continue; }
-            const auto result = core.mutate_monitor(next_core_command_id++, stageforge::core_any_revision, parts[1], parts[2], value);
-            if (!result.applied()) { error("core", stageforge::core_mutation_status_name(result.status)); continue; }
+            const auto result = core.mutate_monitor(next_core_command_id++, stagemesh::core_any_revision, parts[1], parts[2], value);
+            if (!result.applied()) { error("core", stagemesh::core_mutation_status_name(result.status)); continue; }
             auto* bus = monitors.find(parts[1]);
             if (!bus) { error("not_found", "unknown player"); continue; }
             if (!monitor_router.sync(parts[1], *bus, audio_graph)) {
@@ -1960,13 +1960,13 @@ int main(int argc, char** argv) {
         if (command == "PARAM_BIND_AUDIO_MASTER" && parts.size() == 7) {
             std::uint64_t target=0, parameter=0; unsigned int output=0; float minv=0, maxv=0, defv=0;
             if (!parse_number(parts[1],target)||!parse_number(parts[2],parameter)||!parse_number(parts[3],output)||
-                !parse_number(parts[4],minv)||!parse_number(parts[5],maxv)||!parse_number(parts[6],defv)||output>=stageforge::audio_graph_max_outputs) {
+                !parse_number(parts[4],minv)||!parse_number(parts[5],maxv)||!parse_number(parts[6],defv)||output>=stagemesh::audio_graph_max_outputs) {
                 error("argument","invalid audio master parameter binding"); continue;
             }
             auto* ctx=allocate_parameter_context(); if(!ctx){error("capacity","parameter endpoint capacity");continue;}
             ctx->kind=EngineParameterEndpointContext::Kind::audio_master;ctx->graph=&audio_graph;ctx->output=static_cast<std::uint8_t>(output);
-            stageforge::CoreParameterDescriptor d{target,parameter,stageforge::CoreParameterUnit::linear,stageforge::CoreParameterTiming::block,
-                stageforge::CoreParameterSafety::normal,stageforge::CoreParameterEndpointKind::mixer_gain,minv,maxv,defv,0.0F,true,true,true};
+            stagemesh::CoreParameterDescriptor d{target,parameter,stagemesh::CoreParameterUnit::linear,stagemesh::CoreParameterTiming::block,
+                stagemesh::CoreParameterSafety::normal,stagemesh::CoreParameterEndpointKind::mixer_gain,minv,maxv,defv,0.0F,true,true,true};
             if(!parameter_registry.register_endpoint(d,&apply_engine_parameter,ctx)){--parameter_endpoint_context_count;error("conflict","parameter registration refused");continue;}
             (void)automation_state.seed(target,parameter,defv); ok("registered=1 endpoint=audio-master");
             continue;
@@ -1974,11 +1974,11 @@ int main(int argc, char** argv) {
         if (command == "PARAM_BIND_AUDIO_ROUTE" && parts.size() == 8) {
             std::uint64_t target=0, parameter=0; unsigned int source=0,output=0; float minv=0,maxv=0,defv=0;
             if(!parse_number(parts[1],target)||!parse_number(parts[2],parameter)||!parse_number(parts[3],source)||!parse_number(parts[4],output)||
-               !parse_number(parts[5],minv)||!parse_number(parts[6],maxv)||!parse_number(parts[7],defv)||source>=stageforge::audio_graph_max_sources||output>=stageforge::audio_graph_max_outputs){error("argument","invalid audio route parameter binding");continue;}
+               !parse_number(parts[5],minv)||!parse_number(parts[6],maxv)||!parse_number(parts[7],defv)||source>=stagemesh::audio_graph_max_sources||output>=stagemesh::audio_graph_max_outputs){error("argument","invalid audio route parameter binding");continue;}
             auto* ctx=allocate_parameter_context();if(!ctx){error("capacity","parameter endpoint capacity");continue;}
             ctx->kind=EngineParameterEndpointContext::Kind::audio_route;ctx->graph=&audio_graph;ctx->source=static_cast<std::uint8_t>(source);ctx->output=static_cast<std::uint8_t>(output);
-            stageforge::CoreParameterDescriptor d{target,parameter,stageforge::CoreParameterUnit::linear,stageforge::CoreParameterTiming::block,
-                stageforge::CoreParameterSafety::normal,stageforge::CoreParameterEndpointKind::mixer_gain,minv,maxv,defv,0.0F,true,true,false};
+            stagemesh::CoreParameterDescriptor d{target,parameter,stagemesh::CoreParameterUnit::linear,stagemesh::CoreParameterTiming::block,
+                stagemesh::CoreParameterSafety::normal,stagemesh::CoreParameterEndpointKind::mixer_gain,minv,maxv,defv,0.0F,true,true,false};
             if(!parameter_registry.register_endpoint(d,&apply_engine_parameter,ctx)){--parameter_endpoint_context_count;error("conflict","parameter registration refused");continue;}
             (void)automation_state.seed(target,parameter,defv); ok("registered=1 endpoint=audio-route");
             continue;
@@ -1988,16 +1988,16 @@ int main(int argc, char** argv) {
             if(!parse_number(parts[1],target)||!parse_number(parts[2],parameter)||parts[3].empty()||parts[3].size()>=64||!parse_number(parts[4],minv)||!parse_number(parts[5],maxv)||!parse_number(parts[6],defv)){error("argument","invalid monitor parameter binding");continue;}
             auto& bus=monitors.get_or_create(parts[3]);(void)monitor_router.sync(parts[3],bus,audio_graph);
             auto* ctx=allocate_parameter_context();if(!ctx){error("capacity","parameter endpoint capacity");continue;}ctx->kind=EngineParameterEndpointContext::Kind::monitor_master;ctx->graph=&audio_graph;ctx->core=&core;ctx->monitor_router=&monitor_router;std::strncpy(ctx->player.data(),parts[3].c_str(),ctx->player.size()-1);
-            stageforge::CoreParameterDescriptor d{target,parameter,stageforge::CoreParameterUnit::percent,stageforge::CoreParameterTiming::show,stageforge::CoreParameterSafety::normal,stageforge::CoreParameterEndpointKind::monitor_gain,minv,maxv,defv,0.0F,true,true,false};
+            stagemesh::CoreParameterDescriptor d{target,parameter,stagemesh::CoreParameterUnit::percent,stagemesh::CoreParameterTiming::show,stagemesh::CoreParameterSafety::normal,stagemesh::CoreParameterEndpointKind::monitor_gain,minv,maxv,defv,0.0F,true,true,false};
             if(!parameter_registry.register_endpoint(d,&apply_engine_parameter,ctx)){--parameter_endpoint_context_count;error("conflict","parameter registration refused");continue;}(void)automation_state.seed(target,parameter,defv); ok("registered=1 endpoint=monitor-master");
             continue;
         }
         if (command == "PARAM_BIND_MONITOR_CHANNEL" && parts.size() == 8) {
-            std::uint64_t target=0,parameter=0;float minv=0,maxv=0,defv=0;stageforge::MonitorChannel channel{};
-            if(!parse_number(parts[1],target)||!parse_number(parts[2],parameter)||parts[3].empty()||parts[3].size()>=64||!stageforge::MonitorBus::parse_channel(parts[4],channel)||!parse_number(parts[5],minv)||!parse_number(parts[6],maxv)||!parse_number(parts[7],defv)){error("argument","invalid monitor channel parameter binding");continue;}
+            std::uint64_t target=0,parameter=0;float minv=0,maxv=0,defv=0;stagemesh::MonitorChannel channel{};
+            if(!parse_number(parts[1],target)||!parse_number(parts[2],parameter)||parts[3].empty()||parts[3].size()>=64||!stagemesh::MonitorBus::parse_channel(parts[4],channel)||!parse_number(parts[5],minv)||!parse_number(parts[6],maxv)||!parse_number(parts[7],defv)){error("argument","invalid monitor channel parameter binding");continue;}
             auto& bus=monitors.get_or_create(parts[3]);(void)monitor_router.sync(parts[3],bus,audio_graph);
             auto* ctx=allocate_parameter_context();if(!ctx){error("capacity","parameter endpoint capacity");continue;}ctx->kind=EngineParameterEndpointContext::Kind::monitor_channel;ctx->graph=&audio_graph;ctx->core=&core;ctx->monitor_router=&monitor_router;ctx->monitor_channel=channel;std::strncpy(ctx->player.data(),parts[3].c_str(),ctx->player.size()-1);
-            stageforge::CoreParameterDescriptor d{target,parameter,stageforge::CoreParameterUnit::percent,stageforge::CoreParameterTiming::show,stageforge::CoreParameterSafety::normal,stageforge::CoreParameterEndpointKind::monitor_gain,minv,maxv,defv,0.0F,true,true,false};
+            stagemesh::CoreParameterDescriptor d{target,parameter,stagemesh::CoreParameterUnit::percent,stagemesh::CoreParameterTiming::show,stagemesh::CoreParameterSafety::normal,stagemesh::CoreParameterEndpointKind::monitor_gain,minv,maxv,defv,0.0F,true,true,false};
             if(!parameter_registry.register_endpoint(d,&apply_engine_parameter,ctx)){--parameter_endpoint_context_count;error("conflict","parameter registration refused");continue;}(void)automation_state.seed(target,parameter,defv); ok("registered=1 endpoint=monitor-channel");
             continue;
         }
@@ -2005,7 +2005,7 @@ int main(int argc, char** argv) {
             std::uint64_t target=0,parameter=0;unsigned int universe=0,channel=0;float minv=0,maxv=0,defv=0;
             if(!parse_number(parts[1],target)||!parse_number(parts[2],parameter)||!parse_number(parts[3],universe)||!parse_number(parts[4],channel)||!parse_number(parts[5],minv)||!parse_number(parts[6],maxv)||!parse_number(parts[7],defv)||universe>=dmx_universes.size()||channel<1||channel>512){error("argument","invalid lighting parameter binding");continue;}
             auto* ctx=allocate_parameter_context();if(!ctx){error("capacity","parameter endpoint capacity");continue;}ctx->kind=EngineParameterEndpointContext::Kind::lighting;ctx->dmx=&dmx_universes;ctx->universe=static_cast<std::uint16_t>(universe);ctx->channel=static_cast<std::uint16_t>(channel);
-            stageforge::CoreParameterDescriptor d{target,parameter,stageforge::CoreParameterUnit::dmx,stageforge::CoreParameterTiming::show,stageforge::CoreParameterSafety::physical_output,stageforge::CoreParameterEndpointKind::lighting,minv,maxv,defv,0.0F,true,true,false};
+            stagemesh::CoreParameterDescriptor d{target,parameter,stagemesh::CoreParameterUnit::dmx,stagemesh::CoreParameterTiming::show,stagemesh::CoreParameterSafety::physical_output,stagemesh::CoreParameterEndpointKind::lighting,minv,maxv,defv,0.0F,true,true,false};
             if(!parameter_registry.register_endpoint(d,&apply_engine_parameter,ctx)){--parameter_endpoint_context_count;error("conflict","parameter registration refused");continue;}(void)automation_state.seed(target,parameter,defv); ok("registered=1 endpoint=lighting");
             continue;
         }
@@ -2014,7 +2014,7 @@ int main(int argc, char** argv) {
             continue;
         }
         if (command == "PARAM_GET" && parts.size()==3) {
-            std::uint64_t target=0,parameter=0;if(!parse_number(parts[1],target)||!parse_number(parts[2],parameter)){error("argument","invalid parameter identity");continue;}stageforge::CoreParameterStatus st{};if(!parameter_registry.status(target,parameter,st)){error("not_found","parameter not registered");continue;}
+            std::uint64_t target=0,parameter=0;if(!parse_number(parts[1],target)||!parse_number(parts[2],parameter)){error("argument","invalid parameter identity");continue;}stagemesh::CoreParameterStatus st{};if(!parameter_registry.status(target,parameter,st)){error("not_found","parameter not registered");continue;}
             std::cout<<"OK targetId="<<target<<" parameterId="<<parameter<<" value="<<std::setprecision(9)<<st.last_applied<<" applications="<<st.applications<<" automationRevision="<<st.automation_revision<<" timing="<<static_cast<unsigned>(st.descriptor.timing)<<" endpoint="<<static_cast<unsigned>(st.descriptor.endpoint_kind)<<'\n'<<std::flush;
             continue;
         }
@@ -2025,19 +2025,19 @@ int main(int argc, char** argv) {
         if (command == "CUE_GRAPH_ADD_AUTOMATION" && parts.size()==7) {
             if(staged_cue_graph_id==0||staged_cue_action_count>=staged_cue_actions.size()){error("state","cue graph not open or full");continue;}std::uint64_t target=0,param=0,owner=0;float value=0;unsigned int duration=0,offset_ms=0;
             if(!parse_number(parts[1],target)||!parse_number(parts[2],param)||!parse_number(parts[3],value)||!parse_number(parts[4],duration)||!parse_number(parts[5],owner)||!parse_number(parts[6],offset_ms)){error("argument","invalid cue automation action");continue;}
-            auto&a=staged_cue_actions[staged_cue_action_count++];a={};a.type=stageforge::CueActionType::automation;a.owner_id=owner;a.offset_ns=static_cast<std::uint64_t>(offset_ms)*1'000'000ULL;a.payload.automation={target,param,value,duration};ok("action=automation");
+            auto&a=staged_cue_actions[staged_cue_action_count++];a={};a.type=stagemesh::CueActionType::automation;a.owner_id=owner;a.offset_ns=static_cast<std::uint64_t>(offset_ms)*1'000'000ULL;a.payload.automation={target,param,value,duration};ok("action=automation");
             continue;
         }
         if (command == "CUE_GRAPH_ADD_TRANSPORT" && parts.size()==4) {
-            if(staged_cue_graph_id==0||staged_cue_action_count>=staged_cue_actions.size()){error("state","cue graph not open or full");continue;}sf_core_transport_action action{};if(parts[1]=="play")action=SF_CORE_TRANSPORT_PLAY;else if(parts[1]=="pause")action=SF_CORE_TRANSPORT_PAUSE;else if(parts[1]=="bpm")action=SF_CORE_TRANSPORT_SET_BPM;else if(parts[1]=="seek")action=SF_CORE_TRANSPORT_SEEK_SECONDS;else{error("argument","invalid transport action");continue;}double value=0;unsigned int offset_ms=0;if(!parse_number(parts[2],value)||!parse_number(parts[3],offset_ms)){error("argument","invalid transport cue action");continue;}auto&a=staged_cue_actions[staged_cue_action_count++];a={};a.type=stageforge::CueActionType::transport;a.offset_ns=static_cast<std::uint64_t>(offset_ms)*1'000'000ULL;a.payload.transport={action,value};ok("action=transport");
+            if(staged_cue_graph_id==0||staged_cue_action_count>=staged_cue_actions.size()){error("state","cue graph not open or full");continue;}sf_core_transport_action action{};if(parts[1]=="play")action=SF_CORE_TRANSPORT_PLAY;else if(parts[1]=="pause")action=SF_CORE_TRANSPORT_PAUSE;else if(parts[1]=="bpm")action=SF_CORE_TRANSPORT_SET_BPM;else if(parts[1]=="seek")action=SF_CORE_TRANSPORT_SEEK_SECONDS;else{error("argument","invalid transport action");continue;}double value=0;unsigned int offset_ms=0;if(!parse_number(parts[2],value)||!parse_number(parts[3],offset_ms)){error("argument","invalid transport cue action");continue;}auto&a=staged_cue_actions[staged_cue_action_count++];a={};a.type=stagemesh::CueActionType::transport;a.offset_ns=static_cast<std::uint64_t>(offset_ms)*1'000'000ULL;a.payload.transport={action,value};ok("action=transport");
             continue;
         }
         if (command == "CUE_GRAPH_ADD_MIDI" && parts.size()==6) {
-            if(staged_cue_graph_id==0||staged_cue_action_count>=staged_cue_actions.size()){error("state","cue graph not open or full");continue;}unsigned int status=0,d1=0,d2=0,port=0,offset_ms=0;if(!parse_number(parts[1],status)||!parse_number(parts[2],d1)||!parse_number(parts[3],d2)||!parse_number(parts[4],port)||!parse_number(parts[5],offset_ms)||status<0x80||status>255||d1>127||d2>127||port>255){error("argument","invalid MIDI cue action");continue;}auto&a=staged_cue_actions[staged_cue_action_count++];a={};a.type=stageforge::CueActionType::midi;a.offset_ns=static_cast<std::uint64_t>(offset_ms)*1'000'000ULL;a.payload.midi={static_cast<std::uint8_t>(status),static_cast<std::uint8_t>(d1),static_cast<std::uint8_t>(d2),static_cast<std::uint8_t>(port)};ok("action=midi");
+            if(staged_cue_graph_id==0||staged_cue_action_count>=staged_cue_actions.size()){error("state","cue graph not open or full");continue;}unsigned int status=0,d1=0,d2=0,port=0,offset_ms=0;if(!parse_number(parts[1],status)||!parse_number(parts[2],d1)||!parse_number(parts[3],d2)||!parse_number(parts[4],port)||!parse_number(parts[5],offset_ms)||status<0x80||status>255||d1>127||d2>127||port>255){error("argument","invalid MIDI cue action");continue;}auto&a=staged_cue_actions[staged_cue_action_count++];a={};a.type=stagemesh::CueActionType::midi;a.offset_ns=static_cast<std::uint64_t>(offset_ms)*1'000'000ULL;a.payload.midi={static_cast<std::uint8_t>(status),static_cast<std::uint8_t>(d1),static_cast<std::uint8_t>(d2),static_cast<std::uint8_t>(port)};ok("action=midi");
             continue;
         }
         if (command == "CUE_GRAPH_ADD_LIGHT" && parts.size()==5) {
-            if(staged_cue_graph_id==0||staged_cue_action_count>=staged_cue_actions.size()){error("state","cue graph not open or full");continue;}unsigned int universe=0,channel=0,value=0,offset_ms=0;if(!parse_number(parts[1],universe)||!parse_number(parts[2],channel)||!parse_number(parts[3],value)||!parse_number(parts[4],offset_ms)||channel<1||channel>512||value>255||universe>65535){error("argument","invalid lighting cue action");continue;}auto&a=staged_cue_actions[staged_cue_action_count++];a={};a.type=stageforge::CueActionType::lighting;a.offset_ns=static_cast<std::uint64_t>(offset_ms)*1'000'000ULL;a.payload.lighting={static_cast<std::uint16_t>(universe),static_cast<std::uint16_t>(channel),static_cast<std::uint8_t>(value),{0,0,0}};ok("action=lighting");
+            if(staged_cue_graph_id==0||staged_cue_action_count>=staged_cue_actions.size()){error("state","cue graph not open or full");continue;}unsigned int universe=0,channel=0,value=0,offset_ms=0;if(!parse_number(parts[1],universe)||!parse_number(parts[2],channel)||!parse_number(parts[3],value)||!parse_number(parts[4],offset_ms)||channel<1||channel>512||value>255||universe>65535){error("argument","invalid lighting cue action");continue;}auto&a=staged_cue_actions[staged_cue_action_count++];a={};a.type=stagemesh::CueActionType::lighting;a.offset_ns=static_cast<std::uint64_t>(offset_ms)*1'000'000ULL;a.payload.lighting={static_cast<std::uint16_t>(universe),static_cast<std::uint16_t>(channel),static_cast<std::uint8_t>(value),{0,0,0}};ok("action=lighting");
             continue;
         }
         if (command == "CUE_GRAPH_COMMIT") {
@@ -2063,7 +2063,7 @@ int main(int argc, char** argv) {
         if (command == "SHOW_COMPILE_PARAM" && parts.size()==8) {
             std::uint64_t target=0,param=0;float minv=0,maxv=0,defv=0;unsigned int timing=0,unit=0;
             if(!parse_number(parts[1],target)||!parse_number(parts[2],param)||!parse_number(parts[3],minv)||!parse_number(parts[4],maxv)||!parse_number(parts[5],defv)||!parse_number(parts[6],timing)||!parse_number(parts[7],unit)){error("argument","invalid runtime parameter");continue;}
-            stageforge::CoreParameterDescriptor d{};d.target_id=target;d.parameter_id=param;d.minimum=minv;d.maximum=maxv;d.default_value=defv;d.timing=static_cast<stageforge::CoreParameterTiming>(timing);d.unit=static_cast<stageforge::CoreParameterUnit>(unit);
+            stagemesh::CoreParameterDescriptor d{};d.target_id=target;d.parameter_id=param;d.minimum=minv;d.maximum=maxv;d.default_value=defv;d.timing=static_cast<stagemesh::CoreParameterTiming>(timing);d.unit=static_cast<stagemesh::CoreParameterUnit>(unit);
             if(!runtime_show.add_parameter(d)){error("capacity","runtime parameter refused");continue;}ok("compile=parameter");
             continue;
         }
@@ -2084,14 +2084,14 @@ int main(int argc, char** argv) {
             continue;
         }
         if (command == "ROUTE_TX_AUDIO" && parts.size()==5) {
-            unsigned int source=0,output=0,enabled=0;float gain=0.0F;if(!parse_number(parts[1],source)||!parse_number(parts[2],output)||!parse_number(parts[3],gain)||!parse_number(parts[4],enabled)||source>=stageforge::audio_graph_max_sources||output>=stageforge::audio_graph_max_outputs||staged_audio_route_change_count>=staged_audio_route_changes.size()){error("argument","invalid audio routing transaction edge");continue;}
+            unsigned int source=0,output=0,enabled=0;float gain=0.0F;if(!parse_number(parts[1],source)||!parse_number(parts[2],output)||!parse_number(parts[3],gain)||!parse_number(parts[4],enabled)||source>=stagemesh::audio_graph_max_sources||output>=stagemesh::audio_graph_max_outputs||staged_audio_route_change_count>=staged_audio_route_changes.size()){error("argument","invalid audio routing transaction edge");continue;}
             const std::uint64_t from=1ULL+source;const std::uint64_t to=1001ULL+output;if(!routing_state.set({from,to,2,0,enabled!=0})){error("argument","audio routing graph edge refused");continue;}staged_audio_route_changes[staged_audio_route_change_count++]={static_cast<std::uint8_t>(source),static_cast<std::uint8_t>(output),enabled!=0?gain:0.0F};ok("routing=audio-edge");
             continue;
         }
         if (command == "ROUTE_TX_COMMIT") {
             if(!routing_state.commit()){error("invalid","routing graph contains cycle or transaction not open");continue;}
-            if(staged_audio_route_change_count && !audio_graph.apply_route_transaction(std::span<const stageforge::AudioRouteChange>(staged_audio_route_changes.data(),staged_audio_route_change_count))){error("invalid","audio route publication refused");continue;}
-            staged_audio_route_change_count=0;const auto st=routing_state.status();const auto now=clock.snapshot();const auto show_ns=static_cast<std::uint64_t>(std::max(0.0,now.show_seconds)*1'000'000'000.0);(void)core_journal.append(stageforge::CoreJournalKind::routing,show_ns,0,0,st.revision);std::cout<<"OK revision="<<st.revision<<" routes="<<st.route_count<<'\n'<<std::flush;
+            if(staged_audio_route_change_count && !audio_graph.apply_route_transaction(std::span<const stagemesh::AudioRouteChange>(staged_audio_route_changes.data(),staged_audio_route_change_count))){error("invalid","audio route publication refused");continue;}
+            staged_audio_route_change_count=0;const auto st=routing_state.status();const auto now=clock.snapshot();const auto show_ns=static_cast<std::uint64_t>(std::max(0.0,now.show_seconds)*1'000'000'000.0);(void)core_journal.append(stagemesh::CoreJournalKind::routing,show_ns,0,0,st.revision);std::cout<<"OK revision="<<st.revision<<" routes="<<st.route_count<<'\n'<<std::flush;
             continue;
         }
         if (command == "ROUTE_TX_ROLLBACK") { routing_state.rollback();staged_audio_route_change_count=0;ok("rolledBack=1");
@@ -2103,11 +2103,11 @@ int main(int argc, char** argv) {
         if (command == "JOURNAL_STATUS") { std::cout<<"OK pending="<<core_journal.pending()<<" dropped="<<core_journal.dropped()<<" lastHash="<<core_journal.last_hash()<<'\n'<<std::flush;
             continue;
         }
-        if (command == "JOURNAL_NEXT") { stageforge::CoreJournalRecord rec{};if(!core_journal.try_pop(rec)){ok("available=0");continue;}std::cout<<"OK available=1 sequence="<<rec.sequence<<" kind="<<static_cast<unsigned>(rec.kind)<<" showNs="<<rec.show_ns<<" eventId="<<rec.event_id<<" subjectId="<<rec.subject_id<<" revision="<<rec.revision<<" previousHash="<<rec.previous_hash<<" hash="<<rec.hash<<'\n'<<std::flush;
+        if (command == "JOURNAL_NEXT") { stagemesh::CoreJournalRecord rec{};if(!core_journal.try_pop(rec)){ok("available=0");continue;}std::cout<<"OK available=1 sequence="<<rec.sequence<<" kind="<<static_cast<unsigned>(rec.kind)<<" showNs="<<rec.show_ns<<" eventId="<<rec.event_id<<" subjectId="<<rec.subject_id<<" revision="<<rec.revision<<" previousHash="<<rec.previous_hash<<" hash="<<rec.hash<<'\n'<<std::flush;
             continue;
         }
         if (command == "SHADOW_DECLARE" && parts.size()==8) {
-            stageforge::CoreShadowSource src{};unsigned int required=0,capable=0,asset=0;if(!parse_number(parts[1],src.id)||!parse_number(parts[2],src.show_revision)||!parse_number(parts[3],src.content_hash)||!parse_number(parts[4],src.generation)||!parse_number(parts[5],required)||!parse_number(parts[6],capable)||!parse_number(parts[7],asset)){error("argument","invalid shadow source");continue;}src.required=required!=0;src.capable=capable!=0;src.asset_ready=asset!=0;if(!shadow_planner.declare_source(src)){error("capacity","shadow source refused");continue;}ok("shadow=declared");
+            stagemesh::CoreShadowSource src{};unsigned int required=0,capable=0,asset=0;if(!parse_number(parts[1],src.id)||!parse_number(parts[2],src.show_revision)||!parse_number(parts[3],src.content_hash)||!parse_number(parts[4],src.generation)||!parse_number(parts[5],required)||!parse_number(parts[6],capable)||!parse_number(parts[7],asset)){error("argument","invalid shadow source");continue;}src.required=required!=0;src.capable=capable!=0;src.asset_ready=asset!=0;if(!shadow_planner.declare_source(src)){error("capacity","shadow source refused");continue;}ok("shadow=declared");
             continue;
         }
         if (command == "SHADOW_REPORT" && parts.size()==7) {
@@ -2118,7 +2118,7 @@ int main(int argc, char** argv) {
             std::uint64_t id=0,generation=0,rev=0,hash=0,start=0,end=0;unsigned int frames=0,healthy=0;
             if(!parse_number(parts[1],id)||!parse_number(parts[2],generation)||!parse_number(parts[3],rev)||!parse_number(parts[4],hash)||!parse_number(parts[5],start)||!parse_number(parts[6],end)||!parse_number(parts[7],frames)||!parse_number(parts[8],healthy)){error("argument","invalid shadow block");continue;}
             if(!shadow_prebuffer.configure(id,generation,rev,hash)||!shadow_prebuffer.ingest_block(id,generation,rev,hash,start,end,frames,healthy!=0)){error("conflict","shadow block discontinuity or stale identity");continue;}
-            stageforge::CoreShadowPrebufferStatus ps{};if(!shadow_prebuffer.status(id,ps)){error("state","shadow prebuffer status unavailable");continue;}
+            stagemesh::CoreShadowPrebufferStatus ps{};if(!shadow_prebuffer.status(id,ps)){error("state","shadow prebuffer status unavailable");continue;}
             if(!shadow_planner.report(id,generation,rev,hash,ps.buffered_until_show_ns,ps.healthy)){error("conflict","shadow planner rejected block evidence");continue;}
             std::cout<<"OK shadow=block bufferedUntilShowNs="<<ps.buffered_until_show_ns<<" renderedFrames="<<ps.rendered_frames<<" renderedBlocks="<<ps.rendered_blocks<<" discontinuities="<<ps.discontinuities<<'\n'<<std::flush;
             continue;
@@ -2196,7 +2196,7 @@ int main(int argc, char** argv) {
                 const auto time = clock.snapshot();
                 show_ns = static_cast<std::uint64_t>(std::max(0.0, time.show_seconds) * 1'000'000'000.0);
             }
-            stageforge::AutomationParameterSnapshot state{};
+            stagemesh::AutomationParameterSnapshot state{};
             if (!automation_state.snapshot(target, parameter, show_ns, state)) { error("not_found", "automation parameter not registered"); continue; }
             std::cout << "OK targetId=" << state.target_id
                       << " parameterId=" << state.parameter_id
@@ -2261,12 +2261,12 @@ int main(int argc, char** argv) {
             continue;
         }
         if (command == "EVENT_CANCEL" && parts.size() == 3) {
-            stageforge::ShowEventType type{};
-            if (parts[1] == "TRANSPORT") type = stageforge::ShowEventType::transport;
-            else if (parts[1] == "MIDI") type = stageforge::ShowEventType::midi;
-            else if (parts[1] == "LIGHT") type = stageforge::ShowEventType::lighting;
-            else if (parts[1] == "CUE") type = stageforge::ShowEventType::cue;
-            else if (parts[1] == "AUTOMATION") type = stageforge::ShowEventType::automation;
+            stagemesh::ShowEventType type{};
+            if (parts[1] == "TRANSPORT") type = stagemesh::ShowEventType::transport;
+            else if (parts[1] == "MIDI") type = stagemesh::ShowEventType::midi;
+            else if (parts[1] == "LIGHT") type = stagemesh::ShowEventType::lighting;
+            else if (parts[1] == "CUE") type = stagemesh::ShowEventType::cue;
+            else if (parts[1] == "AUTOMATION") type = stagemesh::ShowEventType::automation;
             else { error("argument", "invalid event type"); continue; }
             std::uint64_t event_id = 0;
             if (!parse_number(parts[2], event_id)) { error("argument", "invalid event id"); continue; }
@@ -2275,7 +2275,7 @@ int main(int argc, char** argv) {
             continue;
         }
         if (command == "EVENT_NEXT" && parts.size() == 2) {
-            stageforge::ShowEvent event{};
+            stagemesh::ShowEvent event{};
             bool available = false;
             if (parts[1] == "CUE") available = cue_events.try_pop(event);
             else if (parts[1] == "AUTOMATION") available = automation_events.try_pop(event);
@@ -2283,7 +2283,7 @@ int main(int argc, char** argv) {
             if (!available) { ok("available=0"); continue; }
             std::cout << "OK available=1 eventId=" << event.event_id << " showNs=" << event.show_time_ns
                       << " type=" << parts[1];
-            if (event.type == stageforge::ShowEventType::cue) std::cout << " cueId=" << event.payload.cue.cue_id;
+            if (event.type == stagemesh::ShowEventType::cue) std::cout << " cueId=" << event.payload.cue.cue_id;
             else std::cout << " targetId=" << event.payload.automation.target_id
                            << " parameterId=" << event.payload.automation.parameter_id
                            << " value=" << event.payload.automation.value
@@ -2293,7 +2293,7 @@ int main(int argc, char** argv) {
             continue;
         }
         if (command == "EVENT_SUBMIT" && parts.size() >= 2) {
-            stageforge::ShowEvent event{};
+            stagemesh::ShowEvent event{};
             event.revision = core.metrics().revision;
             unsigned int priority = SF_PRIORITY_SHOW;
             bool parsed = false;
@@ -2302,14 +2302,14 @@ int main(int argc, char** argv) {
                 parsed = parse_number(parts[2], event.event_id) && parse_number(parts[3], event.show_time_ns) &&
                          parse_number(parts[4], priority) && parse_number(parts[5], status) && parse_number(parts[6], data1) && parse_number(parts[7], data2) &&
                          priority <= SF_PRIORITY_BACKGROUND && status <= 255 && data1 <= 127 && data2 <= 127;
-                event.type = stageforge::ShowEventType::midi;
+                event.type = stagemesh::ShowEventType::midi;
                 event.payload.midi = {static_cast<std::uint8_t>(status), static_cast<std::uint8_t>(data1), static_cast<std::uint8_t>(data2), 0};
             } else if (parts[1] == "LIGHT" && parts.size() == 8) {
                 unsigned int universe = 0, channel = 0, value = 0;
                 parsed = parse_number(parts[2], event.event_id) && parse_number(parts[3], event.show_time_ns) &&
                          parse_number(parts[4], priority) && parse_number(parts[5], universe) && parse_number(parts[6], channel) && parse_number(parts[7], value) &&
                          priority <= SF_PRIORITY_BACKGROUND && universe < dmx_universes.size() && channel >= 1 && channel <= 512 && value <= 255;
-                event.type = stageforge::ShowEventType::lighting;
+                event.type = stagemesh::ShowEventType::lighting;
                 event.payload.lighting = {static_cast<std::uint16_t>(universe), static_cast<std::uint16_t>(channel), static_cast<std::uint8_t>(value), {0,0,0}};
             } else if (parts[1] == "TRANSPORT" && parts.size() == 7) {
                 double value = 0.0;
@@ -2323,14 +2323,14 @@ int main(int argc, char** argv) {
                 else { error("argument", "invalid transport event action"); continue; }
                 parsed = parse_number(parts[2], event.event_id) && parse_number(parts[3], event.show_time_ns) &&
                          parse_number(parts[4], priority) && parse_number(parts[6], value) && priority <= SF_PRIORITY_BACKGROUND;
-                event.type = stageforge::ShowEventType::transport;
-                event.flags = stageforge::show_event_authoritative;
+                event.type = stagemesh::ShowEventType::transport;
+                event.flags = stagemesh::show_event_authoritative;
                 event.payload.transport = {action, value};
             } else if (parts[1] == "CUE" && parts.size() == 6) {
                 std::uint64_t cue_id = 0;
                 parsed = parse_number(parts[2], event.event_id) && parse_number(parts[3], event.show_time_ns) &&
                          parse_number(parts[4], priority) && parse_number(parts[5], cue_id) && priority <= SF_PRIORITY_BACKGROUND && cue_id != 0;
-                event.type = stageforge::ShowEventType::cue;
+                event.type = stagemesh::ShowEventType::cue;
                 event.payload.cue = {cue_id};
             } else if (parts[1] == "AUTOMATION" && parts.size() >= 8 && parts.size() <= 10) {
                 std::uint64_t target = 0, parameter = 0;
@@ -2342,7 +2342,7 @@ int main(int argc, char** argv) {
                          priority <= SF_PRIORITY_BACKGROUND && target != 0 && parameter != 0;
                 if (parsed && parts.size() >= 9) parsed = parse_number(parts[8], duration_ms);
                 if (parsed && parts.size() == 10) parsed = parse_number(parts[9], owner);
-                event.type = stageforge::ShowEventType::automation;
+                event.type = stagemesh::ShowEventType::automation;
                 event.owner_id = owner;
                 event.payload.automation = {target, parameter, value, duration_ms};
             } else if (parts[1] == "AUTOMATION_RELEASE" && parts.size() == 8) {
@@ -2350,9 +2350,9 @@ int main(int argc, char** argv) {
                 parsed = parse_number(parts[2], event.event_id) && parse_number(parts[3], event.show_time_ns) &&
                          parse_number(parts[4], priority) && parse_number(parts[5], target) && parse_number(parts[6], parameter) && parse_number(parts[7], owner) &&
                          priority <= SF_PRIORITY_BACKGROUND && target != 0 && parameter != 0 && owner != 0;
-                event.type = stageforge::ShowEventType::automation;
+                event.type = stagemesh::ShowEventType::automation;
                 event.owner_id = owner;
-                event.flags = stageforge::show_event_automation_release_owner;
+                event.flags = stagemesh::show_event_automation_release_owner;
                 event.payload.automation = {target, parameter, 0.0F, 0};
             }
             if (!parsed) { error("argument", "invalid typed show event"); continue; }
@@ -2370,7 +2370,7 @@ int main(int argc, char** argv) {
             continue;
         }
         if (command == "MIDI_MAP_UPSERT" && parts.size() == 15) {
-            stageforge::MidiLearnBinding binding{};unsigned int channel=0,number=0,message=0,behavior=0,action=0,steps=0,key_sync=0;
+            stagemesh::MidiLearnBinding binding{};unsigned int channel=0,number=0,message=0,behavior=0,action=0,steps=0,key_sync=0;
             if(!parse_number(parts[1],binding.mapping_id)||!parse_number(parts[2],binding.device_id)||!parse_number(parts[3],binding.target_id)||
                !parse_number(parts[4],binding.resource_id)||!parse_number(parts[5],binding.parameter_id)||!parse_number(parts[6],channel)||!parse_number(parts[7],number)||
                !parse_number(parts[8],message)||!parse_number(parts[9],behavior)||!parse_number(parts[10],action)||!parse_number(parts[11],steps)||
@@ -2378,8 +2378,8 @@ int main(int argc, char** argv) {
                channel>15||number>127||message>3||behavior>4||action>6||steps>32||key_sync>1||binding.maximum<binding.minimum||
                (action>=4&&binding.resource_id==0)){error("argument","invalid MIDI mapping");continue;}
             binding.channel=static_cast<std::uint8_t>(channel);binding.number=static_cast<std::uint8_t>(number);binding.steps_per_beat=static_cast<std::uint8_t>(steps);
-            binding.message=static_cast<stageforge::MidiLearnMessage>(message);binding.behavior=static_cast<stageforge::MidiMapBehavior>(behavior);
-            binding.action=static_cast<stageforge::MidiMappedActionKind>(action);binding.key_sync=key_sync!=0;
+            binding.message=static_cast<stagemesh::MidiLearnMessage>(message);binding.behavior=static_cast<stagemesh::MidiMapBehavior>(behavior);
+            binding.action=static_cast<stagemesh::MidiMappedActionKind>(action);binding.key_sync=key_sync!=0;
             if(!midi_mapping.upsert(binding)){error("capacity","MIDI mapping refused");continue;}ok("mapped=1 physicalOutputsArmed=0");
             continue;
         }
@@ -2399,14 +2399,14 @@ int main(int argc, char** argv) {
             continue;
         }
         if (command == "MIDI_SCHEDULE" && parts.size() == 6) {
-            stageforge::ShowEvent event{};
+            stagemesh::ShowEvent event{};
             unsigned int status = 0, data1 = 0, data2 = 0;
             if (!parse_number(parts[1], event.event_id) || !parse_number(parts[2], event.show_time_ns) ||
                 !parse_number(parts[3], status) || !parse_number(parts[4], data1) || !parse_number(parts[5], data2) ||
                 status > 255 || data1 > 127 || data2 > 127) {
                 error("argument", "invalid midi event"); continue;
             }
-            event.type = stageforge::ShowEventType::midi;
+            event.type = stagemesh::ShowEventType::midi;
             event.priority = SF_PRIORITY_SHOW;
             event.revision = core.metrics().revision;
             event.payload.midi = {static_cast<std::uint8_t>(status), static_cast<std::uint8_t>(data1), static_cast<std::uint8_t>(data2), 0};
@@ -2421,7 +2421,7 @@ int main(int argc, char** argv) {
             (void)show_loop.drain_until(now_ns);
             (void)ingest_midi_domain();
             std::size_t count = 0;
-            stageforge::MidiEvent event{};
+            stagemesh::MidiEvent event{};
             while (midi.pop_due(now_ns, event)) ++count;
             ok(std::string("drained=") + std::to_string(count) + " queued=" + std::to_string(midi.size()));
             continue;
@@ -2434,7 +2434,7 @@ int main(int argc, char** argv) {
         if (command == "MIDI_DEVICE" && parts.size() == 2) {
             std::size_t index = 0;
             if (!parse_number(parts[1], index)) { error("argument", "invalid midi device index"); continue; }
-            stageforge::MidiDeviceDescriptor device{};
+            stagemesh::MidiDeviceDescriptor device{};
             if (!midi_inputs.device(index, device)) { error("not_found", "unknown midi device index"); continue; }
             std::cout << "OK index=" << index
                       << " id=" << token_safe(device.id.data())
@@ -2463,7 +2463,7 @@ int main(int argc, char** argv) {
             continue;
         }
         if (command == "MIDI_INPUT_NEXT") {
-            stageforge::CapturedMidiInput event{};
+            stagemesh::CapturedMidiInput event{};
             if (!midi_observer_queue.try_pop(event)) { ok("available=0"); continue; }
             std::cout << "OK available=1"
                       << " device=" << token_safe(event.device_id.data())
@@ -2487,7 +2487,7 @@ int main(int argc, char** argv) {
             continue;
         }
         if (command == "MIDI_INPUT_INJECT" && parts.size() == 7) {
-            stageforge::MidiInputMessage message{};
+            stagemesh::MidiInputMessage message{};
             unsigned int status = 0, data1 = 0, data2 = 0;
             if (!parse_number(parts[3], message.show_time_ns) || !parse_number(parts[4], status) ||
                 !parse_number(parts[5], data1) || !parse_number(parts[6], data2) ||
@@ -2502,14 +2502,14 @@ int main(int argc, char** argv) {
             continue;
         }
         if (command == "LIGHT_SCHEDULE" && parts.size() == 6) {
-            stageforge::ShowEvent event{};
+            stagemesh::ShowEvent event{};
             unsigned int universe = 0, channel = 0, value = 0;
             if (!parse_number(parts[1], event.event_id) || !parse_number(parts[2], event.show_time_ns) ||
                 !parse_number(parts[3], universe) || !parse_number(parts[4], channel) || !parse_number(parts[5], value) ||
                 universe >= dmx_universes.size() || channel < 1 || channel > 512 || value > 255) {
                 error("argument", "invalid lighting event"); continue;
             }
-            event.type = stageforge::ShowEventType::lighting;
+            event.type = stagemesh::ShowEventType::lighting;
             event.priority = SF_PRIORITY_SHOW;
             event.revision = core.metrics().revision;
             event.payload.lighting = {static_cast<std::uint16_t>(universe), static_cast<std::uint16_t>(channel), static_cast<std::uint8_t>(value), {0,0,0}};
@@ -2525,7 +2525,7 @@ int main(int argc, char** argv) {
             (void)ingest_lighting_domain();
             std::size_t count = 0;
             std::array<bool, 16> changed{};
-            stageforge::LightingEvent event{};
+            stagemesh::LightingEvent event{};
             while (lighting.pop_due(now_ns, event)) {
                 if (event.universe < dmx_universes.size()) {
                     dmx_universes[event.universe].set(event.channel, event.value);
@@ -2540,12 +2540,12 @@ int main(int argc, char** argv) {
                     auto& sequence = sacn_sequences[universe];
                     sequence = static_cast<std::uint8_t>(sequence + 1);
                     const auto network_universe = static_cast<std::uint16_t>(sacn_universe_base + universe);
-                    const auto packet = stageforge::Sacn::encode_dmx(network_universe, dmx_universes[universe].values(), sequence, sacn_cid);
+                    const auto packet = stagemesh::Sacn::encode_dmx(network_universe, dmx_universes[universe].values(), sequence, sacn_cid);
                     if (sacn_output.send(packet)) ++sent;
                 } else {
                     auto& sequence = artnet_sequences[universe];
                     sequence = static_cast<std::uint8_t>(sequence == 255 ? 1 : sequence + 1);
-                    const auto packet = stageforge::ArtNet::encode_dmx(static_cast<std::uint16_t>(universe), dmx_universes[universe].values(), sequence);
+                    const auto packet = stagemesh::ArtNet::encode_dmx(static_cast<std::uint16_t>(universe), dmx_universes[universe].values(), sequence);
                     if (artnet_output.send(packet)) ++sent;
                 }
             }
@@ -2609,7 +2609,7 @@ int main(int argc, char** argv) {
             if (!parse_number(parts[1], universe) || universe >= dmx_universes.size()) {
                 error("argument", "invalid lighting universe"); continue;
             }
-            const auto packet = stageforge::ArtNet::encode_dmx(
+            const auto packet = stagemesh::ArtNet::encode_dmx(
                 static_cast<std::uint16_t>(universe), dmx_universes[universe].values());
             std::cout << "OK universe=" << universe
                       << " bytes=" << packet.size
@@ -2623,7 +2623,7 @@ int main(int argc, char** argv) {
                 error("argument", "invalid lighting universe"); continue;
             }
             const auto network_universe = static_cast<std::uint16_t>(sacn_universe_base + universe);
-            const auto packet = stageforge::Sacn::encode_dmx(
+            const auto packet = stagemesh::Sacn::encode_dmx(
                 network_universe, dmx_universes[universe].values(), 1, sacn_cid);
             std::cout << "OK universe=" << universe
                       << " networkUniverse=" << network_universe
@@ -2634,15 +2634,15 @@ int main(int argc, char** argv) {
         } else if (command == "NOTATION_QUANTIZE" && parts.size() == 3) {
             double beats = 0.0;
             if (!parse_number(parts[1], beats)) { error("argument", "invalid beat value"); continue; }
-            stageforge::NotationGrid grid{};
-            if (parts[2] == "1/4") grid = stageforge::NotationGrid::quarter;
-            else if (parts[2] == "1/8") grid = stageforge::NotationGrid::eighth;
-            else if (parts[2] == "1/16") grid = stageforge::NotationGrid::sixteenth;
-            else if (parts[2] == "1/32") grid = stageforge::NotationGrid::thirty_second;
+            stagemesh::NotationGrid grid{};
+            if (parts[2] == "1/4") grid = stagemesh::NotationGrid::quarter;
+            else if (parts[2] == "1/8") grid = stagemesh::NotationGrid::eighth;
+            else if (parts[2] == "1/16") grid = stagemesh::NotationGrid::sixteenth;
+            else if (parts[2] == "1/32") grid = stagemesh::NotationGrid::thirty_second;
             else { error("argument", "invalid notation grid"); continue; }
             std::cout << "OK beats=" << std::fixed << std::setprecision(6)
-                      << stageforge::NotationQuantizer::quantize_beats(beats, grid)
-                      << " minimumDuration=" << stageforge::NotationQuantizer::minimum_duration_beats(grid)
+                      << stagemesh::NotationQuantizer::quantize_beats(beats, grid)
+                      << " minimumDuration=" << stagemesh::NotationQuantizer::minimum_duration_beats(grid)
                       << '\n' << std::flush;
         } else if (command == "TIMING_PLAN" && parts.size() == 7) {
             std::uint64_t now_ns = 0, target_ns = 0, fixed_ns = 0, jitter_ns = 0, lookahead_ns = 0;
@@ -2652,12 +2652,12 @@ int main(int argc, char** argv) {
                 !parse_number(parts[5], lookahead_ns) || !parse_number(parts[6], timestamped)) {
                 error("argument", "invalid timing profile"); continue;
             }
-            stageforge::EndpointTimingProfile profile{};
+            stagemesh::EndpointTimingProfile profile{};
             profile.fixed_latency_ns = fixed_ns;
             profile.jitter_ns = jitter_ns;
             profile.minimum_lookahead_ns = lookahead_ns;
             profile.supports_timestamped_execution = timestamped != 0;
-            const auto plan = stageforge::LatencyResolver::plan(now_ns, target_ns, profile);
+            const auto plan = stagemesh::LatencyResolver::plan(now_ns, target_ns, profile);
             std::cout << "OK dispatchNs=" << plan.dispatch_time_ns
                       << " targetNs=" << plan.target_time_ns
                       << " reserveNs=" << plan.reserve_ns
@@ -2694,7 +2694,7 @@ int main(int argc, char** argv) {
                       << " showEventPending=" << show_loop.dispatch_metrics().pending
                       << " showEventDispatched=" << show_loop.dispatch_metrics().dispatched
                       << " showLoopRunning=" << (show_loop.loop_metrics().running ? 1 : 0)
-                      << " audioState=" << static_cast<int>(active_outputs ? stageforge::AudioDeviceState::running : audio_status.state)
+                      << " audioState=" << static_cast<int>(active_outputs ? stagemesh::AudioDeviceState::running : audio_status.state)
                       << " audioBackend=" << (active_outputs > 1 ? "multi" : execution_audio_backends[0])
                       << " audioOutputActive=" << active_outputs
                       << " audioCallbacks=" << output_callbacks

@@ -170,7 +170,7 @@ class VenueCompatibilityTests(unittest.TestCase):
             show_path.write_text(json.dumps(ShowState().persistence_snapshot()), "utf-8")
             venue_path.write_text(json.dumps(self.profile()), "utf-8")
             result = subprocess.run(
-                [sys.executable, str(ROOT / "scripts" / "stageforge-venue-adapt.py"), str(show_path), str(venue_path)],
+                [sys.executable, str(ROOT / "scripts" / "stagemesh-venue-adapt.py"), str(show_path), str(venue_path)],
                 cwd=ROOT, text=True, capture_output=True, check=True,
             )
             transaction = json.loads(result.stdout)

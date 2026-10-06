@@ -1,6 +1,6 @@
 # Core 4.4 DAW media and editing
 
-Media inspection accepts WAV files only from the configured StageForge media directory. It hashes the complete source, reads bounded PCM metadata, converts sample counts into the canonical 192 kHz timeline, and creates bounded min/max waveform peaks. It does not copy, rewrite, decode into the live graph, or arm output hardware.
+Media inspection accepts WAV files only from the configured StageMesh media directory. It hashes the complete source, reads bounded PCM metadata, converts sample counts into the canonical 192 kHz timeline, and creates bounded min/max waveform peaks. It does not copy, rewrite, decode into the live graph, or arm output hardware.
 
 Arrangement edits remain non-destructive. Trim advances source offset and clip placement, split creates two references into the same source, and fades are execution metadata. Undo and redo restore complete normalized session snapshots but always issue a new revision so optimistic concurrency never moves backward.
 

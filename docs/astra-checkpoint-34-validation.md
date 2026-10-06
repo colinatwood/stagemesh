@@ -4,13 +4,13 @@ Checkpoint 34 bounds the durable per-user authorization audit introduced at chec
 32 while preserving a verifiable chain across rotation.
 
 The active `authorization-audit.jsonl` rotates before the next record would cross
-`STAGEFORGE_AUTH_AUDIT_ROTATE_BYTES` (default 4 MiB, accepted range 64 KiB to
+`STAGEMESH_AUTH_AUDIT_ROTATE_BYTES` (default 4 MiB, accepted range 64 KiB to
 256 MiB). Immutable rotated files live under `authorization-audit-segments/` and the
-number retained is bounded by `STAGEFORGE_AUTH_AUDIT_RETAIN_SEGMENTS` (default 8,
+number retained is bounded by `STAGEMESH_AUTH_AUDIT_RETAIN_SEGMENTS` (default 8,
 range 1 to 256). The next segment and active file continue from the exact prior hash;
 rotation never restarts the chain at zero.
 
-When retention prunes an old prefix, StageForge first atomically writes and fsyncs
+When retention prunes an old prefix, StageMesh first atomically writes and fsyncs
 `authorization-audit-retention.json`. That anchor commits the exact previous head,
 next retained sequence, pruned segment count and pruned record count. Only after the
 anchor is durable are old segment bytes unlinked. A write failure such as ENOSPC

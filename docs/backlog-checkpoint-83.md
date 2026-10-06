@@ -32,13 +32,13 @@ compatibility and physical qualification remain separate; see
 
 ## Hosted validation and workbook
 
-[Checkpoint 83 master workbook](backlog/StageForge-Master-Backlog-Checkpoint-83.xlsx)
+[Checkpoint 83 master workbook](backlog/StageMesh-Master-Backlog-Checkpoint-83.xlsx)
 preserves all statuses and acceptance criteria, eight sheets, three tables, one
 chart and 63 formulas. Totals were recalculated and changed regions rendered for
 review. PLUG-034 remains Done for hosted native launch binding.
 
 Code `1c597df574c9a1af2a2e65837f0565eb8911d762` passed all six checks.
-[Native run 34998947927](https://github.com/colinatwood/stageforge/actions/runs/34998947927)
+[Native run 34998947927](https://github.com/colinatwood/stagemesh/actions/runs/34998947927)
 records test merge `28a9f9ff736e91f512956cf300957c2d729a7773` and source/binary
 hashes under `docs/evidence/checkpoint-83/`. Seven native CTests passed per OS.
 macOS arm64/AddressSanitizer passed pinned default input/output comparisons,

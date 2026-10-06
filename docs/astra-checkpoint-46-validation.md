@@ -6,15 +6,15 @@ Checkpoint 46 turns venue-adaptation and operational-authority receipts into a s
 
 `backend/public_record.py` adds a control-plane-only `PublicRecordStore` backed by `.runtime/public-record.jsonl`.
 
-Each record contains a monotonic sequence, record ID/type, nanosecond timestamp, payload, previous hash, SHA-256 record hash, signer identity and an HMAC-SHA256 node signature. The signature key is the existing persisted StageForge security-state root key; no third-party Python runtime dependency is introduced.
+Each record contains a monotonic sequence, record ID/type, nanosecond timestamp, payload, previous hash, SHA-256 record hash, signer identity and an HMAC-SHA256 node signature. The signature key is the existing persisted StageMesh security-state root key; no third-party Python runtime dependency is introduced.
 
 The record chain verifies sequence continuity, previous-hash continuity, payload hash and node signature. A changed payload, reordered record, broken link, wrong signer or wrong signature fails verification.
 
-The node signature is intentionally described as an authenticated signature rather than public-key transparency: HMAC verification requires the StageForge identity secret. Independent verification is supplied by the separate witness boundary below.
+The node signature is intentionally described as an authenticated signature rather than public-key transparency: HMAC verification requires the StageMesh identity secret. Independent verification is supplied by the separate witness boundary below.
 
 ## External witness attestations
 
-Optional `STAGEFORGE_PUBLIC_RECORD_WITNESS_FILE` configures an absolute, owner-only private witness policy:
+Optional `STAGEMESH_PUBLIC_RECORD_WITNESS_FILE` configures an absolute, owner-only private witness policy:
 
 ```json
 {
@@ -28,7 +28,7 @@ Optional `STAGEFORGE_PUBLIC_RECORD_WITNESS_FILE` configures an absolute, owner-o
 
 The file is opened without symlink following, must be a regular file owned by the service UID, must deny group/other permissions, is size bounded and is rejected if it changes while being read.
 
-An external witness signs the exact StageForge `recordHash` plus its witness identity and issue time using the distinct witness secret. `POST /api/v1/public-record/witness` verifies that attestation, rejects unknown records/witnesses/bad MACs and persists accepted attestations in their own hash-linked `.runtime/public-record-witnesses.jsonl` chain. Exact witness/record replay is idempotent.
+An external witness signs the exact StageMesh `recordHash` plus its witness identity and issue time using the distinct witness secret. `POST /api/v1/public-record/witness` verifies that attestation, rejects unknown records/witnesses/bad MACs and persists accepted attestations in their own hash-linked `.runtime/public-record-witnesses.jsonl` chain. Exact witness/record replay is idempotent.
 
 `GET /api/v1/public-record` reports chain verification, signer identity, record/head counts, witness quorum, attestation count and whether every retained record meets the configured external-witness quorum. The witness submission route is excluded from human RBAC because its body carries the separate machine witness credential; it does not inherit operator/authority roles.
 
@@ -51,6 +51,6 @@ An external witness signs the exact StageForge `recordHash` plus its witness ide
 
 ## Remaining boundary
 
-This checkpoint does not claim public-key signatures, transparency-log gossip, externally hosted append-only storage, key escrow or production witness deployment. The software protocol supports a genuinely separate witness credential and exact-hash attestation, but production independence still depends on placing that witness outside the StageForge failure/administrative domain.
+This checkpoint does not claim public-key signatures, transparency-log gossip, externally hosted append-only storage, key escrow or production witness deployment. The software protocol supports a genuinely separate witness credential and exact-hash attestation, but production independence still depends on placing that witness outside the StageMesh failure/administrative domain.
 
 The Public Record is currently append-only and unbounded. Retention/archival policy must not discard evidence silently if added later.

@@ -8,7 +8,7 @@ Hardware: Novation FLkey Mini connected to a MacBook Air
 ## Command
 
 ```sh
-export STAGEFORGE_MIDI_DEVICE_NAME="MIDI Out FLkey Mini"
+export STAGEMESH_MIDI_DEVICE_NAME="MIDI Out FLkey Mini"
 ./build-mac-hardware/native/midi_hardware_smoke 2>&1 | tee midi-hardware-smoke.json
 ```
 

@@ -1,9 +1,9 @@
 # FFmpeg interoperability
 
-StageForge may use FFmpeg as a media inspection and conversion boundary. The
+StageMesh may use FFmpeg as a media inspection and conversion boundary. The
 [FFmpeg documentation](https://ffmpeg.org/ffmpeg-all.html) covers the formats,
 codecs, filters, timestamps, and devices that make this useful, but a media
-tool must remain subordinate to StageForge's show and output authority model.
+tool must remain subordinate to StageMesh's show and output authority model.
 
 ## Probe before use
 
@@ -39,7 +39,7 @@ into an armed physical output.
 
 FFmpeg device inputs and outputs are optional host capabilities. Their presence
 does not qualify an ALSA, PipeWire, JACK, camera, GPU, or display path. Hardware
-arming remains an explicit StageForge operation with its own interlocks.
+arming remains an explicit StageMesh operation with its own interlocks.
 
 ## Qualification scenarios
 
@@ -58,6 +58,6 @@ arming remains an explicit StageForge operation with its own interlocks.
 
 FFmpeg builds can differ in enabled components and licensing configuration.
 Record the detected build configuration and keep distribution obligations
-separate from runtime media support. StageForge should integrate through a
+separate from runtime media support. StageMesh should integrate through a
 documented adapter boundary rather than assuming every codec or device is
 available everywhere.

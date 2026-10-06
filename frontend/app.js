@@ -106,7 +106,7 @@
     }
     return data;
   }
-  globalThis.StageForgeUI = Object.freeze({api});
+  globalThis.StageMeshUI = Object.freeze({api});
 
   function playerById(id) {
     return snapshot?.players.find((p) => p.id === id) || null;
@@ -289,10 +289,10 @@
     q("#dawClipTrack").innerHTML=tracks.map((track)=>`<option value="${escapeHtml(track.trackId)}">${escapeHtml(track.name)}</option>`).join("");
     q("#dawTracks").innerHTML=tracks.map((track)=>`<div class="dawTrack"><div><strong>${escapeHtml(track.name)}</strong><span>${escapeHtml(track.kind)} · gain ${Number(track.gain).toFixed(2)} · pan ${Number(track.pan).toFixed(2)}</span><div class="dawMixer"><label>Gain<input type="range" min="0" max="4" step="0.01" value="${Number(track.gain)}" data-daw-field="gain" data-daw-track="${escapeHtml(track.trackId)}"></label><label>Pan<input type="range" min="-1" max="1" step="0.01" value="${Number(track.pan)}" data-daw-field="pan" data-daw-track="${escapeHtml(track.trackId)}"></label><button type="button" class="${track.muted?"active":""}" data-daw-toggle="muted" data-daw-track="${escapeHtml(track.trackId)}">M</button><button type="button" class="${track.solo?"active":""}" data-daw-toggle="solo" data-daw-track="${escapeHtml(track.trackId)}">S</button></div></div><div class="dawLane" data-daw-lane="${escapeHtml(track.trackId)}">${(track.clips||[]).map((clip)=>`<button type="button" class="dawClip ${clip.clipId===dawSelectedClipId?"selected":""}" data-daw-clip="${escapeHtml(clip.clipId)}" data-daw-track="${escapeHtml(track.trackId)}" title="${escapeHtml(clip.source?.uri||clip.clipId)}" style="--clip-left:${Math.min(100,Number(clip.startFrame)/(192000*zoomSeconds)*100)}%;--clip-width:${Math.max(1,Math.min(100,Number(clip.lengthFrames)/(192000*zoomSeconds)*100))}%"><i data-daw-resize="start" aria-hidden="true"></i><span>${escapeHtml(clip.clipId)}</span><i data-daw-resize="end" aria-hidden="true"></i></button>`).join("")}</div></div>`).join("")||'<p class="hint">Add an audio track to begin arranging.</p>';
     const selectClip=(clipId)=>{dawSelectedClipId=clipId;q("#dawSelectedClip").value=clipId;renderDaw(dawSessionState);renderDawWaveform().catch((error)=>q("#dawWaveform").textContent=error.message);};
-    if(globalThis.StageForgeArrangement)globalThis.StageForgeArrangement.bindClips({doc:document,session:dawSessionState,zoomSeconds,snap:q("#dawSnap").value,onSelect:(clipIds,primary)=>selectClip(primary),onEdit:(body)=>dawEdit(body)});
+    if(globalThis.StageMeshArrangement)globalThis.StageMeshArrangement.bindClips({doc:document,session:dawSessionState,zoomSeconds,snap:q("#dawSnap").value,onSelect:(clipIds,primary)=>selectClip(primary),onEdit:(body)=>dawEdit(body)});
     else qa("[data-daw-clip]").forEach((button)=>button.addEventListener("click",()=>selectClip(button.dataset.dawClip)));
-    globalThis.StageForgeMarkers?.render({doc:document,session:dawSessionState,zoomSeconds,snap:q("#dawSnap").value,onEdit:(body)=>dawMarkerEdit(body)});
-    globalThis.StageForgeAutomation?.render({doc:document,session:dawSessionState,zoomSeconds,onEdit:(body)=>dawAutomationEdit(body)});
+    globalThis.StageMeshMarkers?.render({doc:document,session:dawSessionState,zoomSeconds,snap:q("#dawSnap").value,onEdit:(body)=>dawMarkerEdit(body)});
+    globalThis.StageMeshAutomation?.render({doc:document,session:dawSessionState,zoomSeconds,onEdit:(body)=>dawAutomationEdit(body)});
     qa("[data-daw-field]").forEach((input)=>input.addEventListener("change",()=>updateDawTrack(input.dataset.dawTrack,input.dataset.dawField,Number(input.value))));
     qa("[data-daw-toggle]").forEach((button)=>button.addEventListener("click",()=>{const track=tracks.find((item)=>item.trackId===button.dataset.dawTrack);return updateDawTrack(button.dataset.dawTrack,button.dataset.dawToggle,!Boolean(track?.[button.dataset.dawToggle]));}));
   }
@@ -656,10 +656,10 @@
 
   async function command(path, method, body, resourceKey) {
     try {
-      const headers = {"X-StageForge-Command-Id": commandId()};
+      const headers = {"X-StageMesh-Command-Id": commandId()};
       if (snapshot?.revision) headers["If-Match"] = `"rev-${snapshot.revision}"`;
       const resourceRevision = resourceKey && snapshot?.resourceRevisions?.[resourceKey];
-      if (resourceRevision) headers["X-StageForge-Resource-If-Match"] = `"${resourceKey}@${resourceRevision}"`;
+      if (resourceRevision) headers["X-StageMesh-Resource-If-Match"] = `"${resourceKey}@${resourceRevision}"`;
       const state = await api(path, {method, headers, body: JSON.stringify(body)});
       render(state);
       refreshPlan();
@@ -691,7 +691,7 @@
     }
     eventStream = new EventSource("/api/v1/events");
     q("#streamMode").textContent = "SSE";
-    eventStream.addEventListener("stageforge", (event) => {
+    eventStream.addEventListener("stagemesh", (event) => {
       try {
         const notice = JSON.parse(event.data);
         if (!snapshot || notice.revision > snapshot.revision) refresh();

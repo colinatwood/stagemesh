@@ -11,7 +11,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'backend'))
 
-from dev_server import StageForgeHandler, StageForgeHTTPServer
+from dev_server import StageMeshHandler, StageMeshHTTPServer
 from http_authorization import authorization_policy, authorize_control_request
 from persistence import StateRepository
 
@@ -29,7 +29,7 @@ class AuthorizationPolicyTests(unittest.TestCase):
         replacement.replace(self.path)
 
     def env(self):
-        return {'STAGEFORGE_HTTP_AUTHORIZATION_FILE': str(self.path)}
+        return {'STAGEMESH_HTTP_AUTHORIZATION_FILE': str(self.path)}
 
     def test_private_policy_loads_fixed_roles_and_assignments(self):
         self.write({'version': 1, 'users': {
@@ -105,10 +105,10 @@ class AuthorizationHttpTests(unittest.TestCase):
         self.api_token = 'a' * 32
         self.proxy_token = 'p' * 32
         self.env = {
-            'STAGEFORGE_REQUIRE_API_TOKEN': '1',
-            'STAGEFORGE_API_TOKEN': self.api_token,
-            'STAGEFORGE_AUTH_PROXY_TOKEN': self.proxy_token,
-            'STAGEFORGE_HTTP_AUTHORIZATION_FILE': str(self.policy_path),
+            'STAGEMESH_REQUIRE_API_TOKEN': '1',
+            'STAGEMESH_API_TOKEN': self.api_token,
+            'STAGEMESH_AUTH_PROXY_TOKEN': self.proxy_token,
+            'STAGEMESH_HTTP_AUTHORIZATION_FILE': str(self.policy_path),
         }
 
     def write_policy(self, users):
@@ -118,7 +118,7 @@ class AuthorizationHttpTests(unittest.TestCase):
         replacement.replace(self.policy_path)
 
     def request(self, method, path, user, body=None):
-        server = StageForgeHTTPServer(('127.0.0.1', 0), StageForgeHandler)
+        server = StageMeshHTTPServer(('127.0.0.1', 0), StageMeshHandler)
         worker = threading.Thread(target=server.serve_forever, daemon=True)
         worker.start()
         conn = http.client.HTTPConnection(*server.server_address, timeout=3)
@@ -126,9 +126,9 @@ class AuthorizationHttpTests(unittest.TestCase):
         headers = {
             'Content-Type': 'application/json',
             'Content-Length': str(len(payload.encode('utf-8'))),
-            'X-StageForge-API-Token': self.api_token,
-            'X-StageForge-Auth-Proxy-Token': self.proxy_token,
-            'X-StageForge-Authenticated-User': user,
+            'X-StageMesh-API-Token': self.api_token,
+            'X-StageMesh-Auth-Proxy-Token': self.proxy_token,
+            'X-StageMesh-Authenticated-User': user,
         }
         try:
             conn.request(method, path, body=payload, headers=headers)
@@ -185,15 +185,15 @@ class AuthorizationHttpTests(unittest.TestCase):
 
     def test_keepalive_connection_reloads_role_policy(self):
         self.write_policy({'foh': {'roles': ['operator']}})
-        server = StageForgeHTTPServer(('127.0.0.1', 0), StageForgeHandler)
+        server = StageMeshHTTPServer(('127.0.0.1', 0), StageMeshHandler)
         worker = threading.Thread(target=server.serve_forever, daemon=True)
         worker.start()
         conn = http.client.HTTPConnection(*server.server_address, timeout=3)
         headers = {
             'Content-Type': 'application/json',
-            'X-StageForge-API-Token': self.api_token,
-            'X-StageForge-Auth-Proxy-Token': self.proxy_token,
-            'X-StageForge-Authenticated-User': 'foh',
+            'X-StageMesh-API-Token': self.api_token,
+            'X-StageMesh-Auth-Proxy-Token': self.proxy_token,
+            'X-StageMesh-Authenticated-User': 'foh',
         }
         try:
             with patch.dict(os.environ, self.env, clear=True), \

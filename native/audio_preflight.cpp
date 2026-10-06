@@ -24,7 +24,7 @@
 #include <vector>
 #endif
 
-namespace stageforge {
+namespace stagemesh {
 namespace {
 
 bool supported_rate(const AudioHostCapabilities& capabilities, std::uint32_t rate) {

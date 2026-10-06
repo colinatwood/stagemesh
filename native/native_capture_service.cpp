@@ -1,6 +1,6 @@
 #include "native_capture_service.h"
 
-namespace stageforge {
+namespace stagemesh {
 
 NativeCaptureService::NativeCaptureService(CaptureReceive receive, void* context)
     : receive_(receive), context_(context) {
@@ -97,4 +97,4 @@ EndpointStreamStats NativeCaptureService::stats() const {
     return stream_ ? stream_->stats() : last_stats_;
 }
 
-} // namespace stageforge
+} // namespace stagemesh

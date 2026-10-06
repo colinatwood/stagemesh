@@ -1,8 +1,8 @@
-#include "stageforge/audio_device.hpp"
+#include "stagemesh/audio_device.hpp"
 
 #include <cmath>
 
-namespace stageforge {
+namespace stagemesh {
 
 namespace {
 
@@ -50,4 +50,4 @@ AudioDeviceStatus NullAudioDevice::status() const noexcept {
     return status_;
 }
 
-} // namespace stageforge
+} // namespace stagemesh

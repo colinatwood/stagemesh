@@ -9,31 +9,31 @@ from urllib.parse import urlparse, parse_qs
 from witness import WitnessLeaseStore, verify_request, verify_transfer_request, verify_recovery_request, sign_response
 from cluster_secrets import RotatingHmacKeyring
 
-HOST = os.environ.get("STAGEFORGE_WITNESS_HOST", "127.0.0.1")
-PORT = int(os.environ.get("STAGEFORGE_WITNESS_PORT", "8790"))
-SECRET = os.environ.get("STAGEFORGE_WITNESS_SECRET", os.environ.get("STAGEFORGE_REPLICATION_SECRET", "")).encode("utf-8")
-EXPLICIT_KEYRING_PATH = os.environ.get("STAGEFORGE_WITNESS_KEYRING_FILE", "").strip()
-KEYRING_PATH = EXPLICIT_KEYRING_PATH or os.environ.get("STAGEFORGE_REPLICATION_KEYRING_FILE", "")
+HOST = os.environ.get("STAGEMESH_WITNESS_HOST", "127.0.0.1")
+PORT = int(os.environ.get("STAGEMESH_WITNESS_PORT", "8790"))
+SECRET = os.environ.get("STAGEMESH_WITNESS_SECRET", os.environ.get("STAGEMESH_REPLICATION_SECRET", "")).encode("utf-8")
+EXPLICIT_KEYRING_PATH = os.environ.get("STAGEMESH_WITNESS_KEYRING_FILE", "").strip()
+KEYRING_PATH = EXPLICIT_KEYRING_PATH or os.environ.get("STAGEMESH_REPLICATION_KEYRING_FILE", "")
 KEYRING = RotatingHmacKeyring(KEYRING_PATH, SECRET)
-WITNESS_ID = os.environ.get("STAGEFORGE_WITNESS_ID", "").strip()[:64]
-FAILURE_DOMAIN = os.environ.get("STAGEFORGE_WITNESS_FAILURE_DOMAIN", "").strip()[:64]
-INDEPENDENT_MODE = os.environ.get("STAGEFORGE_WITNESS_INDEPENDENT", "0").strip().lower() in {"1", "true", "yes", "on"}
-DATA = Path(os.environ.get("STAGEFORGE_WITNESS_DATA", ".stageforge-witness/leases.json"))
+WITNESS_ID = os.environ.get("STAGEMESH_WITNESS_ID", "").strip()[:64]
+FAILURE_DOMAIN = os.environ.get("STAGEMESH_WITNESS_FAILURE_DOMAIN", "").strip()[:64]
+INDEPENDENT_MODE = os.environ.get("STAGEMESH_WITNESS_INDEPENDENT", "0").strip().lower() in {"1", "true", "yes", "on"}
+DATA = Path(os.environ.get("STAGEMESH_WITNESS_DATA", ".stagemesh-witness/leases.json"))
 STORE = WitnessLeaseStore(DATA)
 
 def independent_configuration_error() -> str | None:
     if not INDEPENDENT_MODE:
         return None
     if not WITNESS_ID or not FAILURE_DOMAIN:
-        return "independent witness requires STAGEFORGE_WITNESS_ID and STAGEFORGE_WITNESS_FAILURE_DOMAIN"
+        return "independent witness requires STAGEMESH_WITNESS_ID and STAGEMESH_WITNESS_FAILURE_DOMAIN"
     if not EXPLICIT_KEYRING_PATH:
-        return "independent witness requires its own STAGEFORGE_WITNESS_KEYRING_FILE"
+        return "independent witness requires its own STAGEMESH_WITNESS_KEYRING_FILE"
     if SECRET:
         return "independent witness forbids environment/shared-secret fallback"
     return None
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "StageForgeWitness/1"
+    server_version = "StageMeshWitness/1"
     def log_message(self, format: str, *args) -> None:
         return
     def _json(self, code: int, value: object) -> None:
@@ -43,7 +43,7 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         if parsed.path == "/health":
             error = independent_configuration_error()
-            self._json(200 if error is None else 503, {"ok": error is None, "service": "stageforge-witness", "witnessId": WITNESS_ID or None, "failureDomain": FAILURE_DOMAIN or None, "independentMode": INDEPENDENT_MODE, "error": error})
+            self._json(200 if error is None else 503, {"ok": error is None, "service": "stagemesh-witness", "witnessId": WITNESS_ID or None, "failureDomain": FAILURE_DOMAIN or None, "independentMode": INDEPENDENT_MODE, "error": error})
             return
         if parsed.path == "/api/v1/lease/status":
             cluster = parse_qs(parsed.query).get("clusterId", [""])[0]
@@ -83,5 +83,5 @@ if __name__ == "__main__":
     error = independent_configuration_error()
     if error:
         raise SystemExit(error)
-    print(f"StageForge witness {WITNESS_ID or 'legacy'} listening on http://{HOST}:{PORT}", flush=True)
+    print(f"StageMesh witness {WITNESS_ID or 'legacy'} listening on http://{HOST}:{PORT}", flush=True)
     ThreadingHTTPServer((HOST, PORT), Handler).serve_forever()

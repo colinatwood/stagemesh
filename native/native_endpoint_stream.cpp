@@ -19,7 +19,7 @@
 #include <CoreAudio/CoreAudio.h>
 #endif
 
-namespace stageforge {
+namespace stagemesh {
 namespace {
 // Process-lifetime callback storage: OS notifications never dereference a stream
 // object, including a callback already dispatched during listener removal.

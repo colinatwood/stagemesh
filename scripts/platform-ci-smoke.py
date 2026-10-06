@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Target-OS CI smoke evidence for StageForge.
+"""Target-OS CI smoke evidence for StageMesh.
 
 This is a software/platform reference exercise, not physical hardware qualification.
 It never arms physical outputs. Windows exercises the native protected named-pipe
@@ -48,7 +48,7 @@ def _find_engine() -> Path:
     for path in candidates:
         if path.is_file():
             return path.resolve()
-    raise RuntimeError("platform CI smoke requires a built StageForge native engine")
+    raise RuntimeError("platform CI smoke requires a built StageMesh native engine")
 
 
 def _current_windows_sid() -> str:
@@ -75,8 +75,8 @@ def _windows_pipe_smoke() -> dict:
     from session_channel import AuthenticatedSessionChannel
 
     sid = _current_windows_sid()
-    name = rf"\\.\pipe\StageForge\CI-{uuid.uuid4().hex}"
-    key = hashlib.sha256(b"stageforge-ci-smoke-session-key").digest()
+    name = rf"\\.\pipe\StageMesh\CI-{uuid.uuid4().hex}"
+    key = hashlib.sha256(b"stagemesh-ci-smoke-session-key").digest()
     cluster_id = "11" * 16
     session_id = "22" * 32
     capabilities = {7}
@@ -90,7 +90,7 @@ def _windows_pipe_smoke() -> dict:
     server = WindowsNamedPipeIpcServer(
         name,
         server_channel,
-        lambda capability, payload: b"stageforge-ci:" + payload,
+        lambda capability, payload: b"stagemesh-ci:" + payload,
         max_requests=1,
         allowed_sids=(sid,),
         allow_administrators=False,
@@ -117,7 +117,7 @@ def _windows_pipe_smoke() -> dict:
             time.sleep(0.05)
     if connection is None:
         server.close()
-        raise RuntimeError("could not connect to StageForge Windows named-pipe smoke endpoint")
+        raise RuntimeError("could not connect to StageMesh Windows named-pipe smoke endpoint")
 
     client = AuthenticatedSessionChannel(
         key, cluster_id, session_id, capabilities,
@@ -125,13 +125,13 @@ def _windows_pipe_smoke() -> dict:
     )
     try:
         request = client.encode(7, b"ping")
-        # AF_PIPE adds its own message envelope. StageForge additionally requires
+        # AF_PIPE adds its own message envelope. StageMesh additionally requires
         # the explicit local-IPC big-endian length prefix inside that message,
         # exactly as WindowsNamedPipeIpcServer.recv_message_frame expects.
         connection.send_bytes(encode_transport_packet(request))
         response = decode_transport_packet(connection.recv_bytes())
         decoded = client.decode(response)
-        if decoded["payload"] != b"stageforge-ci:ping":
+        if decoded["payload"] != b"stagemesh-ci:ping":
             raise RuntimeError("Windows named-pipe authenticated roundtrip returned unexpected payload")
         outcome = {
             "authorizedRoundtripQualified": True,

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://upp.stageforge.dev/schema/witness-lease-v1.json",
+  "$id": "https://upp.stagemesh.dev/schema/witness-lease-v1.json",
   "title": "UPP Witness Lease Status",
   "type": "object",
   "additionalProperties": true,

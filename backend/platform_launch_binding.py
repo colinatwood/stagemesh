@@ -252,7 +252,7 @@ def macos_verify_and_launch(
                 raise PlatformLaunchBindingError("adapter SHA-256 mismatch")
 
         os.lseek(fd, 0, os.SEEK_SET)
-        temp_dir = tempfile.TemporaryDirectory(prefix="stageforge-launch-")
+        temp_dir = tempfile.TemporaryDirectory(prefix="stagemesh-launch-")
         staged = Path(temp_dir.name) / path.name
         read_fd = os.dup(fd)
         with os.fdopen(read_fd, "rb", closefd=True) as source, staged.open("wb") as target:

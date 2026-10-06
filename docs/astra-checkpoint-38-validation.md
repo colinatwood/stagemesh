@@ -4,7 +4,7 @@ Updated 2026-09-13. This checkpoint qualifies the current HTTP controller/rate p
 
 ## Deterministic rate model
 
-The harness replays four independent controllers at 20 requests/second each beside one abusive peer at 300 requests/second for five seconds using the actual StageForge `RequestRateLimiter` with a controlled monotonic clock. Result:
+The harness replays four independent controllers at 20 requests/second each beside one abusive peer at 300 requests/second for five seconds using the actual StageMesh `RequestRateLimiter` with a controlled monotonic clock. Result:
 
 - controller requests allowed: **400**
 - controller requests denied: **0**
@@ -15,7 +15,7 @@ The abusive peer is processed first each 10 ms tick. The default 100 rps per-pee
 
 ## Live local-reference workload
 
-`python3 scripts/stageforge-http-workload.py --json` launches the real loopback StageForge bridge with a temporary data directory and native execution disabled, then runs normal and abusive HTTP bursts. Checkpoint reference result:
+`python3 scripts/stagemesh-http-workload.py --json` launches the real loopback StageMesh bridge with a temporary data directory and native execution disabled, then runs normal and abusive HTTP bursts. Checkpoint reference result:
 
 - normal mixed control requests: **120/120 HTTP 200**
 - normal p50: **13.233 ms**

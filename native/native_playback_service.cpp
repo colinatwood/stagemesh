@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <thread>
 
-namespace stageforge {
+namespace stagemesh {
 
 NativePlaybackService::NativePlaybackService(PlaybackRender render, void* context)
     : render_(render), context_(context), owner_thread_(std::this_thread::get_id()) {
@@ -111,4 +111,4 @@ void NativePlaybackService::require_owner() const {
     }
 }
 
-} // namespace stageforge
+} // namespace stagemesh

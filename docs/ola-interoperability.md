@@ -2,10 +2,10 @@
 
 OLA is a reference for a protocol/device distribution layer: application code
 produces lighting intent while a daemon and plugins abstract DMX, Art-Net,
-sACN, RDM, and USB-DMX hardware. StageForge should preserve that separation
+sACN, RDM, and USB-DMX hardware. StageMesh should preserve that separation
 when it grows beyond its current native UDP outputs.
 
-## StageForge adapter direction
+## StageMesh adapter direction
 
 - Keep fixture and cue compilation independent of transport and device plugin.
 - Add an optional OLA client/bridge path rather than embedding `olad`.
@@ -19,7 +19,7 @@ when it grows beyond its current native UDP outputs.
 ## Qualification sequence
 
 1. Run an OLA daemon with a virtual or isolated Art-Net/sACN endpoint.
-2. Verify StageForge can discover the intended node and universe.
+2. Verify StageMesh can discover the intended node and universe.
 3. Send a known cue through the client/bridge path.
 4. Restart the daemon and remove/re-add the selected node.
 5. Verify output fences and remains disarmed until explicit re-arm.

@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'backend'))
-from dev_server import StageForgeHandler
+from dev_server import StageMeshHandler
 
 
 class EventRevocationTests(unittest.TestCase):
@@ -17,9 +17,9 @@ class EventRevocationTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.path = Path(self.temp.name) / 'credentials.json'
         self.replace('a' * 32)
-        self.handler = object.__new__(StageForgeHandler)
-        self.handler._credential_snapshot = {'STAGEFORGE_HTTP_CREDENTIAL_FILE': str(self.path)}
-        self.handler.headers = {'Host': 'localhost', 'X-StageForge-API-Token': 'a' * 32}
+        self.handler = object.__new__(StageMeshHandler)
+        self.handler._credential_snapshot = {'STAGEMESH_HTTP_CREDENTIAL_FILE': str(self.path)}
+        self.handler.headers = {'Host': 'localhost', 'X-StageMesh-API-Token': 'a' * 32}
         self.handler.client_address = ('127.0.0.1', 1234)
         self.handler.path = '/api/v1/events?after=0'
         self.handler.wfile = io.BytesIO()
@@ -29,7 +29,7 @@ class EventRevocationTests(unittest.TestCase):
 
     def replace(self, token):
         temporary = self.path.with_suffix('.new')
-        temporary.write_text(json.dumps({'STAGEFORGE_API_TOKEN': token}))
+        temporary.write_text(json.dumps({'STAGEMESH_API_TOKEN': token}))
         temporary.chmod(0o600)
         temporary.replace(self.path)
 
@@ -59,6 +59,6 @@ class EventRevocationTests(unittest.TestCase):
                 [{'eventId': 7, 'revision': 2}], [], BrokenPipeError()]):
             self.handler._serve_events(0)
         data = self.handler.wfile.getvalue()
-        self.assertIn(b'id: 7\nevent: stageforge', data)
+        self.assertIn(b'id: 7\nevent: stagemesh', data)
         self.assertIn(b': keepalive', data)
         self.assertTrue(self.handler.close_connection)

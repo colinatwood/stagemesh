@@ -1,16 +1,16 @@
 # LinuxCNC motion interoperability
 
-StageForge may integrate with machine or robotics controllers through a
+StageMesh may integrate with machine or robotics controllers through a
 simulation-first motion adapter. LinuxCNC's Hardware Abstraction Layer (HAL)
 separates real-time signal processing from non-real-time configuration and
-interfaces, which is a useful boundary for StageForge as well.
+interfaces, which is a useful boundary for StageMesh as well.
 
 References: [LinuxCNC HAL manual](https://www.linuxcnc.org/docs/devel/html/en/man/man3/hal.3.html),
 [LinuxCNC HAL tutorial](https://www.linuxcnc.org/docs/stable/html/hal/tutorial.html).
 
 ## Separate planning from motion
 
-StageForge should produce inspectable, versioned motion intents rather than
+StageMesh should produce inspectable, versioned motion intents rather than
 writing directly to pins or drives. An intent should include target identity,
 coordinate frame, units, limits, timing, generation, expiry, and authorization.
 The controller adapter is responsible for translating that intent into the
@@ -19,7 +19,7 @@ state.
 
 Keep planning, preview, controller communication, real-time control, and
 physical I/O as separate layers. LinuxCNC or another controller may own the
-hard real-time loop; StageForge must not assume that a normal user-space process
+hard real-time loop; StageMesh must not assume that a normal user-space process
 can provide machine-safe timing.
 
 ## Safety and lifecycle
@@ -52,5 +52,5 @@ state, fault state, and emergency-stop state.
 Start with a fake HAL/controller and recorded telemetry. Add a real controller
 only after the software qualification passes and the machine's independent
 guards have been reviewed. LinuxCNC availability, a real-time kernel, and
-machine hardware are host qualifications, not requirements for StageForge's
+machine hardware are host qualifications, not requirements for StageMesh's
 portable software release.

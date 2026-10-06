@@ -1,6 +1,6 @@
 # Cluster HMAC key rotation
 
-StageForge replication, planned handoff and witness control traffic support an
+StageMesh replication, planned handoff and witness control traffic support an
 optional private JSON keyring so authentication keys can rotate without process
 restart. This is control-plane authentication only; it does not grant authority,
 change witness epochs, or arm physical outputs.
@@ -10,8 +10,8 @@ change witness epochs, or arm physical outputs.
 Set either or both of:
 
 ```text
-STAGEFORGE_REPLICATION_KEYRING_FILE=/etc/stageforge/replication-keys.json
-STAGEFORGE_WITNESS_KEYRING_FILE=/etc/stageforge/witness-keys.json
+STAGEMESH_REPLICATION_KEYRING_FILE=/etc/stagemesh/replication-keys.json
+STAGEMESH_WITNESS_KEYRING_FILE=/etc/stagemesh/witness-keys.json
 ```
 
 If the witness keyring path is unset, it follows the replication keyring path,
@@ -34,7 +34,7 @@ printable ASCII strings of 32..512 characters.
 }
 ```
 
-StageForge opens and validates a fresh immutable snapshot for every replication
+StageMesh opens and validates a fresh immutable snapshot for every replication
 or witness operation. Atomic file replacement therefore changes the next
 operation without changing a key halfway through one quorum request.
 
@@ -53,7 +53,7 @@ still depends on it. Planned-handoff readiness receipts must use the same key ID
 as their offer, so rotating the active key cannot silently change an in-flight
 authority transaction.
 
-Legacy `STAGEFORGE_REPLICATION_SECRET` and `STAGEFORGE_WITNESS_SECRET` remain
+Legacy `STAGEMESH_REPLICATION_SECRET` and `STAGEMESH_WITNESS_SECRET` remain
 available only when the corresponding keyring file is not configured. They are
 compatibility mode, not a fallback from keyring mode.
 

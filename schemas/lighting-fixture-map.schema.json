@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://upp.stageforge.dev/schema/lighting-fixture-map-v1.json",
+  "$id": "https://upp.stagemesh.dev/schema/lighting-fixture-map-v1.json",
   "title": "UPP Venue Lighting Fixture Map v1",
   "type": "object",
   "additionalProperties": {

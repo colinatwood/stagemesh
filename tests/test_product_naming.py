@@ -1,82 +1,67 @@
 from pathlib import Path
 import unittest
+import zipfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE_ROOTS = (
-    ROOT / ".github",
-    ROOT / "backend",
-    ROOT / "ci",
-    ROOT / "desktop",
-    ROOT / "docs",
-    ROOT / "native",
-    ROOT / "packaging",
-    ROOT / "scripts",
-    ROOT / "tests",
+LEGACY_LOWER = "stage" + "forge"
+LEGACY_FORMS = (
+    LEGACY_LOWER,
+    LEGACY_LOWER.upper(),
+    LEGACY_LOWER.title(),
 )
-TEXT_SUFFIXES = {
-    ".cmake", ".cpp", ".h", ".hpp", ".json", ".md", ".py", ".rs",
-    ".service", ".sh", ".toml", ".yaml", ".yml",
+SKIP_DIRECTORIES = {
+    ".git",
+    ".pytest_cache",
+    ".runtime",
+    ".venv",
+    "__pycache__",
+    "node_modules",
+    "target",
 }
-HISTORICAL_EVIDENCE = ROOT / "docs" / "evidence"
+
+
+def repository_files():
+    for path in ROOT.rglob("*"):
+        if not path.is_file():
+            continue
+        relative = path.relative_to(ROOT)
+        if any(part in SKIP_DIRECTORIES for part in relative.parts):
+            continue
+        if relative.parts and relative.parts[0].startswith("build"):
+            continue
+        yield path, relative
 
 
 class ProductNamingTests(unittest.TestCase):
-    def _live_source_offenders(self, legacy_text):
-        offenders = []
-        for source_root in SOURCE_ROOTS:
-            for path in source_root.rglob("*"):
-                if not path.is_file() or path.suffix not in TEXT_SUFFIXES:
-                    continue
-                if HISTORICAL_EVIDENCE in path.parents or path == Path(__file__):
-                    continue
-                if legacy_text in path.read_text(encoding="utf-8", errors="ignore"):
-                    offenders.append(path.relative_to(ROOT).as_posix())
-        return offenders
-
-    def test_live_sources_do_not_restore_legacy_native_engine_name(self):
-        legacy_name = "stageforge" + "_engine"
-        offenders = self._live_source_offenders(legacy_name)
-        for path in (ROOT / "CMakeLists.txt",):
-            if legacy_name in path.read_text(encoding="utf-8"):
-                offenders.append(path.relative_to(ROOT).as_posix())
+    def test_repository_paths_use_only_stagemesh_identity(self):
+        offenders = [
+            relative.as_posix()
+            for _, relative in repository_files()
+            if LEGACY_LOWER in relative.as_posix().casefold()
+        ]
         self.assertEqual(offenders, [])
 
-    def test_live_sources_do_not_restore_legacy_native_engine_environment_variable(self):
-        legacy_variable = "STAGEFORGE" + "_NATIVE_ENGINE"
-        self.assertEqual(self._live_source_offenders(legacy_variable), [])
-
-    def test_desktop_runtime_contract_uses_stagemesh_identity(self):
-        legacy_contracts = (
-            "STAGEFORGE" + "_RUNTIME_MODE",
-            "STAGEFORGE" + "_DESKTOP_SESSION_TOKEN",
-            "X-StageForge" + "-Desktop-Token",
-        )
+    def test_repository_text_uses_only_stagemesh_identity(self):
         offenders = []
-        for legacy_contract in legacy_contracts:
-            offenders.extend(
-                f"{path}:{legacy_contract}"
-                for path in self._live_source_offenders(legacy_contract)
-            )
-        self.assertEqual(offenders, [])
+        for path, relative in repository_files():
+            if path.suffix.casefold() == ".xlsx":
+                with zipfile.ZipFile(path) as workbook:
+                    for member in workbook.namelist():
+                        if member.endswith("/"):
+                            continue
+                        text = workbook.read(member).decode("utf-8", errors="ignore")
+                        if any(form in text for form in LEGACY_FORMS):
+                            offenders.append(f"{relative.as_posix()}!{member}")
+                continue
 
-    def test_live_sources_do_not_restore_legacy_build_contracts(self):
-        legacy_contracts = (
-            "STAGEFORGE" + "_BUILD_TESTS",
-            "STAGEFORGE" + "_ENABLE_SANITIZERS",
-            "STAGEFORGE" + "_RT_QUALIFICATION",
-            "STAGEFORGE" + "_DEVICE_ASAN",
-        )
-        offenders = []
-        cmake = (ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
-        native_devices = (ROOT / "native" / "devices.cmake").read_text(encoding="utf-8")
-        for legacy_contract in legacy_contracts:
-            offenders.extend(
-                f"{path}:{legacy_contract}"
-                for path in self._live_source_offenders(legacy_contract)
-            )
-            if legacy_contract in cmake or legacy_contract in native_devices:
-                offenders.append(legacy_contract)
+            data = path.read_bytes()
+            if b"\x00" in data:
+                continue
+            text = data.decode("utf-8", errors="ignore")
+            if any(form in text for form in LEGACY_FORMS):
+                offenders.append(relative.as_posix())
+
         self.assertEqual(offenders, [])
 
     def test_build_and_desktop_bundle_use_stagemesh_engine(self):

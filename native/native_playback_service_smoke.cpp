@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <thread>
 
-using namespace stageforge;
+using namespace stagemesh;
 
 namespace {
 void require(bool condition, const char* message) {

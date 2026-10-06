@@ -1,6 +1,6 @@
 # Broadcast playout interoperability
 
-StageForge can use a broadcast-style playout adapter for layered graphics,
+StageMesh can use a broadcast-style playout adapter for layered graphics,
 audio, video, recording, and multiple presentation outputs. This guidance is
 informed by [CasparCG Server](https://github.com/CasparCG/server), which
 supports professional media and graphics playout across multiple outputs on
@@ -61,6 +61,6 @@ configuration validation, and explicit re-arm.
 ## Licensing boundary
 
 CasparCG Server is GPLv3-or-later according to its repository documentation.
-StageForge should use the documented protocol and interoperability concepts
+StageMesh should use the documented protocol and interoperability concepts
 without copying implementation code or bundling components before reviewing
 license and distribution obligations.

@@ -4,12 +4,12 @@ from threading import RLock
 from unittest.mock import Mock,patch
 
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/"backend"))
-from runtime import StageForgeRuntime
+from runtime import StageMeshRuntime
 
 
 class BackendNeutralAudioRuntimeTests(unittest.TestCase):
     def runtime(self):
-        runtime=StageForgeRuntime.__new__(StageForgeRuntime)
+        runtime=StageMeshRuntime.__new__(StageMeshRuntime)
         runtime._audio_control_lock=RLock();runtime.native=Mock();runtime.native.available=True
         runtime._audio_activation_preflight={};runtime._has_authority=Mock(return_value=True)
         runtime._mapped_execution_device=Mock(return_value=None);runtime._mark_post_promotion_output=Mock()

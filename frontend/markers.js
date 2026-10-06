@@ -2,7 +2,7 @@
   const RATE=192000;
   function render({doc,session,zoomSeconds,snap,onEdit}){
     const rail=doc.querySelector('#dawMarkers'),add=doc.querySelector('#dawMarkerAdd'),name=doc.querySelector('#dawMarkerName'),seconds=doc.querySelector('#dawMarkerSeconds'),kind=doc.querySelector('#dawMarkerKind');
-    const grid=root.StageForgeArrangement?.snapFrames(session,snap)||1;
+    const grid=root.StageMeshArrangement?.snapFrames(session,snap)||1;
     if(!add.dataset.mounted){add.dataset.mounted='true';add.addEventListener('click',()=>{const label=name.value.trim();const frame=Math.round(Number(seconds.value)*RATE);if(!label||!Number.isSafeInteger(frame)||frame<0){doc.querySelector('#dawStatus').textContent='Marker name and non-negative time are required.';return;}onEdit({action:'add',markerId:`marker-${root.crypto?.randomUUID?.()||Date.now()}`,name:label,kind:kind.value,frame});});}
     rail.replaceChildren();
     for(const marker of session.markers||[]){
@@ -15,5 +15,5 @@
       item.appendChild(locate);item.appendChild(remove);rail.appendChild(item);
     }
   }
-  const api={render};if(typeof module!=='undefined')module.exports=api;root.StageForgeMarkers=api;
+  const api={render};if(typeof module!=='undefined')module.exports=api;root.StageMeshMarkers=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

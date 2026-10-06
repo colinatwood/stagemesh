@@ -1,16 +1,16 @@
-#include "stageforge/realtime_qualification.hpp"
+#include "stagemesh/realtime_qualification.hpp"
 
 #include <cstddef>
 #include <cstdlib>
 #include <new>
 
-#include "stageforge/realtime_audit.hpp"
+#include "stagemesh/realtime_audit.hpp"
 
 namespace {
-thread_local stageforge::RealtimeAudit* active_audit = nullptr;
+thread_local stagemesh::RealtimeAudit* active_audit = nullptr;
 }
 
-namespace stageforge {
+namespace stagemesh {
 
 RealtimeQualificationScope::RealtimeQualificationScope(RealtimeAudit* audit) noexcept
     : previous_(active_audit) {
@@ -41,11 +41,11 @@ void note_realtime_lock_attempt() noexcept {
 #endif
 }
 
-}  // namespace stageforge
+}  // namespace stagemesh
 
 #ifdef STAGEMESH_RT_QUALIFICATION
 void* operator new(std::size_t size) {
-    stageforge::note_realtime_allocation(size);
+    stagemesh::note_realtime_allocation(size);
     if (void* value = std::malloc(size ? size : 1)) return value;
     throw std::bad_alloc();
 }
@@ -55,7 +55,7 @@ void* operator new[](std::size_t size) {
 }
 
 void* operator new(std::size_t size, std::align_val_t alignment) {
-    stageforge::note_realtime_allocation(size);
+    stagemesh::note_realtime_allocation(size);
     void* value = nullptr;
     const auto boundary = static_cast<std::size_t>(alignment);
     if (posix_memalign(&value, boundary, size ? size : boundary) == 0) return value;
@@ -79,7 +79,7 @@ void operator delete[](void* value, std::size_t, std::align_val_t) noexcept { st
 #include <pthread.h>
 extern "C" int __real_pthread_mutex_lock(pthread_mutex_t* mutex);
 extern "C" int __wrap_pthread_mutex_lock(pthread_mutex_t* mutex) {
-    stageforge::note_realtime_lock_attempt();
+    stagemesh::note_realtime_lock_attempt();
     return __real_pthread_mutex_lock(mutex);
 }
 #endif

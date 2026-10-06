@@ -6,7 +6,7 @@ keyring mode is not selected, while making keyring mode explicitly non-downgrada
 
 ## Contract
 
-- `STAGEFORGE_REPLICATION_KEYRING_FILE` and `STAGEFORGE_WITNESS_KEYRING_FILE`
+- `STAGEMESH_REPLICATION_KEYRING_FILE` and `STAGEMESH_WITNESS_KEYRING_FILE`
   load owner-only, non-symlink, bounded JSON keyrings.
 - Every keyring-authenticated wire object carries a HMAC-covered `keyId`.
 - Outbound traffic uses only `activeKeyId`; inbound traffic resolves exactly the

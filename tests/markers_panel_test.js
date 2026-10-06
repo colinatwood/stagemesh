@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-global.StageForgeArrangement={snapFrames:()=>96000};global.confirm=()=>true;
+global.StageMeshArrangement={snapFrames:()=>96000};global.confirm=()=>true;
 const {render}=require('../frontend/markers.js');
 class Element{
   constructor(value=''){this.value=value;this.dataset={};this.handlers={};this.children=[];this.style={};this.attributes={};this.clientWidth=100;this.textContent='';}
