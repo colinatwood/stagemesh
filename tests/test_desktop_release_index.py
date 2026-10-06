@@ -226,6 +226,18 @@ class DesktopReleaseIndexTests(unittest.TestCase):
         self.assertIn("scripts/desktop-release-index.py", workflow)
         self.assertIn("stagemesh-desktop-release-index-${{ github.sha }}", workflow)
 
+    def test_desktop_workflow_attests_release_candidate_index(self):
+        workflow = (ROOT / ".github" / "workflows" / "desktop.yml").read_text(
+            encoding="utf-8"
+        )
+        release_job = workflow.split("  release-candidate:", maxsplit=1)[1]
+        self.assertIn("Attest release-candidate index", release_job)
+        self.assertIn("uses: actions/attest@v4", release_job)
+        self.assertIn("subject-path: desktop-release-index.json", release_job)
+        self.assertIn("id-token: write", release_job)
+        self.assertIn("attestations: write", release_job)
+        self.assertIn("artifact-metadata: write", release_job)
+
 
 if __name__ == "__main__":
     unittest.main()

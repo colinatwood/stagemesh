@@ -68,6 +68,11 @@ original per-platform CI artifacts, avoiding a second large copy. Reviewers
 can use the index to reject missing, duplicated, mixed-version, mixed-commit,
 tampered, or failed-signature candidates before any publication step exists.
 
+Before upload, CI creates a separate GitHub artifact provenance attestation for
+the exact `desktop-release-index.json` bytes. This closes the provenance chain
+from each platform bundle to the cross-platform index without changing the
+index's unsigned-candidate or external-qualification boundaries.
+
 The index always identifies itself as an `unsigned-ci-candidate`, keeps
 `readyForPublication` false, and records the legal, signing, clean-host,
 accessibility, and physical-hardware blockers. Even when every exact artifact
