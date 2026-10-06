@@ -248,6 +248,7 @@ jobs:
         with:
           name: stagemesh-desktop-${{ matrix.os }}
           path: desktop/src-tauri/target/release/bundle/
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 90
 

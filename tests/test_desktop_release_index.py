@@ -222,6 +222,7 @@ class DesktopReleaseIndexTests(unittest.TestCase):
         self.assertIn("release-candidate:", workflow)
         self.assertIn("needs: build", workflow)
         self.assertIn("actions/download-artifact@v4", workflow)
+        self.assertIn("include-hidden-files: true", workflow)
         self.assertIn("scripts/desktop-release-index.py", workflow)
         self.assertIn("stagemesh-desktop-release-index-${{ github.sha }}", workflow)
 
