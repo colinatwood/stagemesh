@@ -20,8 +20,10 @@ plugins, deployed services, or installed packages. See
 GitHub Actions provides a manually runnable Linux release-artifact workflow
 and a cross-platform desktop workflow. The desktop workflow builds native
 Windows, macOS, and Linux installers, verifies each downloadable bundle, then
-publishes a small SHA-256-bound release-candidate index as a CI artifact. These
-are unsigned test artifacts rather than a public release; signing, legal
+publishes a small SHA-256-bound release-candidate index as a CI artifact. Each
+bundle includes a deterministic CycloneDX 1.7 SBOM for its locked npm, Cargo,
+and Python components. These are unsigned test artifacts rather than a public
+release; signing, legal
 review, clean-host installation, accessibility, and physical hardware remain
 separate gates. Platform evidence workflows run on pull requests, `main`
 pushes, and manual dispatches.
