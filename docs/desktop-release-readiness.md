@@ -139,6 +139,13 @@ evidence is completed. CycloneDX 1.7 documentation and the reference JSON
 schema are published at <https://cyclonedx.org/docs/1.7/json/> and
 <https://cyclonedx.org/schema/bom-1.7.schema.json>.
 
+After bundle verification, CI generates a GitHub artifact provenance attestation
+whose subjects are the exact files listed by `SHA256SUMS` and whose SBOM
+predicate is `desktop-sbom.cdx.json`. The attestation links the candidate to its
+workflow, source commit, and build identity. It is supply-chain evidence only;
+it does not sign or notarize installers, approve licenses, or qualify hosts,
+accessibility, or physical hardware.
+
 The release preflight parses the inventory and SBOM and fails closed on malformed
 components or counts, unsafe input paths, duplicate package identifiers, or any
 claim that payload, license, or legal-review boundaries are complete. For built

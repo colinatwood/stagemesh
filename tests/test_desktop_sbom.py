@@ -138,6 +138,16 @@ class DesktopSbomTests(unittest.TestCase):
         self.assertIn("Generate CycloneDX desktop SBOM", workflow)
         self.assertIn("bundle/desktop-sbom.cdx.json", workflow)
 
+    def test_desktop_workflow_attests_bundle_checksums_and_sbom(self):
+        workflow = (ROOT / ".github" / "workflows" / "desktop.yml").read_text(encoding="utf-8")
+        self.assertIn("Attest desktop bundle provenance and SBOM", workflow)
+        self.assertIn("uses: actions/attest@v4", workflow)
+        self.assertIn("subject-checksums: desktop/src-tauri/target/release/bundle/SHA256SUMS", workflow)
+        self.assertIn("sbom-path: desktop/src-tauri/target/release/bundle/desktop-sbom.cdx.json", workflow)
+        self.assertIn("id-token: write", workflow)
+        self.assertIn("attestations: write", workflow)
+        self.assertIn("artifact-metadata: write", workflow)
+
 
 if __name__ == "__main__":
     unittest.main()

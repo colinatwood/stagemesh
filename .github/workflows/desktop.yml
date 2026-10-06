@@ -87,6 +87,11 @@ permissions:
 jobs:
   build:
     name: Build desktop package (${{ matrix.os }})
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -286,6 +291,12 @@ jobs:
         run: >-
           python scripts/verify-desktop-download.py
           --directory desktop/src-tauri/target/release/bundle
+
+      - name: Attest desktop bundle provenance and SBOM
+        uses: actions/attest@v4
+        with:
+          subject-checksums: desktop/src-tauri/target/release/bundle/SHA256SUMS
+          sbom-path: desktop/src-tauri/target/release/bundle/desktop-sbom.cdx.json
 
       - name: Upload installer artifacts
         uses: actions/upload-artifact@v4

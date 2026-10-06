@@ -29,9 +29,12 @@ Windows, macOS, and Linux installers, verifies each downloadable bundle, then
 publishes a small SHA-256-bound release-candidate index as a CI artifact. Each
 bundle includes a deterministic CycloneDX 1.7 SBOM for its locked npm, Cargo,
 and Python components. These are unsigned test artifacts rather than a public
-release; signing, legal
-review, clean-host installation, accessibility, and physical hardware remain
-separate gates. Platform evidence workflows run on pull requests, `main`
+release; signing, legal review, clean-host installation, accessibility, and
+physical hardware remain
+separate gates. Each bundle's SHA-256 subject list and SBOM also receive a
+GitHub artifact provenance attestation. This is supply-chain evidence, not
+platform signing, notarization, legal approval, or hardware qualification.
+Platform evidence workflows run on pull requests, `main`
 pushes, and manual dispatches.
 
 The desktop artifacts also carry fail-closed clean-host evidence collectors
