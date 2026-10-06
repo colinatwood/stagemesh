@@ -32,9 +32,9 @@ installer, or hardware claim.
 The report always keeps `readyForPublication` false. Before publishing an
 installer, an owner must complete each separate gate and retain its evidence:
 
-1. Select and confirm the project license and review the exact dependency and
-   packaged-notice inventory. The repository files alone do not record that
-   owner/legal decision.
+1. Confirm the repository's Apache License 2.0 choice and review the exact
+   dependency and packaged-notice inventory. The license text is present; the
+   owner/legal dependency-redistribution review remains separate.
 2. Configure platform signing certificates and protected CI credentials, then
    run platform signing and notarization/verification on the exact artifacts.
    Credentials and certificates must never be committed or placed in this

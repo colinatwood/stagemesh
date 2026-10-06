@@ -28,6 +28,7 @@ def main():
         if args.check_prerequisites:
             print("Release prerequisites available")
             return 0
+        run([sys.executable, str(ROOT / "scripts/open-source-hygiene.py")])
         # Never reuse a developer build tree or delete user-selected paths.
         with tempfile.TemporaryDirectory(prefix="stagemesh-release-") as temporary:
             build = Path(temporary) / "build"
