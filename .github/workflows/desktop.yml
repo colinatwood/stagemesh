@@ -16,6 +16,7 @@ on:
       - "scripts/desktop-dependency-inventory.py"
       - "scripts/desktop-release-readiness.py"
       - "scripts/desktop-release-index.py"
+      - "scripts/desktop-clean-host-review.py"
       - "scripts/desktop-signing-readiness.py"
       - "scripts/desktop-signing-verification.py"
       - "scripts/verify-desktop-download.py"
@@ -27,6 +28,7 @@ on:
       - "tests/test_desktop_dependency_inventory.py"
       - "tests/test_desktop_release_readiness.py"
       - "tests/test_desktop_release_index.py"
+      - "tests/test_desktop_clean_host_review.py"
       - "tests/test_desktop_signing_readiness.py"
       - "tests/test_desktop_signing_verification.py"
       - "tests/test_desktop_download_verifier.py"
@@ -52,6 +54,7 @@ on:
       - "scripts/desktop-dependency-inventory.py"
       - "scripts/desktop-release-readiness.py"
       - "scripts/desktop-release-index.py"
+      - "scripts/desktop-clean-host-review.py"
       - "scripts/desktop-signing-readiness.py"
       - "scripts/desktop-signing-verification.py"
       - "scripts/verify-desktop-download.py"
@@ -63,6 +66,7 @@ on:
       - "tests/test_desktop_dependency_inventory.py"
       - "tests/test_desktop_release_readiness.py"
       - "tests/test_desktop_release_index.py"
+      - "tests/test_desktop_clean_host_review.py"
       - "tests/test_desktop_signing_readiness.py"
       - "tests/test_desktop_signing_verification.py"
       - "tests/test_desktop_download_verifier.py"
@@ -210,6 +214,12 @@ jobs:
         run: >-
           cp scripts/verify-desktop-download.py
           desktop/src-tauri/target/release/bundle/verify-download.py
+
+      - name: Include cross-platform clean-host evidence reviewer
+        shell: bash
+        run: >-
+          cp scripts/desktop-clean-host-review.py
+          desktop/src-tauri/target/release/bundle/review-clean-host.py
 
       - name: Include Windows clean-host evidence collector
         if: runner.os == 'Windows'
