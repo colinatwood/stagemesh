@@ -60,10 +60,16 @@ license review.
 ## Windows
 
 The Windows installer bundles the WebView2 Evergreen offline installer.
-This adds about 127 MB to the Windows packages, but lets the installer set up
-WebView2 without internet access when the runtime is missing. Windows 10
-(version 1803 and later) and Windows 11 normally include WebView2; when a
+Tauri documents an increase of about 127 MB per installer; this lets setup
+install WebView2 without internet access when the runtime is missing. Windows
+10 (version 1803 and later) and Windows 11 normally include WebView2; when a
 compatible runtime is present, it remains managed and updated by Windows.
+
+This workflow emits both NSIS and MSI installers. The PR #103 Windows CI
+archive containing both installers measured 451,685,898 bytes, compared with
+24,019,887 bytes for the preceding main archive. Treat this measured combined
+archive size as the distribution cost; the Tauri figure is a per-installer
+estimate. Check the exact artifact metadata for each release candidate.
 
 For audio and MIDI:
 
