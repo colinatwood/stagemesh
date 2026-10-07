@@ -46,6 +46,22 @@ class DesktopReleaseReadinessTests(unittest.TestCase):
         self.assertTrue(report["readyForUnsignedTesting"])
         self.assertFalse(report["readyForPublication"])
         self.assertEqual(report["version"], "0.1.0")
+        self.assertEqual(report["windowsWebViewInstallMode"], "offlineInstaller")
+
+    def test_windows_readiness_rejects_network_dependent_webview_bootstrapper(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.fixture(root)
+            config_path = root / "desktop" / "src-tauri" / "tauri.conf.json"
+            config = json.loads(config_path.read_text(encoding="utf-8"))
+            config["bundle"]["windows"]["webviewInstallMode"]["type"] = "downloadBootstrapper"
+            config_path.write_text(json.dumps(config), encoding="utf-8")
+
+            report = load_script().evaluate(root, "v0.1.0")
+
+            self.assertFalse(report["passed"])
+            self.assertEqual(report["windowsWebViewInstallMode"], "downloadBootstrapper")
+            self.assertIn("offlineInstaller", " ".join(report["blockers"]))
 
     def test_missing_distribution_file_fails_closed(self):
         with tempfile.TemporaryDirectory() as temporary:
