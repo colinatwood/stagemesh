@@ -22,6 +22,26 @@ VERSION_SCRIPT = Path(__file__).with_name("verify-desktop-version.py")
 SBOM_SCRIPT = Path(__file__).with_name("desktop-sbom.py")
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 REQUIRED_DISTRIBUTION_FILES = ("LICENSE", "THIRD_PARTY_NOTICES.md")
+
+WINDOWS_WEBVIEW_INSTALL_MODE = "offlineInstaller"
+
+
+def _windows_webview_install_mode(root: Path) -> tuple[str | None, str | None]:
+    config_path = root / "desktop" / "src-tauri" / "tauri.conf.json"
+    try:
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return None, f"Windows WebView2 installer configuration is invalid: {exc}"
+    bundle = config.get("bundle") if isinstance(config, dict) else None
+    windows = bundle.get("windows") if isinstance(bundle, dict) else None
+    mode = windows.get("webviewInstallMode") if isinstance(windows, dict) else None
+    mode = mode.get("type") if isinstance(mode, dict) else None
+    if mode != WINDOWS_WEBVIEW_INSTALL_MODE:
+        return mode, (
+            "Windows WebView2 installation must use offlineInstaller "
+            f"(found {mode!r})"
+        )
+    return mode, None
 DEPENDENCY_INVENTORY_NAME = "desktop-dependencies.json"
 SBOM_NAME = "desktop-sbom.cdx.json"
 REQUIRED_DEPENDENCY_INPUTS = {
@@ -288,6 +308,10 @@ def evaluate(
     if missing:
         blockers.append("missing required distribution file(s): " + ", ".join(missing))
 
+    windows_webview_mode, windows_webview_error = _windows_webview_install_mode(root)
+    if windows_webview_error:
+        blockers.append(windows_webview_error)
+
     manifest_report: dict[str, Any] | None = None
     manifest_document: dict[str, Any] | None = None
     if manifest_path is not None:
@@ -397,6 +421,7 @@ def evaluate(
         "tag": tag,
         "manifests": version_report.get("manifests") if version_report else None,
         "distributionFilesPresent": not missing,
+        "windowsWebViewInstallMode": windows_webview_mode,
         "artifactManifest": manifest_report,
         "dependencyInventory": dependency_report,
         "sbom": sbom_report,

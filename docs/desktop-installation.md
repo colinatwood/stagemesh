@@ -59,9 +59,11 @@ license review.
 
 ## Windows
 
-The installer uses the WebView2 download bootstrapper. The installer needs
-internet access on machines that do not already have WebView2. Windows 10
-(version 1803 and later) and Windows 11 normally include WebView2.
+The Windows installer bundles the WebView2 Evergreen offline installer.
+This adds about 127 MB to the Windows packages, but lets the installer set up
+WebView2 without internet access when the runtime is missing. Windows 10
+(version 1803 and later) and Windows 11 normally include WebView2; when a
+compatible runtime is present, it remains managed and updated by Windows.
 
 For audio and MIDI:
 
