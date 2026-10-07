@@ -63,6 +63,11 @@ version and source commit and
 records that signing, clean-host installation, and physical hardware remain
 unqualified.
 
+Windows NSIS and MSI packages bundle the WebView2 Evergreen offline
+installer. This adds approximately 127 MB, but permits installation without
+internet access when WebView2 is absent. Existing WebView2 installations remain
+managed by Windows; this package does not pin a fixed WebView2 version.
+
 ## Driver and hardware boundary
 
 Read docs/desktop-installation.md for WebView, audio, MIDI, permissions,
