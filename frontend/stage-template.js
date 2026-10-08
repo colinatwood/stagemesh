@@ -172,14 +172,41 @@
   q("#templateDelete").addEventListener("click", () => { if (!selected()) return; objects = objects.filter((item) => item.id !== selectedId); selectedId = null; save(); render(); });
   q("#templateReset").addEventListener("click", () => { objects = []; selectedId = null; save(); render(); q("#templateHint").textContent = "Draft reset. No backend or hardware state was changed."; });
   q("#templateExport").addEventListener("click", () => {
-    const blob = new Blob([JSON.stringify({version: 1, name: "StageMesh stage template", objects}, null, 2)], {type: "application/json"});
+    const blob = new Blob([JSON.stringify({version: 1, name: q("#templateName").value, objects}, null, 2)], {type: "application/json"});
     const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "stagemesh-stage-template.json"; link.click(); URL.revokeObjectURL(link.href);
   });
   q("#templateImportButton").addEventListener("click", () => q("#templateImport").click());
+  const validateImport = (parsed) => {
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) || parsed.version !== 1) throw new Error("supported template version 1 required");
+    if (!Array.isArray(parsed.objects) || parsed.objects.length > 5000) throw new Error("objects must be an array of at most 5000 entries");
+    if (parsed.name !== undefined && (typeof parsed.name !== "string" || !parsed.name.trim() || parsed.name.length > 128)) throw new Error("template name must contain 1–128 characters");
+    const ids = new Set();
+    const imported = parsed.objects.map((item, index) => {
+      const fail = (message) => { throw new Error(`Object ${index + 1}: ${message}`); };
+      if (!item || typeof item !== "object" || Array.isArray(item)) fail("object record required");
+      if (typeof item.label !== "string" || !item.label.trim() || item.label.length > 128) fail("label must contain 1–128 characters");
+      const id = item.id === undefined ? `import-${Date.now()}-${index}` : item.id;
+      if (typeof id !== "string" || !id || ids.has(id)) fail("nonempty unique ID required");
+      ids.add(id);
+      const type = item.type === undefined ? "marker" : item.type;
+      if (typeof type !== "string" || !type || type.length > 32) fail("type must contain 1–32 characters");
+      const x = item.x === undefined ? 50 : item.x;
+      const y = item.y === undefined ? 50 : item.y;
+      if (![x, y].every((value) => typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 100)) fail("coordinates must be finite numbers between 0 and 100");
+      return {...item, id, type, x, y};
+    });
+    return {version: 1, name: parsed.name === undefined ? q("#templateName").value : parsed.name, objects: imported};
+  };
   q("#templateImport").addEventListener("change", async (event) => {
     const file = event.target.files?.[0]; if (!file) return;
-    try { const parsed = JSON.parse(await file.text()); if (!Array.isArray(parsed.objects)) throw new Error("objects array missing"); objects = parsed.objects.filter((item) => item && typeof item.label === "string").map((item) => ({id: String(item.id || `object-${Date.now()}-${Math.random()}`), type: String(item.type || "marker"), label: item.label.slice(0, 48), x: Number(item.x) || 50, y: Number(item.y) || 50})); selectedId = null; save(); render(); q("#templateHint").textContent = "Template imported into the local draft."; }
-    catch (error) { q("#templateHint").textContent = `Import rejected: ${error.message}`; }
+    try {
+      const imported = validateImport(JSON.parse(await file.text()));
+      // Persist the complete validated replacement before changing the visible draft.
+      localStorage.setItem(storageKey, JSON.stringify(imported));
+      objects = imported.objects; selectedId = null; q("#templateName").value = imported.name;
+      if (serverTemplateId) serverDirty = true;
+      render(); q("#templateHint").textContent = "Template imported into the local draft.";
+    } catch (error) { q("#templateHint").textContent = `Import rejected: ${error.message}`; }
     event.target.value = "";
   });
   canvas.addEventListener("dragover", (event) => { if (event.dataTransfer.types.includes("application/x-stagemesh-template")) { event.preventDefault(); canvas.classList.add("dropTarget"); } });
