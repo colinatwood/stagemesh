@@ -282,6 +282,53 @@ def main() -> int:
                     )
 
                 request_graceful_shutdown(process, port, api_token)
+
+                template_store_path = root / "data" / "stage-templates.json"
+                preserved_template_store = template_store_path.read_bytes()
+                malformed_template_store = b'{"incomplete":'
+                template_store_path.write_bytes(malformed_template_store)
+                process = start_runtime(runtime, port, environment, log)
+                try:
+                    try:
+                        corrupt_code = process.wait(timeout=15)
+                    except subprocess.TimeoutExpired as exc:
+                        raise RuntimeError(
+                            "runtime did not fail closed on a corrupt template store"
+                        ) from exc
+                    if corrupt_code == 0:
+                        raise RuntimeError(
+                            "runtime reported success with a corrupt template store"
+                        )
+                finally:
+                    stop_process_tree(process)
+                if template_store_path.read_bytes() != malformed_template_store:
+                    raise RuntimeError(
+                        "runtime changed the corrupt template store during failed startup"
+                    )
+
+                template_store_path.write_bytes(preserved_template_store)
+                process = start_runtime(runtime, port, environment, log)
+                wait_until_ready(process, port, api_token)
+                recovered_status, _, recovered_body = request(
+                    port,
+                    "GET",
+                    f"/api/v1/templates/{template_id}",
+                    {"X-StageMesh-API-Token": api_token},
+                )
+                recovered_payload = json.loads(recovered_body)
+                if recovered_status != 200 or recovered_payload != restored_payload:
+                    raise RuntimeError(
+                        "packaged runtime did not recover after the exact template store "
+                        f"was restored: {recovered_payload}"
+                    )
+                request_graceful_shutdown(process, port, api_token)
+
+                log.flush()
+                log_details = log_path.read_text(encoding="utf-8", errors="replace")
+                if api_token in log_details or bootstrap_token in log_details:
+                    raise RuntimeError(
+                        "runtime persistence-recovery log exposed a desktop credential"
+                    )
             except Exception as exc:
                 log.flush()
                 details = log_path.read_text(encoding="utf-8", errors="replace")[-4000:]
@@ -289,7 +336,8 @@ def main() -> int:
             finally:
                 stop_process_tree(process)
     print(
-        "Desktop runtime smoke passed, including persistence restart; "
+        "Desktop runtime smoke passed, including persistence restart and "
+        "corrupt-store fencing; "
         "physical hardware was not activated or qualified."
     )
     return 0
