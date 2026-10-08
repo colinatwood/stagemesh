@@ -75,10 +75,13 @@ def _candidate(bundle: Path, installer: Path) -> dict[str, Any]:
         raise ValueError("clean-host evidence requires a macOS or Linux StageMesh bundle")
     version = manifest.get("version")
     commit = manifest.get("sourceCommit")
+    distribution_channel = manifest.get("distributionChannel")
     if not isinstance(version, str) or not VERSION_PATTERN.fullmatch(version):
         raise ValueError("artifact manifest version is invalid")
     if not isinstance(commit, str) or not COMMIT_PATTERN.fullmatch(commit):
         raise ValueError("artifact manifest source commit is invalid")
+    if distribution_channel != "standard":
+        raise ValueError("macOS and Linux artifact manifest distribution channel must be standard")
     expected_qualification = {
         "softwarePackageBuilt": True,
         "cleanHostInstallQualified": False,
@@ -118,6 +121,7 @@ def _candidate(bundle: Path, installer: Path) -> dict[str, Any]:
         "platform": target_platform,
         "version": version,
         "sourceCommit": commit,
+        "distributionChannel": distribution_channel,
         "manifest": {
             "bytes": manifest_path.stat().st_size,
             "sha256": _sha256_file(manifest_path),

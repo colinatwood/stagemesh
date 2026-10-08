@@ -151,7 +151,11 @@ def _evidence_summary(
     if len(matches) != 1:
         raise ValueError(f"{path.name}: candidate manifest does not match exactly one release index bundle")
     channel = matches[0]
-    if "distributionChannel" in candidate and candidate["distributionChannel"] != channel:
+    evidence_channel = candidate.get("distributionChannel")
+    if channel == "legacy":
+        if evidence_channel is not None:
+            raise ValueError(f"{path.name}: legacy candidate must not claim a distribution channel")
+    elif evidence_channel != channel:
         raise ValueError(f"{path.name}: candidate distribution channel does not match its manifest")
 
     installer = candidate.get("installer")
