@@ -87,6 +87,8 @@ class DesktopCleanHostReviewTests(unittest.TestCase):
         }
         if platform != "Windows":
             candidate["platform"] = platform
+        if channel is not None:
+            candidate["distributionChannel"] = channel
         value = {
             "documentType": document_type,
             "schemaVersion": 1,
@@ -240,6 +242,11 @@ class DesktopCleanHostReviewTests(unittest.TestCase):
                              {"standard", "online", "offline"})
             value = json.loads(evidence[-1].read_text())
             value["candidate"]["distributionChannel"] = "online"
+            evidence[-1].write_text(json.dumps(value))
+            with self.assertRaisesRegex(ValueError, "distribution channel does not match"):
+                script.build_review(index, evidence)
+
+            value["candidate"].pop("distributionChannel")
             evidence[-1].write_text(json.dumps(value))
             with self.assertRaisesRegex(ValueError, "distribution channel does not match"):
                 script.build_review(index, evidence)

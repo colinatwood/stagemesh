@@ -31,6 +31,7 @@ class WindowsDesktopCleanHostTests(unittest.TestCase):
             "product": "StageMesh",
             "version": "0.1.0",
             "platform": "Windows",
+            "distributionChannel": "offline",
             "sourceCommit": self.commit,
             "signed": False,
             "qualification": {
@@ -145,7 +146,30 @@ class WindowsDesktopCleanHostTests(unittest.TestCase):
             self.assertFalse(report["readiness"]["cleanHostInstallQualified"])
             self.assertFalse(report["readiness"]["physicalHardwareQualified"])
             self.assertEqual(report["candidate"]["sourceCommit"], self.commit)
+            self.assertEqual(report["candidate"]["distributionChannel"], "offline")
             self.assertNotIn(marker, json.dumps(report))
+
+    def test_distribution_channel_is_required_and_limited_to_windows_channels(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            module = load_script()
+            bundle, installer = self.make_bundle(Path(temporary))
+            manifest_path = bundle / "desktop-artifacts.json"
+            original = json.loads(manifest_path.read_text(encoding="utf-8"))
+            for channel in (None, "standard", "nightly"):
+                manifest = dict(original)
+                if channel is None:
+                    manifest.pop("distributionChannel", None)
+                else:
+                    manifest["distributionChannel"] = channel
+                manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "distribution channel"):
+                    module.start_evidence(
+                        bundle,
+                        installer,
+                        self.snapshot(),
+                        clean_host_attested=True,
+                        observed_at_utc="2026-10-06T00:00:00Z",
+                    )
 
     def test_installer_tampering_is_rejected(self):
         with tempfile.TemporaryDirectory() as temporary:

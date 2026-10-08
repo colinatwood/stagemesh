@@ -88,10 +88,12 @@ For audio and MIDI:
 ### Windows clean-host evidence
 
 The Windows CI bundle contains `windows-clean-host.py`. It records the exact
-manifest and installer hashes, a hashed machine/user identity, Windows 11
-build and architecture, WebView2 detection, installed-version state, and the
-baseline/install/restart/upgrade/uninstall sequence. It never marks the host
-qualified; a complete report only becomes ready for owner review.
+manifest and installer hashes, the manifest-declared `online` or `offline`
+distribution channel, a hashed machine/user identity, Windows 11 build and
+architecture, WebView2 detection, installed-version state, and the
+baseline/install/restart/upgrade/uninstall sequence. A missing or invalid
+channel fails before baseline evidence is created. The collector never marks
+the host qualified; a complete report only becomes ready for owner review.
 
 Keep the report outside the downloaded bundle so the bundle remains exactly
 verifiable. From PowerShell on a fresh Windows 11 x64 host or VM, first run the
@@ -171,7 +173,8 @@ Apple Silicon host, verify the bundle, record the baseline against the DMG,
 drag `StageMesh.app` to `/Applications`, and then record the installed and
 restart phases. The collector hashes the exact DMG and manifest, machine/user
 identity, installed application identity, observed version, process state, and
-the persistence marker without retaining its plaintext value:
+the persistence marker without retaining its plaintext value. It also requires
+and records the manifest's `standard` distribution channel before baseline:
 
 ```sh
 python3 verify-download.py --directory .
@@ -231,7 +234,8 @@ The Linux CI bundle also contains `posix-clean-host.py`. Run it on a fresh
 Ubuntu 22.04 or 24.04 x64 host for the AppImage and Debian package separately.
 The Debian path reads its installed version from `dpkg`; the AppImage path
 requires the installed/portable executable path and an explicit observed
-version because AppImage has no package registration:
+version because AppImage has no package registration. Both evidence tracks
+require and record the manifest's `standard` distribution channel:
 
 ```sh
 python3 verify-download.py --directory .

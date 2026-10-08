@@ -31,6 +31,7 @@ class PosixDesktopCleanHostTests(unittest.TestCase):
             "product": "StageMesh",
             "version": "0.1.0",
             "platform": platform,
+            "distributionChannel": "standard",
             "sourceCommit": self.commit,
             "signed": False,
             "qualification": {
@@ -135,7 +136,30 @@ class PosixDesktopCleanHostTests(unittest.TestCase):
             self.assertFalse(report["readiness"]["cleanHostInstallQualified"])
             self.assertFalse(report["readiness"]["physicalHardwareQualified"])
             self.assertEqual(report["candidate"]["sourceCommit"], self.commit)
+            self.assertEqual(report["candidate"]["distributionChannel"], "standard")
             self.assertNotIn("clean-host-template-canary", json.dumps(report))
+
+    def test_distribution_channel_is_required_and_must_be_standard(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            module = load_script()
+            bundle, installer = self.make_bundle(Path(temporary), "Linux", "deb/StageMesh.deb")
+            manifest_path = bundle / "desktop-artifacts.json"
+            original = json.loads(manifest_path.read_text(encoding="utf-8"))
+            for channel in (None, "online", "nightly"):
+                manifest = dict(original)
+                if channel is None:
+                    manifest.pop("distributionChannel", None)
+                else:
+                    manifest["distributionChannel"] = channel
+                manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "distribution channel"):
+                    module.start_evidence(
+                        bundle,
+                        installer,
+                        self.snapshot("Linux"),
+                        clean_host_attested=True,
+                        observed_at_utc="2026-10-06T00:00:00Z",
+                    )
 
     def test_complete_macos_sequence_accepts_dmg_without_package_registration(self):
         with tempfile.TemporaryDirectory() as temporary:
