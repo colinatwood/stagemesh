@@ -68,3 +68,18 @@ Use this file to prevent progress loss when a ChatGPT/project session reaches it
 ## Backup policy
 
 The GitHub repository is the durable project backup. A checkpoint is not considered safely preserved until its source changes and this continuity record (when the handoff changes) are committed to GitHub. Chat transcripts are working context, not project storage.
+
+
+## Release readiness update — 2026-10-07
+
+The application is suitable for controlled developer testing with unsigned CI candidates. Public end-user release remains gated on the following evidence:
+
+- Clean-host installation, readiness, persistence recovery, upgrade, and uninstall on Windows 11 x64, macOS 14+ Apple Silicon, and Ubuntu 22.04/24.04 x64.
+- Separate NSIS/MSI and AppImage/Debian exercises bound to the exact release-candidate index.
+- Apogee BOOM 48 kHz/24-bit balanced-TRS playback/capture measurements, including aligned WAV, SNR, THD+N, continuity, latency, and dropout artifacts.
+- FLkey Mini event, disconnect, reconnect, and topology-loss evidence.
+- NVDA/VoiceOver and keyboard/focus accessibility exercises.
+- Owner license/notice review, Windows signing, Apple signing/notarization, and Linux package-signing policy.
+- Exact signed-artifact re-verification and a versioned public release.
+
+The 451 MB combined Windows NSIS/MSI archive remains a distribution tradeoff. Evaluate separate online/offline channels before publication. Hosted CI remains software evidence and does not close physical, clean-host, accessibility, legal, signing, or audible-quality gates.
