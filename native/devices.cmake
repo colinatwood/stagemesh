@@ -93,3 +93,22 @@ add_test(NAME native_selected_loss COMMAND native_selected_loss_smoke)
 set_tests_properties(native_selected_loss PROPERTIES TIMEOUT 30)
 add_test(NAME audio_conversion COMMAND audio_conversion_smoke)
 set_tests_properties(audio_conversion PROPERTIES TIMEOUT 30)
+
+# Help must complete before endpoint discovery, even without hardware opt-ins.
+foreach(direction playback capture)
+  add_test(NAME native_${direction}_help COMMAND native_${direction}_smoke --help)
+  set_tests_properties(native_${direction}_help PROPERTIES
+    TIMEOUT 5 PASS_REGULAR_EXPRESSION "Help exits before device discovery or endpoint activation"
+    ENVIRONMENT "STAGEMESH_ALLOW_SILENT_ENDPOINT_TEST=1;STAGEMESH_ALLOW_ENDPOINT_CAPTURE_TEST=1")
+  add_test(NAME native_${direction}_short_help COMMAND native_${direction}_smoke -h)
+  set_tests_properties(native_${direction}_short_help PROPERTIES
+    TIMEOUT 5 PASS_REGULAR_EXPRESSION "Help exits before device discovery or endpoint activation"
+    ENVIRONMENT "STAGEMESH_ALLOW_SILENT_ENDPOINT_TEST=1;STAGEMESH_ALLOW_ENDPOINT_CAPTURE_TEST=1")
+endforeach()
+
+foreach(direction playback capture)
+  add_test(NAME native_${direction}_invalid_arguments
+    COMMAND ${CMAKE_COMMAND} -DSMOKE=$<TARGET_FILE:native_${direction}_smoke>
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/audio_smoke_cli_test.cmake)
+  set_tests_properties(native_${direction}_invalid_arguments PROPERTIES TIMEOUT 15)
+endforeach()

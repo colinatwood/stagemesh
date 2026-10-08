@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
+#include <string>
 #include <thread>
 #ifdef __APPLE__
 #include <CoreAudio/CoreAudio.h>
@@ -44,7 +45,18 @@ struct TopologyFixture {
 };
 #endif
 }
-int main() {
+int main(int argc, char** argv) {
+    if (argc != 1) {
+        if (argc == 2 && (std::string(argv[1]) == "--help" || std::string(argv[1]) == "-h")) {
+            std::cout << "Usage: native_playback_smoke [--help|-h]\n"
+                      << "Set STAGEMESH_ALLOW_SILENT_ENDPOINT_TEST=1 to opt into the default endpoint test.\n"
+                      << "Renders silence; this is endpoint lifecycle evidence only.\n"
+                      << "Help exits before device discovery or endpoint activation.\n";
+            return 0;
+        }
+        std::cerr << "Unsupported arguments; use --help for usage.\n";
+        return 2;
+    }
     try {
         Context context;
         NativePlaybackStream stream(silence, &context);
