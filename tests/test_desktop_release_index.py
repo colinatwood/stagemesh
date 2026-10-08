@@ -33,6 +33,7 @@ class DesktopReleaseIndexTests(unittest.TestCase):
         version: str = "0.1.0",
         commit: str | None = None,
         signing_status: str = "not-configured",
+        distribution_channel: str = "standard",
     ) -> Path:
         bundle = root / name
         bundle.mkdir()
@@ -47,6 +48,8 @@ class DesktopReleaseIndexTests(unittest.TestCase):
                 str(bundle),
                 "--platform",
                 platform,
+                "--distribution-channel",
+                distribution_channel,
                 "--commit",
                 commit or self.commit,
                 "--version",
@@ -86,7 +89,20 @@ class DesktopReleaseIndexTests(unittest.TestCase):
     def make_candidate(self, root: Path, *, signing_status: str = "not-configured") -> None:
         self.make_bundle(root, "stagemesh-desktop-ubuntu-22.04", "Linux", signing_status=signing_status)
         self.make_bundle(root, "stagemesh-desktop-macos-14", "macOS", signing_status=signing_status)
-        self.make_bundle(root, "stagemesh-desktop-windows-2022", "Windows", signing_status=signing_status)
+        self.make_bundle(
+            root,
+            "stagemesh-desktop-windows-2022-online",
+            "Windows",
+            signing_status=signing_status,
+            distribution_channel="online",
+        )
+        self.make_bundle(
+            root,
+            "stagemesh-desktop-windows-2022-offline",
+            "Windows",
+            signing_status=signing_status,
+            distribution_channel="offline",
+        )
 
     def test_binds_all_platforms_without_claiming_publication(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -101,8 +117,14 @@ class DesktopReleaseIndexTests(unittest.TestCase):
             self.assertEqual(report["candidateId"], "stagemesh-0.1.0-aaaaaaaaaaaa")
             self.assertEqual(
                 [item["platform"] for item in report["platforms"]],
-                ["Linux", "macOS", "Windows"],
+                ["Linux", "macOS", "Windows", "Windows"],
             )
+            self.assertEqual(
+                [item["distributionChannel"] for item in report["platforms"]],
+                ["standard", "standard", "online", "offline"],
+            )
+            self.assertEqual(report["summary"]["requiredPlatformCount"], 3)
+            self.assertEqual(report["summary"]["requiredBundleCount"], 4)
             self.assertTrue(report["summary"]["allBundlesIntegrityVerified"])
             self.assertFalse(report["summary"]["allSignaturesVerified"])
             self.assertTrue(report["readiness"]["readyForUnsignedTesting"])
@@ -125,16 +147,16 @@ class DesktopReleaseIndexTests(unittest.TestCase):
             self.assertFalse(report["readiness"]["readyForPublication"])
             self.assertFalse(report["readiness"]["cleanHostInstallQualified"])
 
-    def test_missing_and_duplicate_platforms_fail_closed(self):
+    def test_missing_and_duplicate_distribution_bundles_fail_closed(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             self.make_bundle(root, "linux", "Linux")
             self.make_bundle(root, "mac", "macOS")
-            with self.assertRaisesRegex(ValueError, "missing platform bundles: Windows"):
+            with self.assertRaisesRegex(ValueError, "Windows/online"):
                 load_script().build_index(root, version="0.1.0", source_commit=self.commit)
-            self.make_bundle(root, "windows-one", "Windows")
-            self.make_bundle(root, "windows-two", "Windows")
-            with self.assertRaisesRegex(ValueError, "duplicate Windows"):
+            self.make_bundle(root, "windows-one", "Windows", distribution_channel="online")
+            self.make_bundle(root, "windows-two", "Windows", distribution_channel="online")
+            with self.assertRaisesRegex(ValueError, "duplicate Windows/online"):
                 load_script().build_index(root, version="0.1.0", source_commit=self.commit)
 
     def test_version_and_commit_mismatches_fail_closed(self):
@@ -142,7 +164,8 @@ class DesktopReleaseIndexTests(unittest.TestCase):
             root = Path(temporary)
             self.make_bundle(root, "linux", "Linux", version="0.1.1")
             self.make_bundle(root, "mac", "macOS")
-            self.make_bundle(root, "windows", "Windows")
+            self.make_bundle(root, "windows-online", "Windows", distribution_channel="online")
+            self.make_bundle(root, "windows-offline", "Windows", distribution_channel="offline")
             with self.assertRaisesRegex(ValueError, "artifact version does not match"):
                 load_script().build_index(root, version="0.1.0", source_commit=self.commit)
 
@@ -150,7 +173,8 @@ class DesktopReleaseIndexTests(unittest.TestCase):
             root = Path(temporary)
             self.make_bundle(root, "linux", "Linux", commit="b" * 40)
             self.make_bundle(root, "mac", "macOS")
-            self.make_bundle(root, "windows", "Windows")
+            self.make_bundle(root, "windows-online", "Windows", distribution_channel="online")
+            self.make_bundle(root, "windows-offline", "Windows", distribution_channel="offline")
             with self.assertRaisesRegex(ValueError, "source commit does not match"):
                 load_script().build_index(root, version="0.1.0", source_commit=self.commit)
 
@@ -158,7 +182,7 @@ class DesktopReleaseIndexTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             self.make_candidate(root)
-            installer = root / "stagemesh-desktop-windows-2022" / "StageMesh-Windows.installer"
+            installer = root / "stagemesh-desktop-windows-2022-online" / "StageMesh-Windows.installer"
             installer.write_bytes(b"tampered")
             with self.assertRaisesRegex(ValueError, "download verification failed"):
                 load_script().build_index(root, version="0.1.0", source_commit=self.commit)
@@ -225,6 +249,9 @@ class DesktopReleaseIndexTests(unittest.TestCase):
         self.assertIn("include-hidden-files: true", workflow)
         self.assertIn("scripts/desktop-release-index.py", workflow)
         self.assertIn("stagemesh-desktop-release-index-${{ github.sha }}", workflow)
+        self.assertIn('--distribution-channel "${{ matrix.distribution_channel }}"', workflow)
+        self.assertEqual(workflow.count("distribution_channel: online"), 1)
+        self.assertEqual(workflow.count("distribution_channel: offline"), 1)
 
     def test_desktop_workflow_attests_release_candidate_index(self):
         workflow = (ROOT / ".github" / "workflows" / "desktop.yml").read_text(

@@ -39,6 +39,7 @@ class DesktopArtifactManifestTests(unittest.TestCase):
             self.assertEqual(manifest["schemaVersion"], 1)
             self.assertEqual(manifest["version"], "0.1.0")
             self.assertEqual(manifest["platform"], "test-os")
+            self.assertEqual(manifest["distributionChannel"], "standard")
             self.assertFalse(manifest["signed"])
             self.assertFalse(manifest["qualification"]["cleanHostInstallQualified"])
             self.assertFalse(manifest["qualification"]["physicalHardwareQualified"])
@@ -75,6 +76,21 @@ class DesktopArtifactManifestTests(unittest.TestCase):
             result = self.run_manifest(artifacts, "latest")
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("version must use", result.stderr)
+
+    def test_requires_an_explicit_windows_distribution_channel(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            artifacts = Path(temporary)
+            (artifacts / "installer.msi").write_bytes(b"installer")
+            result = subprocess.run([
+                sys.executable,
+                str(SCRIPT),
+                "--directory", str(artifacts),
+                "--platform", "Windows",
+                "--commit", "a" * 40,
+                "--version", "0.1.0",
+            ], cwd=ROOT, text=True, capture_output=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("online or offline", result.stderr)
 
 
 if __name__ == "__main__":

@@ -25,7 +25,7 @@ completes the separate legal and clean-host gates.
 The historical `v0.1.0-alpha1` through `v0.1.0-alpha3` GitHub releases predate
 the current StageMesh desktop pipeline and are not current Windows, macOS, and
 Linux desktop installers. Use artifacts from the `StageMesh Desktop` workflow
-for controlled testing and pair the three platform artifacts with the
+for controlled testing and pair the four distribution artifacts with the
 commit-specific release-candidate index.
 
 Each CI artifact includes `SHA256SUMS`, `desktop-artifacts.json`, and a
@@ -39,7 +39,8 @@ python verify-download.py --directory .
 The verifier rejects missing, changed, or unexpected files; cross-checks the
 manifest and checksum list; and binds `signing-verification.json` to the exact
 manifest when that report is present. The JSON inventory records the
-product version, source commit, platform, byte count, and SHA-256 digest for every packaged file;
+product version, source commit, platform, distribution channel, byte count,
+and SHA-256 digest for every packaged file;
 it also preserves the explicit unsigned, clean-host, and physical-hardware
 qualification boundaries.
 
@@ -59,17 +60,22 @@ license review.
 
 ## Windows
 
-The Windows installer bundles the WebView2 Evergreen offline installer.
-Tauri documents an increase of about 127 MB per installer; this lets setup
-install WebView2 without internet access when the runtime is missing. Windows
-10 (version 1803 and later) and Windows 11 normally include WebView2; when a
+CI publishes separate Windows `online` and `offline` artifacts, each containing
+both NSIS and MSI installers. The online channel downloads the WebView2
+Evergreen bootstrapper if the runtime is missing and therefore requires a
+network connection in that case. The offline channel embeds the Evergreen
+installer, allowing setup without network access. Its manifest records
+`distributionChannel: offline`; the smaller bundle records `online`.
+
+Tauri documents an increase of about 127 MB per offline installer. Windows 10
+(version 1803 and later) and Windows 11 normally include WebView2; when a
 compatible runtime is present, it remains managed and updated by Windows.
 
-This workflow emits both NSIS and MSI installers. The PR #103 Windows CI
-archive containing both installers measured 451,685,898 bytes, compared with
-24,019,887 bytes for the preceding main archive. Treat this measured combined
-archive size as the distribution cost; the Tauri figure is a per-installer
-estimate. Check the exact artifact metadata for each release candidate.
+The PR #103 offline Windows CI archive containing both installers measured
+451,685,898 bytes, compared with 24,019,887 bytes for the preceding
+online-style main archive. Treat this measured combined archive size as the
+offline distribution cost; the Tauri figure is a per-installer estimate.
+Check the exact artifact metadata for each release candidate.
 
 For audio and MIDI:
 

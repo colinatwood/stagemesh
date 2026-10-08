@@ -23,10 +23,15 @@ SBOM_SCRIPT = Path(__file__).with_name("desktop-sbom.py")
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 REQUIRED_DISTRIBUTION_FILES = ("LICENSE", "THIRD_PARTY_NOTICES.md")
 
-WINDOWS_WEBVIEW_INSTALL_MODE = "offlineInstaller"
+WINDOWS_WEBVIEW_INSTALL_MODES = {
+    "offline": "offlineInstaller",
+    "online": "downloadBootstrapper",
+}
 
 
-def _windows_webview_install_mode(root: Path) -> tuple[str | None, str | None]:
+def _windows_webview_install_mode(
+    root: Path, expected: str = "offlineInstaller"
+) -> tuple[str | None, str | None]:
     config_path = root / "desktop" / "src-tauri" / "tauri.conf.json"
     try:
         config = json.loads(config_path.read_text(encoding="utf-8"))
@@ -36,9 +41,9 @@ def _windows_webview_install_mode(root: Path) -> tuple[str | None, str | None]:
     windows = bundle.get("windows") if isinstance(bundle, dict) else None
     mode = windows.get("webviewInstallMode") if isinstance(windows, dict) else None
     mode = mode.get("type") if isinstance(mode, dict) else None
-    if mode != WINDOWS_WEBVIEW_INSTALL_MODE:
+    if mode != expected:
         return mode, (
-            "Windows WebView2 installation must use offlineInstaller "
+            f"Windows WebView2 installation must use {expected} "
             f"(found {mode!r})"
         )
     return mode, None
@@ -87,6 +92,11 @@ def _manifest_error(manifest: dict[str, Any], version: str) -> str | None:
     platform = manifest.get("platform")
     if not isinstance(platform, str) or not platform.strip():
         return "artifact manifest platform is missing"
+    channel = manifest.get("distributionChannel")
+    expected_channels = {"online", "offline"} if platform == "Windows" else {"standard"}
+    if channel not in expected_channels:
+        expected = "online or offline" if platform == "Windows" else "standard"
+        return f"artifact manifest distributionChannel must be {expected} for {platform}"
     commit = manifest.get("sourceCommit")
     if not isinstance(commit, str) or not COMMIT_PATTERN.fullmatch(commit):
         return "artifact manifest sourceCommit must be a 40-character lowercase commit"
@@ -308,10 +318,6 @@ def evaluate(
     if missing:
         blockers.append("missing required distribution file(s): " + ", ".join(missing))
 
-    windows_webview_mode, windows_webview_error = _windows_webview_install_mode(root)
-    if windows_webview_error:
-        blockers.append(windows_webview_error)
-
     manifest_report: dict[str, Any] | None = None
     manifest_document: dict[str, Any] | None = None
     if manifest_path is not None:
@@ -325,6 +331,7 @@ def evaluate(
                 "path": str(path),
                 "signed": manifest.get("signed"),
                 "platform": manifest.get("platform"),
+                "distributionChannel": manifest.get("distributionChannel"),
                 "sourceCommit": manifest.get("sourceCommit"),
             }
             if version_report is not None:
@@ -333,6 +340,21 @@ def evaluate(
                     blockers.append(error)
         except (OSError, json.JSONDecodeError, ValueError) as exc:
             blockers.append(f"artifact manifest check failed: {exc}")
+
+    expected_webview_mode = "offlineInstaller"
+    if (
+        manifest_document is not None
+        and manifest_document.get("platform") == "Windows"
+        and manifest_document.get("distributionChannel") in WINDOWS_WEBVIEW_INSTALL_MODES
+    ):
+        expected_webview_mode = WINDOWS_WEBVIEW_INSTALL_MODES[
+            str(manifest_document["distributionChannel"])
+        ]
+    windows_webview_mode, windows_webview_error = _windows_webview_install_mode(
+        root, expected_webview_mode
+    )
+    if windows_webview_error:
+        blockers.append(windows_webview_error)
 
     dependency_report: dict[str, Any] | None = None
     inventory_document: dict[str, Any] | None = None

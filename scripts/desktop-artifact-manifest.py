@@ -46,6 +46,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--directory", required=True, type=Path)
     parser.add_argument("--platform", required=True)
+    parser.add_argument(
+        "--distribution-channel",
+        choices=("standard", "online", "offline"),
+        default="standard",
+    )
     parser.add_argument("--commit", required=True)
     parser.add_argument("--version", required=True)
     args = parser.parse_args()
@@ -58,12 +63,17 @@ def main() -> int:
         parser.error(f"artifact directory contains no files: {root}")
     if not VERSION_PATTERN.fullmatch(args.version):
         parser.error("version must use MAJOR.MINOR.PATCH with an optional prerelease suffix")
+    if args.platform == "Windows" and args.distribution_channel not in {"online", "offline"}:
+        parser.error("Windows artifacts require the online or offline distribution channel")
+    if args.platform != "Windows" and args.distribution_channel != "standard":
+        parser.error("only Windows artifacts may use online or offline distribution channels")
 
     manifest = {
         "schemaVersion": 1,
         "product": "StageMesh",
         "version": args.version,
         "platform": args.platform,
+        "distributionChannel": args.distribution_channel,
         "sourceCommit": args.commit,
         "signed": False,
         "qualification": {

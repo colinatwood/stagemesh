@@ -29,6 +29,7 @@ class DesktopDownloadVerifierTests(unittest.TestCase):
             str(MANIFEST_SCRIPT),
             "--directory", str(directory),
             "--platform", "Windows",
+            "--distribution-channel", "offline",
             "--commit", "a" * 40,
             "--version", "0.1.0",
         ], cwd=ROOT, capture_output=True, text=True)
@@ -57,6 +58,7 @@ class DesktopDownloadVerifierTests(unittest.TestCase):
             report = load_script().evaluate(directory)
             self.assertTrue(report["passed"])
             self.assertEqual(report["status"], "passed")
+            self.assertEqual(report["distributionChannel"], "offline")
             self.assertEqual(report["filesVerified"], 1)
             self.assertEqual(report["signingVerificationStatus"], "not-configured")
             self.assertFalse(report["readyForPublication"])

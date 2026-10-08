@@ -63,13 +63,16 @@ version and source commit and
 records that signing, clean-host installation, and physical hardware remain
 unqualified.
 
-Windows NSIS and MSI packages bundle the WebView2 Evergreen offline
-installer. Tauri documents an increase of approximately 127 MB per installer.
-The PR #103 combined Windows CI archive measured 451,685,898 bytes, versus
-24,019,887 bytes for the preceding main archive, because the workflow emits
-both NSIS and MSI installers. Check each candidate's artifact metadata for the
-actual distribution size. Existing WebView2 installations remain managed by
-Windows; this package does not pin a fixed WebView2 version.
+Windows CI produces separate `online` and `offline` NSIS/MSI bundles. The
+online installers download the WebView2 Evergreen bootstrapper when the
+runtime is missing; the offline installers embed the Evergreen installer.
+Tauri documents an increase of approximately 127 MB per offline installer.
+The PR #103 combined offline Windows CI archive measured 451,685,898 bytes,
+versus 24,019,887 bytes for the preceding online-style archive, because the
+workflow emits both NSIS and MSI installers. Each artifact manifest records
+its distribution channel; use the offline bundle when setup must work without
+network access. Existing WebView2 installations remain managed by Windows;
+neither channel pins a fixed WebView2 version.
 
 ## Driver and hardware boundary
 

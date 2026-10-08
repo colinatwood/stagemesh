@@ -55,10 +55,11 @@ artifact manifest. Its JSON is a review aid, not a release approval.
 
 ## Cross-platform release-candidate index
 
-After all three desktop matrix jobs pass, CI downloads their exact artifacts
+After all four desktop matrix jobs pass, CI downloads their exact artifacts
 and runs `desktop-release-index.py`. The script independently re-runs each
-bundle's offline integrity check, requires exactly one Linux, macOS, and
-Windows bundle with the same version and source commit, and writes
+bundle's offline integrity check, requires Linux/standard, macOS/standard,
+Windows/online, and Windows/offline bundles with the same version and source
+commit, and writes
 `desktop-release-index.json`. The index binds each platform manifest,
 checksum file, and signing-verification report by SHA-256.
 
@@ -79,7 +80,7 @@ accessibility, and physical-hardware blockers. Even when every exact artifact
 signature verifies, it cannot convert those external gates into release
 approval and it never creates or updates a GitHub Release.
 
-To reproduce the aggregation after downloading the three workflow artifacts
+To reproduce the aggregation after downloading the four workflow artifacts
 into sibling directories:
 
 ```sh

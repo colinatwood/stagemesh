@@ -16,6 +16,7 @@ on:
       - "scripts/desktop-artifact-manifest.py"
       - "scripts/desktop-dependency-inventory.py"
       - "scripts/desktop-release-readiness.py"
+      - "scripts/desktop-windows-channel.py"
       - "scripts/desktop-release-index.py"
       - "scripts/desktop-clean-host-review.py"
       - "scripts/desktop-sbom.py"
@@ -29,6 +30,7 @@ on:
       - "tests/test_desktop_artifact_manifest.py"
       - "tests/test_desktop_dependency_inventory.py"
       - "tests/test_desktop_release_readiness.py"
+      - "tests/test_desktop_windows_channel.py"
       - "tests/test_desktop_release_index.py"
       - "tests/test_desktop_clean_host_review.py"
       - "tests/test_desktop_sbom.py"
@@ -57,6 +59,7 @@ on:
       - "scripts/desktop-artifact-manifest.py"
       - "scripts/desktop-dependency-inventory.py"
       - "scripts/desktop-release-readiness.py"
+      - "scripts/desktop-windows-channel.py"
       - "scripts/desktop-release-index.py"
       - "scripts/desktop-clean-host-review.py"
       - "scripts/desktop-sbom.py"
@@ -70,6 +73,7 @@ on:
       - "tests/test_desktop_artifact_manifest.py"
       - "tests/test_desktop_dependency_inventory.py"
       - "tests/test_desktop_release_readiness.py"
+      - "tests/test_desktop_windows_channel.py"
       - "tests/test_desktop_release_index.py"
       - "tests/test_desktop_clean_host_review.py"
       - "tests/test_desktop_sbom.py"
@@ -88,7 +92,7 @@ permissions:
 
 jobs:
   build:
-    name: Build desktop package (${{ matrix.os }})
+    name: Build desktop package (${{ matrix.os }} / ${{ matrix.distribution_channel }})
     permissions:
       contents: read
       id-token: write
@@ -102,12 +106,19 @@ jobs:
           - os: ubuntu-22.04
             native_engine: build-desktop-native/native/stagemesh_engine
             binary_suffix: ""
+            distribution_channel: standard
           - os: macos-14
             native_engine: build-desktop-native/native/stagemesh_engine
             binary_suffix: ""
+            distribution_channel: standard
           - os: windows-2022
             native_engine: build-desktop-native/native/Release/stagemesh_engine.exe
             binary_suffix: .exe
+            distribution_channel: online
+          - os: windows-2022
+            native_engine: build-desktop-native/native/Release/stagemesh_engine.exe
+            binary_suffix: .exe
+            distribution_channel: offline
 
     steps:
       - uses: actions/checkout@v4
@@ -179,6 +190,13 @@ jobs:
         working-directory: desktop
         run: npm run tauri icon src-tauri/icons/stagemesh.svg
 
+      - name: Configure Windows distribution channel
+        if: runner.os == 'Windows'
+        shell: bash
+        run: >-
+          python scripts/desktop-windows-channel.py
+          --channel "${{ matrix.distribution_channel }}"
+
       - name: Build and package desktop application
         working-directory: desktop
         run: npm run tauri build
@@ -210,6 +228,7 @@ jobs:
         run: >-
           python scripts/desktop-signing-readiness.py
           --platform "${{ runner.os }}"
+          --distribution-channel "${{ matrix.distribution_channel }}"
           --output desktop/src-tauri/target/release/bundle/signing-readiness.json
 
       - name: Record locked desktop dependency inventory
@@ -259,6 +278,7 @@ jobs:
           python scripts/desktop-artifact-manifest.py
           --directory desktop/src-tauri/target/release/bundle
           --platform "${{ runner.os }}"
+          --distribution-channel "${{ matrix.distribution_channel }}"
           --commit "$GITHUB_SHA"
           --version "$(python -c 'import json; print(json.load(open("desktop/package.json"))["version"])')"
 
@@ -303,7 +323,7 @@ jobs:
       - name: Upload installer artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: stagemesh-desktop-${{ matrix.os }}
+          name: stagemesh-desktop-${{ matrix.os }}-${{ matrix.distribution_channel }}
           path: desktop/src-tauri/target/release/bundle/
           include-hidden-files: true
           if-no-files-found: error
@@ -331,7 +351,7 @@ jobs:
           pattern: stagemesh-desktop-*
           path: release-candidate
 
-      - name: Verify and bind Windows, macOS, and Linux bundles
+      - name: Verify and bind Windows online/offline, macOS, and Linux bundles
         shell: bash
         run: >-
           python scripts/desktop-release-index.py
