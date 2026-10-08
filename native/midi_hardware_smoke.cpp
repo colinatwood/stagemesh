@@ -1,4 +1,5 @@
 #include "stagemesh/midi_input.hpp"
+#include "stagemesh/midi_smoke_evidence.hpp"
 #include "device_identity.h"
 
 #include <CoreFoundation/CoreFoundation.h>
@@ -102,13 +103,8 @@ int main() {
         const auto audit = manager.audit_status();
         manager.detach(id);
         manager.deactivate();
-        std::cout << std::boolalpha
-                  << "{\"endpointName\":\"" << selected_name
-                  << "\",\"matchedName\":\"" << needle
-                  << "\",\"attached\":true,\"eventsObserved\":" << events
-                  << ",\"callbackMessages\":" << audit.messages
-                  << ",\"physicalOutputsArmed\":" << audit.physical_outputs_armed
-                  << ",\"hardwareQualified\":" << (events > 0) << "}\n";
+        std::cout << stagemesh::midi_smoke_evidence(
+            selected_name, needle, events, audit.messages, audit.physical_outputs_armed) << '\n';
         return events > 0 ? 0 : 2;
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
