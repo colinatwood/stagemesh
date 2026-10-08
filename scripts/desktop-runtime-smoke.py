@@ -14,9 +14,15 @@ import tempfile
 import time
 
 
-def request(port: int, method: str, path: str, headers: dict[str, str] | None = None):
+def request(
+    port: int,
+    method: str,
+    path: str,
+    headers: dict[str, str] | None = None,
+    body: bytes | None = None,
+):
     connection = http.client.HTTPConnection("127.0.0.1", port, timeout=2)
-    connection.request(method, path, headers=headers or {})
+    connection.request(method, path, body=body, headers=headers or {})
     response = connection.getresponse()
     body = response.read()
     result = response.status, dict(response.getheaders()), body
@@ -56,6 +62,70 @@ def start_runtime(
         stdout=log,
         stderr=subprocess.STDOUT,
     )
+
+
+def wait_until_ready(
+    process: subprocess.Popen,
+    port: int,
+    api_token: str,
+) -> dict:
+    deadline = time.monotonic() + 15
+    health = None
+    while time.monotonic() < deadline:
+        if process.poll() is not None:
+            raise RuntimeError(
+                f"runtime exited before readiness with {process.returncode}"
+            )
+        try:
+            health = request(
+                port,
+                "GET",
+                "/healthz",
+                {"X-StageMesh-API-Token": api_token},
+            )
+            if health[0] == 200:
+                break
+        except OSError:
+            pass
+        time.sleep(0.1)
+    if health is None or health[0] != 200:
+        raise RuntimeError("runtime did not become ready within 15 seconds")
+    health_payload = json.loads(health[2])
+    if not health_payload.get("ok"):
+        raise RuntimeError("runtime health payload is not healthy")
+    return health_payload
+
+
+def request_graceful_shutdown(
+    process: subprocess.Popen,
+    port: int,
+    api_token: str,
+) -> None:
+    shutdown_status, _, shutdown_body = request(
+        port,
+        "POST",
+        "/api/v1/desktop/shutdown",
+        {
+            "Content-Type": "application/json",
+            "X-StageMesh-API-Token": api_token,
+        },
+        b"{}",
+    )
+    shutdown_payload = json.loads(shutdown_body)
+    if shutdown_status != 202 or shutdown_payload.get("status") != "stopping":
+        raise RuntimeError(
+            f"desktop runtime rejected graceful shutdown: {shutdown_payload}"
+        )
+    try:
+        return_code = process.wait(timeout=5)
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(
+            "desktop runtime did not exit after graceful shutdown"
+        ) from exc
+    if return_code != 0:
+        raise RuntimeError(
+            f"desktop runtime exited with {return_code} after graceful shutdown"
+        )
 
 
 def main() -> int:
@@ -123,25 +193,7 @@ def main() -> int:
         with log_path.open("wb") as log:
             process = start_runtime(runtime, port, environment, log)
             try:
-                deadline = time.monotonic() + 15
-                health = None
-                while time.monotonic() < deadline:
-                    if process.poll() is not None:
-                        raise RuntimeError(f"runtime exited before readiness with {process.returncode}")
-                    try:
-                        health = request(port, "GET", "/healthz", {
-                            "X-StageMesh-API-Token": api_token,
-                        })
-                        if health[0] == 200:
-                            break
-                    except OSError:
-                        pass
-                    time.sleep(0.1)
-                if health is None or health[0] != 200:
-                    raise RuntimeError("runtime did not become ready within 15 seconds")
-                health_payload = json.loads(health[2])
-                if not health_payload.get("ok"):
-                    raise RuntimeError("runtime health payload is not healthy")
+                wait_until_ready(process, port, api_token)
 
                 native_status, _, native_body = request(port, "GET", "/api/v1/native", {
                     "X-StageMesh-API-Token": api_token,
@@ -167,31 +219,79 @@ def main() -> int:
                 if b"StageMesh" not in app_body:
                     raise RuntimeError("packaged frontend content is invalid")
 
-                shutdown_status, _, shutdown_body = request(
+                template_body = json.dumps({
+                    "name": "Desktop restart persistence",
+                    "objects": [{
+                        "label": "Packaged marker",
+                        "x": 50,
+                        "y": 50,
+                    }],
+                }).encode("utf-8")
+                template_status, _, template_response_body = request(
                     port,
                     "POST",
-                    "/api/v1/desktop/shutdown",
+                    "/api/v1/templates",
                     {
                         "Content-Type": "application/json",
                         "X-StageMesh-API-Token": api_token,
                     },
+                    template_body,
                 )
-                shutdown_payload = json.loads(shutdown_body)
-                if shutdown_status != 202 or shutdown_payload.get("status") != "stopping":
-                    raise RuntimeError(f"desktop runtime rejected graceful shutdown: {shutdown_payload}")
-                try:
-                    return_code = process.wait(timeout=5)
-                except subprocess.TimeoutExpired as exc:
-                    raise RuntimeError("desktop runtime did not exit after graceful shutdown") from exc
-                if return_code != 0:
-                    raise RuntimeError(f"desktop runtime exited with {return_code} after graceful shutdown")
+                template_payload = json.loads(template_response_body)
+                template_id = template_payload.get("templateId")
+                template_objects = template_payload.get("objects")
+                if (
+                    template_status != 201
+                    or not isinstance(template_id, str)
+                    or not template_id
+                    or template_payload.get("revision") != 1
+                    or template_payload.get("state") != "draft"
+                    or not isinstance(template_objects, list)
+                    or len(template_objects) != 1
+                    or not isinstance(template_objects[0], dict)
+                    or template_objects[0].get("label") != "Packaged marker"
+                    or template_objects[0].get("x") != 50
+                    or template_objects[0].get("y") != 50
+                ):
+                    raise RuntimeError(
+                        f"packaged runtime did not create a template: {template_payload}"
+                    )
+
+                request_graceful_shutdown(process, port, api_token)
+                process = start_runtime(runtime, port, environment, log)
+                wait_until_ready(process, port, api_token)
+
+                restored_status, _, restored_body = request(
+                    port,
+                    "GET",
+                    f"/api/v1/templates/{template_id}",
+                    {"X-StageMesh-API-Token": api_token},
+                )
+                restored_payload = json.loads(restored_body)
+                if (
+                    restored_status != 200
+                    or restored_payload.get("templateId") != template_id
+                    or restored_payload.get("name") != "Desktop restart persistence"
+                    or restored_payload.get("revision") != 1
+                    or restored_payload.get("state") != "draft"
+                    or restored_payload.get("objects") != template_objects
+                ):
+                    raise RuntimeError(
+                        "packaged runtime did not preserve the template across restart: "
+                        f"{restored_payload}"
+                    )
+
+                request_graceful_shutdown(process, port, api_token)
             except Exception as exc:
                 log.flush()
                 details = log_path.read_text(encoding="utf-8", errors="replace")[-4000:]
                 raise RuntimeError(f"{exc}\nRuntime log:\n{details}") from exc
             finally:
                 stop_process_tree(process)
-    print("Desktop runtime smoke passed; physical hardware was not activated or qualified.")
+    print(
+        "Desktop runtime smoke passed, including persistence restart; "
+        "physical hardware was not activated or qualified."
+    )
     return 0
 
 

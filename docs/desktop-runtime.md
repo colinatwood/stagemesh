@@ -46,9 +46,12 @@ closed and cleans up its native child when the selected loopback port is already
 owned. It then releases that port and restarts the same packaged runtime against
 the same data directory, verifying authenticated health, native-engine status,
 desktop-session cookie, and bundled frontend response before requesting
-authenticated graceful shutdown and requiring a clean process exit. This proves
-package composition, port-collision recovery, and software startup/shutdown
-behavior only.
+authenticated graceful shutdown and requiring a clean process exit. The smoke
+also creates a stage template through that packaged runtime, starts the exact
+runtime again against the same data directory, and verifies the template's
+identity, name, revision, state, and object payload before a second graceful
+shutdown. This proves package composition, port-collision recovery, packaged
+persistence restart, and software startup/shutdown behavior only.
 It does not qualify a physical device, audible output, recording quality,
 drivers, signing identity, or target-OS hardware behavior. Those remain
 separate external qualification gates.
