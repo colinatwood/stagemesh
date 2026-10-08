@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 import platform
 import re
+import stat
 import subprocess
 import sys
 import tempfile
@@ -23,15 +24,67 @@ sys.path.insert(0, str(ROOT / "backend"))
 from hardware_diagnostics import diagnose_hardware
 
 
+def _stat_fingerprint(value: os.stat_result) -> tuple[int, int, int, int]:
+    modified_ns = getattr(value, "st_mtime_ns", int(value.st_mtime * 1_000_000_000))
+    return value.st_dev, value.st_ino, value.st_size, modified_ns
+
+
+def _input_identity(path: Path) -> tuple[int, int]:
+    try:
+        metadata = path.lstat()
+    except OSError as error:
+        raise ValueError(f"evidence input is not a regular file: {path.name}") from error
+    if stat.S_ISLNK(metadata.st_mode):
+        raise ValueError(f"evidence input must not be a symlink: {path.name}")
+    if not stat.S_ISREG(metadata.st_mode):
+        raise ValueError(f"evidence input is not a regular file: {path.name}")
+    return metadata.st_dev, metadata.st_ino
+
+
+def validate_evidence_inputs(binary: Path, transcripts: list[Path]) -> None:
+    paths = [binary, *transcripts]
+    resolved_paths: set[str] = set()
+    file_identities: set[tuple[int, int]] = set()
+    names: set[str] = set()
+    for path in paths:
+        resolved = os.path.normcase(str(path.resolve(strict=False)))
+        if resolved in resolved_paths:
+            raise ValueError(f"evidence input is repeated: {path.name}")
+        resolved_paths.add(resolved)
+        identity = _input_identity(path)
+        if identity in file_identities:
+            raise ValueError(f"evidence inputs refer to the same file: {path.name}")
+        file_identities.add(identity)
+        name_key = path.name.casefold()
+        if name_key in names:
+            raise ValueError(f"evidence input names are ambiguous: {path.name}")
+        names.add(name_key)
+
+
 def file_observation(path: Path) -> dict:
-    if not path.is_file():
-        raise ValueError(f"evidence input is not a file: {path.name}")
+    _input_identity(path)
     digest = hashlib.sha256()
     size = 0
-    with path.open("rb") as source:
+    flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(path, flags)
+    except OSError as error:
+        raise ValueError(f"evidence input could not be opened safely: {path.name}") from error
+    with os.fdopen(descriptor, "rb") as source:
+        before = os.fstat(source.fileno())
+        if not stat.S_ISREG(before.st_mode):
+            raise ValueError(f"evidence input is not a regular file: {path.name}")
         for block in iter(lambda: source.read(1024 * 1024), b""):
             digest.update(block)
             size += len(block)
+        after = os.fstat(source.fileno())
+    try:
+        current = path.stat()
+        indirect = stat.S_ISLNK(path.lstat().st_mode)
+    except OSError as error:
+        raise ValueError(f"evidence input changed while being hashed: {path.name}") from error
+    if indirect or _stat_fingerprint(before) != _stat_fingerprint(after) or _stat_fingerprint(after) != _stat_fingerprint(current):
+        raise ValueError(f"evidence input changed while being hashed: {path.name}")
     if not size:
         raise ValueError(f"evidence input is empty: {path.name}")
     return {"name": path.name, "bytes": size, "sha256": digest.hexdigest()}
@@ -50,6 +103,7 @@ def source_observation(root: Path) -> dict:
 
 
 def collect(root: Path, binary: Path, transcripts: list[Path]) -> dict:
+    validate_evidence_inputs(binary, transcripts)
     binary_info = file_observation(binary)
     artifacts = [file_observation(path) for path in transcripts]
     source = source_observation(root)
@@ -66,6 +120,10 @@ def collect(root: Path, binary: Path, transcripts: list[Path]) -> dict:
         "hardwareInventory": inventory,
         "evidenceBoundary": {
             "readOnlyCollection": True,
+            "regularFileInputs": True,
+            "distinctInputIdentities": True,
+            "unambiguousInputNames": True,
+            "inputFilesStableDuringHashing": True,
             "binaryExecuted": False,
             "audioCaptured": False,
             "physicalOutputsArmed": False,
