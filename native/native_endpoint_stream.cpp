@@ -1,4 +1,5 @@
 #include "native_endpoint_stream.h"
+#include "stagemesh/windows_hresult.hpp"
 #include <atomic>
 #include <algorithm>
 #include <chrono>
@@ -29,7 +30,9 @@ static_assert(std::atomic<std::uint64_t>::is_always_lock_free);
 static_assert(std::atomic<bool>::is_always_lock_free);
 #ifdef _WIN32
 void checked(HRESULT value, const char* operation) {
-    if (FAILED(value)) throw std::runtime_error(std::string(operation) + ": " + std::to_string(value));
+    if (FAILED(value))
+        throw std::runtime_error(std::string(operation) + ": " +
+            format_windows_hresult(static_cast<std::int32_t>(value)));
 }
 std::string utf8(const wchar_t* text) {
     int n = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, text, -1, nullptr, 0, nullptr, nullptr);
