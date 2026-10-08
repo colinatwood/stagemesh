@@ -30,7 +30,7 @@ Next: record a fresh Windows session from merged commit `a3b5d0f` and preserve t
 
 ## Keyboard backlog follow-up (2026-10-08)
 
-UX-035 software follow-up preserves native button/link/form activation instead of letting global launcher shortcuts intercept Space on focused controls. Modified, composing, repeated, and already-handled key events are ignored. Template JSON import now uses a keyboard-focusable native button to open the existing file chooser. Focused regression checks execute the registered shortcut handler; installed-app keyboard, NVDA, and VoiceOver acceptance remain open. Continue source-bound Windows capture/MIDI and seven clean-host package/channel exercises while those external gates are pending.
+UX-035 software follow-up preserves native button/link/form activation instead of letting global launcher shortcuts intercept Space on focused controls. Modified, composing, repeated, and already-handled key events are ignored. Template JSON import now uses a keyboard-focusable native button to open the existing file chooser. Canvas objects can be selected with native button activation and moved with Arrow keys (Shift for ten-percent steps). Pointer selection no longer replaces the captured DOM node; cancelled drags restore the original position. Focused regression checks execute the registered shortcut handler; installed-app keyboard, NVDA, and VoiceOver acceptance remain open. Continue source-bound Windows capture/MIDI and seven clean-host package/channel exercises while those external gates are pending.
 
 ## Latest completed work
 
