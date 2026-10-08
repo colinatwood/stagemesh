@@ -1,3 +1,4 @@
+import json
 import sys
 import tempfile
 import unittest
@@ -6,7 +7,11 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
-from stage_templates import StageTemplateConflict, StageTemplateStore
+from stage_templates import (
+    StageTemplateConflict,
+    StageTemplateStore,
+    StageTemplateStoreCorrupt,
+)
 
 
 class StageTemplateStoreTests(unittest.TestCase):
@@ -77,6 +82,48 @@ class StageTemplateStoreTests(unittest.TestCase):
             with self.assertRaises(OSError):
                 self.store.delete(created["templateId"], 1)
             self.assertEqual(self.store.get(created["templateId"]), created)
+
+    def test_malformed_store_fails_closed_without_changing_source(self):
+        malformed = b'{"template":'
+        self.path.write_bytes(malformed)
+        with self.assertRaisesRegex(
+            StageTemplateStoreCorrupt,
+            "stage template store is unreadable or malformed",
+        ):
+            StageTemplateStore(self.path)
+        self.assertEqual(self.path.read_bytes(), malformed)
+
+    def test_invalid_persisted_schema_fails_closed(self):
+        invalid_documents = (
+            [],
+            {"template": {"version": 1}},
+            {
+                "template": {
+                    "version": 2,
+                    "name": "Future",
+                    "objects": [],
+                    "revision": 1,
+                    "state": "draft",
+                    "updatedAt": 1.0,
+                }
+            },
+        )
+        for document in invalid_documents:
+            with self.subTest(document=document):
+                self.path.write_text(json.dumps(document), encoding="utf-8")
+                with self.assertRaises(StageTemplateStoreCorrupt):
+                    StageTemplateStore(self.path)
+
+    def test_incomplete_temporary_write_fails_closed_and_is_preserved(self):
+        self.store.create(self.document())
+        temporary = self.path.with_suffix(".tmp")
+        temporary.write_bytes(b"incomplete replacement")
+        with self.assertRaisesRegex(
+            StageTemplateStoreCorrupt,
+            "stage template store has an incomplete temporary write",
+        ):
+            StageTemplateStore(self.path)
+        self.assertEqual(temporary.read_bytes(), b"incomplete replacement")
 
 
 if __name__ == "__main__":
