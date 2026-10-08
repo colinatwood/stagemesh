@@ -299,17 +299,23 @@ reference signal, capture, continuity, and review artifacts also pass.
 
 ### Bind the complete clean-host matrix
 
-After all five reports are complete, place them with the CI
+After all seven reports are complete, place them with the CI
 `desktop-release-index.json` and run the reviewer shipped in any desktop
 bundle. Each report must match that index's version, source commit, and exact
-platform-manifest digest; every phase must have passed. Duplicate, unsupported,
-incomplete, or cross-candidate reports fail closed.
+platform/channel-manifest digest; every phase must have passed. Duplicate, unsupported,
+incomplete, or cross-candidate reports fail closed. Windows NSIS and MSI each
+require a separate report for the online and offline channel, collected from
+that channel’s exact bundle on a fresh clean host. The reviewer identifies
+the channel through the bound manifest; a report cannot cover both channels.
+Historical indexes without channels retain their five-track review contract.
 
 ```sh
 python3 review-clean-host.py \
   --index desktop-release-index.json \
-  --evidence windows-nsis-clean-host.json \
-  --evidence windows-msi-clean-host.json \
+  --evidence windows-online-nsis-clean-host.json \
+  --evidence windows-online-msi-clean-host.json \
+  --evidence windows-offline-nsis-clean-host.json \
+  --evidence windows-offline-msi-clean-host.json \
   --evidence macos-clean-host.json \
   --evidence linux-deb-clean-host.json \
   --evidence linux-appimage-clean-host.json \
