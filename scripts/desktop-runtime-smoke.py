@@ -43,6 +43,21 @@ def stop_process_tree(process: subprocess.Popen) -> None:
         process.wait(timeout=5)
 
 
+def start_runtime(
+    runtime: Path,
+    port: int,
+    environment: dict[str, str],
+    log,
+) -> subprocess.Popen:
+    return subprocess.Popen(
+        [str(runtime), "--host", "127.0.0.1", "--port", str(port)],
+        env=environment,
+        stdin=subprocess.DEVNULL,
+        stdout=log,
+        stderr=subprocess.STDOUT,
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runtime", required=True, type=Path)
@@ -59,9 +74,6 @@ def main() -> int:
     if not (frontend / "app.html").is_file():
         parser.error(f"frontend app is missing: {frontend}")
 
-    with socket.socket() as reservation:
-        reservation.bind(("127.0.0.1", 0))
-        port = reservation.getsockname()[1]
     api_token = secrets.token_hex(32)
     bootstrap_token = secrets.token_hex(32)
 
@@ -78,14 +90,38 @@ def main() -> int:
             "STAGEMESH_API_TOKEN": api_token,
             "STAGEMESH_DESKTOP_SESSION_TOKEN": bootstrap_token,
         })
+
+        # Prove a packaged runtime fails closed when its selected loopback port
+        # is stolen, cleans up its native child, and can recover using the same
+        # data directory once the port becomes available.
+        collision_log_path = root / "runtime-port-collision.log"
+        with socket.socket() as reservation:
+            reservation.bind(("127.0.0.1", 0))
+            reservation.listen(1)
+            port = reservation.getsockname()[1]
+            with collision_log_path.open("wb") as collision_log:
+                collision = start_runtime(runtime, port, environment, collision_log)
+                try:
+                    try:
+                        collision_code = collision.wait(timeout=15)
+                    except subprocess.TimeoutExpired as exc:
+                        raise RuntimeError(
+                            "runtime did not fail closed on a reserved loopback port"
+                        ) from exc
+                    if collision_code == 0:
+                        raise RuntimeError(
+                            "runtime reported success while its loopback port was unavailable"
+                        )
+                finally:
+                    stop_process_tree(collision)
+        collision_details = collision_log_path.read_text(
+            encoding="utf-8", errors="replace"
+        )
+        if api_token in collision_details or bootstrap_token in collision_details:
+            raise RuntimeError("runtime port-collision log exposed a desktop credential")
+
         with log_path.open("wb") as log:
-            process = subprocess.Popen(
-                [str(runtime), "--host", "127.0.0.1", "--port", str(port)],
-                env=environment,
-                stdin=subprocess.DEVNULL,
-                stdout=log,
-                stderr=subprocess.STDOUT,
-            )
+            process = start_runtime(runtime, port, environment, log)
             try:
                 deadline = time.monotonic() + 15
                 health = None

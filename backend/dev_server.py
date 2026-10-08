@@ -1660,18 +1660,20 @@ def main() -> None:
         parser.error(str(exc))
     if not loopback_bind and (not startup_credentials.get("STAGEMESH_ALLOWED_HOSTS","").strip() or not startup_credentials.get("STAGEMESH_API_TOKEN","")):
         parser.error("non-loopback binding requires STAGEMESH_ALLOWED_HOSTS and STAGEMESH_API_TOKEN")
-    server = StageMeshHTTPServer((args.host, args.port), StageMeshHandler)
-    print(f"StageMesh dev bridge: http://{args.host}:{args.port}")
-    print(f"State directory: {DATA_DIR}")
-    if deployment.get("active"):
-        print("HTTP deployment profile: proxy-https (TLS terminates at reviewed loopback proxy)")
-    print("Local development bridge only; native real-time engine remains a separate process/library target.")
+    server = None
     try:
+        server = StageMeshHTTPServer((args.host, args.port), StageMeshHandler)
+        print(f"StageMesh dev bridge: http://{args.host}:{args.port}")
+        print(f"State directory: {DATA_DIR}")
+        if deployment.get("active"):
+            print("HTTP deployment profile: proxy-https (TLS terminates at reviewed loopback proxy)")
+        print("Local development bridge only; native real-time engine remains a separate process/library target.")
         server.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
-        server.server_close()
+        if server is not None:
+            server.server_close()
         RUNTIME.close()
 
 

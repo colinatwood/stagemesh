@@ -41,11 +41,14 @@ force-termination fallback.
 
 The desktop workflow now compiles the native engine and freezes the Python API
 runtime with PyInstaller before Tauri builds the Windows, macOS, and Linux
-packages. Each runner starts those exact target-tagged sidecars and verifies the
-authenticated health, native-engine status, desktop-session cookie, and bundled
-frontend response before requesting authenticated graceful shutdown and
-requiring a clean process exit. This proves package composition and software
-startup/shutdown behavior only.
+packages. Each runner first verifies that the exact target-tagged runtime fails
+closed and cleans up its native child when the selected loopback port is already
+owned. It then releases that port and restarts the same packaged runtime against
+the same data directory, verifying authenticated health, native-engine status,
+desktop-session cookie, and bundled frontend response before requesting
+authenticated graceful shutdown and requiring a clean process exit. This proves
+package composition, port-collision recovery, and software startup/shutdown
+behavior only.
 It does not qualify a physical device, audible output, recording quality,
 drivers, signing identity, or target-OS hardware behavior. Those remain
 separate external qualification gates.

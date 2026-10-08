@@ -62,6 +62,7 @@
 #include "stagemesh/midi_mapped_action_dispatcher.hpp"
 #include "stagemesh/sampler_voice_engine.hpp"
 #include "stagemesh/streaming_voice_engine.hpp"
+#include "stagemesh/windows_hresult.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -86,6 +87,12 @@
 } while (false)
 
 namespace {
+
+void test_windows_hresult_format_preserves_decimal_and_hexadecimal() {
+    SF_CHECK(stagemesh::format_windows_hresult(-2147024726) ==
+             "-2147024726 (0x800700AA)");
+    SF_CHECK(stagemesh::format_windows_hresult(0) == "0 (0x00000000)");
+}
 
 struct DawTestIo {std::uint64_t reads{0},writes{0},frames{0};float maximum{0};};
 bool daw_test_read(void* raw,std::uint64_t,float* left,float* right,std::uint32_t frames) noexcept {auto& io=*static_cast<DawTestIo*>(raw);++io.reads;for(std::uint32_t i=0;i<frames;++i)left[i]=right[i]=2.0F;return true;}
@@ -1693,6 +1700,7 @@ void test_recording_disarm_stabilizes_tail_and_rearm_fences_old_generation() {
 }
 
 int main() {
+    test_windows_hresult_format_preserves_decimal_and_hexadecimal();
     {
         stagemesh::RealtimeAudit outer, inner;
         {

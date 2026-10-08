@@ -1,6 +1,7 @@
 #include "audio_preflight.h"
 #include "device_identity.h"
 #include "device_monitor.h"
+#include "stagemesh/windows_hresult.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -51,7 +52,9 @@ bool supported_period(const AudioHostCapabilities& capabilities, std::uint32_t p
 
 #ifdef _WIN32
 void checked(HRESULT status, const char* operation) {
-    if (FAILED(status)) throw std::runtime_error(std::string(operation) + ": " + std::to_string(status));
+    if (FAILED(status))
+        throw std::runtime_error(std::string(operation) + ": " +
+            format_windows_hresult(static_cast<std::int32_t>(status)));
 }
 
 struct ComApartment {

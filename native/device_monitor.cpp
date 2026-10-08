@@ -1,4 +1,5 @@
 #include "device_monitor.h"
+#include "stagemesh/windows_hresult.hpp"
 #include <atomic>
 #include <chrono>
 #include <stdexcept>
@@ -32,7 +33,9 @@ std::atomic<std::uint64_t> topology_revision{0};
 
 #ifdef _WIN32
 void checked(HRESULT status, const char* operation) {
-    if (FAILED(status)) throw std::runtime_error(std::string(operation) + ": " + std::to_string(status));
+    if (FAILED(status))
+        throw std::runtime_error(std::string(operation) + ": " +
+            format_windows_hresult(static_cast<std::int32_t>(status)));
 }
 std::string utf8(LPCWSTR text) {
     if (!text || !*text) return {};
