@@ -22,7 +22,12 @@ A real key event was observed while the FLkey Mini was exercised. The result con
 
 ## Boundary
 
-This evidence qualifies the named MIDI callback smoke on the connected Mac. It does not qualify audio input/output, audible output quality, physical hotplug/topology loss, conversion quality, or full target-platform release acceptance. Those gates remain open.
+This evidence confirms the named MIDI callback smoke on the connected Mac.
+The historical `hardwareQualified:true` field above is preserved as recorded;
+it describes that callback observation and is not full physical hardware
+acceptance. Current reports emit `callbackDeliveryObserved` for observed events
+and keep `hardwareQualified:false` pending external qualification review.
+Device and configured-name strings are escaped as JSON strings. It does not qualify audio input/output, audible output quality, physical hotplug/topology loss, conversion quality, or full target-platform release acceptance. Those gates remain open.
 
 ## Next action
 

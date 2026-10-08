@@ -99,3 +99,10 @@ if(APPLE)
     target_link_libraries(midi_hardware_smoke PRIVATE stagemesh_core)
     target_compile_features(midi_hardware_smoke PRIVATE cxx_std_20)
 endif()
+
+# Report serialization is portable; no MIDI hardware is needed for this test.
+add_executable(midi_smoke_evidence_tests tests/midi_smoke_evidence_tests.cpp)
+target_include_directories(midi_smoke_evidence_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_compile_features(midi_smoke_evidence_tests PRIVATE cxx_std_17)
+add_test(NAME midi_smoke_evidence COMMAND midi_smoke_evidence_tests)
+set_tests_properties(midi_smoke_evidence PROPERTIES TIMEOUT 5)
