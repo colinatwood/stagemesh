@@ -31,7 +31,7 @@ class DesktopCleanHostReviewTests(unittest.TestCase):
     commit = "1" * 40
     version = "0.1.0"
 
-    def write_index(self, root: Path) -> Path:
+    def write_index(self, root: Path, *, channelled: bool = False) -> Path:
         platforms = []
         for position, platform in enumerate(("Linux", "macOS", "Windows"), start=1):
             platforms.append({
@@ -41,6 +41,15 @@ class DesktopCleanHostReviewTests(unittest.TestCase):
                     "bytes": 100 + position,
                     "sha256": str(position) * 64,
                 },
+                "qualification": {"cleanHostInstallQualified": False},
+            })
+        if channelled:
+            for entry in platforms:
+                entry["distributionChannel"] = "online" if entry["platform"] == "Windows" else "standard"
+            platforms.append({
+                "platform": "Windows",
+                "distributionChannel": "offline",
+                "artifactManifest": {"path": "Windows-offline/desktop-artifacts.json", "bytes": 104, "sha256": "4" * 64},
                 "qualification": {"cleanHostInstallQualified": False},
             })
         value = {
@@ -57,9 +66,9 @@ class DesktopCleanHostReviewTests(unittest.TestCase):
         path.write_text(json.dumps(value), encoding="utf-8")
         return path
 
-    def write_evidence(self, root: Path, platform: str, installer_format: str, *, suffix: str = "") -> Path:
+    def write_evidence(self, root: Path, platform: str, installer_format: str, *, suffix: str = "", channel: str | None = None) -> Path:
         index = json.loads((root / "desktop-release-index.json").read_text(encoding="utf-8"))
-        manifest = next(item["artifactManifest"] for item in index["platforms"] if item["platform"] == platform)
+        manifest = next(item["artifactManifest"] for item in index["platforms"] if item["platform"] == platform and (channel is None or item.get("distributionChannel") == channel))
         document_type = (
             "org.stagemesh.windows-desktop-clean-host-evidence"
             if platform == "Windows"
@@ -208,6 +217,53 @@ class DesktopCleanHostReviewTests(unittest.TestCase):
             )
             self.assertEqual(refused.returncode, 2)
             self.assertIn("must not overwrite", refused.stderr)
+
+    def test_channel_matrix_requires_both_windows_installers_per_channel(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            index = self.write_index(root, channelled=True)
+            evidence = [self.write_evidence(root, platform, fmt, channel=("online" if platform == "Windows" else "standard"))
+                        for platform, fmt in TRACKS]
+            script = load_script()
+            partial = script.build_review(index, evidence)
+            self.assertFalse(partial["readiness"]["readyForOwnerReview"])
+            self.assertEqual(partial["summary"]["requiredTrackCount"], 7)
+            self.assertIn("Windows/exe/offline", partial["readiness"]["blockers"][0])
+            self.assertIn("Windows/msi/offline", partial["readiness"]["blockers"][0])
+            evidence += [self.write_evidence(root, "Windows", fmt, suffix="-offline", channel="offline")
+                         for fmt in ("exe", "msi")]
+            report = script.build_review(index, evidence)
+            self.assertTrue(report["readiness"]["readyForOwnerReview"])
+            self.assertFalse(report["readiness"]["cleanHostInstallQualified"])
+            self.assertEqual(report["summary"]["reviewReadyTrackCount"], 7)
+            self.assertEqual({item["distributionChannel"] for item in report["evidence"]},
+                             {"standard", "online", "offline"})
+            value = json.loads(evidence[-1].read_text())
+            value["candidate"]["distributionChannel"] = "online"
+            evidence[-1].write_text(json.dumps(value))
+            with self.assertRaisesRegex(ValueError, "distribution channel does not match"):
+                script.build_review(index, evidence)
+
+    def test_channel_index_rejects_missing_duplicate_and_ambiguous_bindings(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            index = self.write_index(root, channelled=True)
+            evidence = self.write_evidence(root, "Windows", "exe", channel="online")
+            original = json.loads(index.read_text())
+            script = load_script()
+            for mutation in ("missing", "duplicate", "mixed", "ambiguous"):
+                value = json.loads(json.dumps(original))
+                if mutation == "missing":
+                    value["platforms"].pop()
+                elif mutation == "duplicate":
+                    value["platforms"].append(value["platforms"][-1])
+                elif mutation == "mixed":
+                    del value["platforms"][0]["distributionChannel"]
+                else:
+                    value["platforms"][-1]["artifactManifest"] = value["platforms"][-2]["artifactManifest"]
+                index.write_text(json.dumps(value))
+                with self.assertRaises(ValueError):
+                    script.build_review(index, [evidence])
 
     def test_desktop_workflow_packages_reviewer_and_tracks_tests(self):
         workflow = (ROOT / ".github" / "workflows" / "desktop.yml").read_text(encoding="utf-8")

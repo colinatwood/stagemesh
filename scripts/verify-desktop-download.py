@@ -64,6 +64,13 @@ def _manifest_entries(manifest: dict[str, Any]) -> dict[str, dict[str, Any]]:
     for field in ("version", "platform"):
         if not isinstance(manifest.get(field), str) or not manifest[field].strip():
             raise ValueError(f"artifact manifest {field} must be a non-empty string")
+    channel = manifest.get("distributionChannel")
+    expected_channels = {"online", "offline"} if manifest["platform"] == "Windows" else {"standard"}
+    if channel not in expected_channels:
+        expected = "online or offline" if manifest["platform"] == "Windows" else "standard"
+        raise ValueError(
+            f"artifact manifest distributionChannel must be {expected} for {manifest['platform']}"
+        )
     if not isinstance(manifest.get("sourceCommit"), str) or not COMMIT_PATTERN.fullmatch(
         manifest["sourceCommit"]
     ):
@@ -238,6 +245,7 @@ def evaluate(directory: Path) -> dict[str, Any]:
         "passed": passed,
         "version": manifest.get("version"),
         "platform": manifest.get("platform"),
+        "distributionChannel": manifest.get("distributionChannel"),
         "sourceCommit": manifest.get("sourceCommit"),
         "filesVerified": files_verified,
         "signingVerificationStatus": signing_status,

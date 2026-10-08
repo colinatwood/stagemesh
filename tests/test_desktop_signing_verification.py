@@ -23,13 +23,21 @@ def load_script():
 
 
 class DesktopSigningVerificationTests(unittest.TestCase):
-    def make_manifest(self, directory: Path, filename: str = "StageMesh-setup.exe") -> Path:
+    def make_manifest(
+        self,
+        directory: Path,
+        filename: str = "StageMesh-setup.exe",
+        *,
+        platform: str = "Windows",
+        distribution_channel: str = "offline",
+    ) -> Path:
         (directory / filename).write_bytes(b"signed-artifact")
         result = subprocess.run([
             sys.executable,
             str(MANIFEST_SCRIPT),
             "--directory", str(directory),
-            "--platform", "Windows",
+            "--platform", platform,
+            "--distribution-channel", distribution_channel,
             "--commit", "a" * 40,
             "--version", "0.1.0",
         ], cwd=ROOT, capture_output=True, text=True)
@@ -108,7 +116,12 @@ class DesktopSigningVerificationTests(unittest.TestCase):
     def test_linux_keeps_package_policy_as_an_explicit_blocker(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
-            manifest = self.make_manifest(directory, "StageMesh.AppImage")
+            manifest = self.make_manifest(
+                directory,
+                "StageMesh.AppImage",
+                platform="Linux",
+                distribution_channel="standard",
+            )
             report = load_script().evaluate(
                 "Linux", manifest, [directory / "StageMesh.AppImage"], environment={}
             )

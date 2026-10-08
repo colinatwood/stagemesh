@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bind the three verified desktop bundles into one unsigned release candidate.
+"""Bind the verified desktop distribution bundles into one unsigned candidate.
 
 The resulting index is a CI review artifact. It never publishes a release or
 claims signing, legal approval, clean-host installation, accessibility, or
@@ -25,7 +25,13 @@ INDEX_NAME = "desktop-release-index.json"
 MANIFEST_NAME = "desktop-artifacts.json"
 CHECKSUM_NAME = "SHA256SUMS"
 SIGNING_NAME = "signing-verification.json"
-REQUIRED_PLATFORMS = ("Linux", "macOS", "Windows")
+REQUIRED_BUNDLES = (
+    ("Linux", "standard"),
+    ("macOS", "standard"),
+    ("Windows", "online"),
+    ("Windows", "offline"),
+)
+KNOWN_PLATFORMS = frozenset(platform for platform, _ in REQUIRED_BUNDLES)
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 VERSION_PATTERN = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$")
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
@@ -94,8 +100,11 @@ def _manifest_summary(
     if manifest.get("sourceCommit") != source_commit:
         raise ValueError(f"{bundle_relative}: artifact source commit does not match {source_commit}")
     platform = manifest.get("platform")
-    if platform not in REQUIRED_PLATFORMS:
+    if platform not in KNOWN_PLATFORMS:
         raise ValueError(f"{bundle_relative}: platform must be Linux, macOS, or Windows")
+    channel = manifest.get("distributionChannel")
+    if (platform, channel) not in REQUIRED_BUNDLES:
+        raise ValueError(f"{bundle_relative}: platform/distribution channel is invalid")
     expected_qualification = {
         "softwarePackageBuilt": True,
         "cleanHostInstallQualified": False,
@@ -155,6 +164,7 @@ def _manifest_summary(
         raise ValueError(f"{bundle_relative}/{CHECKSUM_NAME} is missing")
     return {
         "platform": platform,
+        "distributionChannel": channel,
         "artifactName": bundle_relative,
         "manifestFileCount": len(files),
         "manifestPayloadBytes": payload_bytes,
@@ -190,7 +200,7 @@ def build_index(
     *,
     version: str,
     source_commit: str,
-    required_platforms: tuple[str, ...] = REQUIRED_PLATFORMS,
+    required_bundles: tuple[tuple[str, str], ...] = REQUIRED_BUNDLES,
 ) -> dict[str, Any]:
     root = Path(directory).resolve()
     if not root.is_dir():
@@ -199,15 +209,15 @@ def build_index(
         raise ValueError("version must use MAJOR.MINOR.PATCH with an optional prerelease suffix")
     if not COMMIT_PATTERN.fullmatch(source_commit):
         raise ValueError("source commit must be a lowercase 40-character SHA")
-    if not required_platforms or len(required_platforms) != len(set(required_platforms)):
-        raise ValueError("required platforms must be unique and non-empty")
-    if any(platform not in REQUIRED_PLATFORMS for platform in required_platforms):
-        raise ValueError("required platform must be Linux, macOS, or Windows")
+    if not required_bundles or len(required_bundles) != len(set(required_bundles)):
+        raise ValueError("required bundles must be unique and non-empty")
+    if any(bundle not in REQUIRED_BUNDLES for bundle in required_bundles):
+        raise ValueError("required platform/distribution channel is invalid")
 
     manifests = sorted(root.rglob(MANIFEST_NAME), key=lambda item: item.as_posix())
     if not manifests:
         raise ValueError("release candidate contains no desktop artifact manifests")
-    summaries: dict[str, dict[str, Any]] = {}
+    summaries: dict[tuple[str, str], dict[str, Any]] = {}
     for manifest_path in manifests:
         summary = _manifest_summary(
             root,
@@ -215,19 +225,28 @@ def build_index(
             version=version,
             source_commit=source_commit,
         )
-        platform = str(summary["platform"])
-        if platform in summaries:
-            raise ValueError(f"release candidate contains duplicate {platform} bundles")
-        summaries[platform] = summary
+        key = (str(summary["platform"]), str(summary["distributionChannel"]))
+        if key in summaries:
+            raise ValueError(
+                "release candidate contains duplicate "
+                f"{key[0]}/{key[1]} bundles"
+            )
+        summaries[key] = summary
 
-    missing = [platform for platform in required_platforms if platform not in summaries]
-    unexpected = [platform for platform in summaries if platform not in required_platforms]
+    missing = [bundle for bundle in required_bundles if bundle not in summaries]
+    unexpected = [bundle for bundle in summaries if bundle not in required_bundles]
     if missing:
-        raise ValueError("release candidate is missing platform bundles: " + ", ".join(missing))
+        raise ValueError(
+            "release candidate is missing distribution bundles: "
+            + ", ".join(f"{platform}/{channel}" for platform, channel in missing)
+        )
     if unexpected:
-        raise ValueError("release candidate has unexpected platform bundles: " + ", ".join(unexpected))
+        raise ValueError(
+            "release candidate has unexpected distribution bundles: "
+            + ", ".join(f"{platform}/{channel}" for platform, channel in unexpected)
+        )
 
-    platforms = [summaries[platform] for platform in required_platforms]
+    platforms = [summaries[bundle] for bundle in required_bundles]
     all_signatures_verified = all(
         item["signingVerification"]["status"] == "verified" for item in platforms
     )
@@ -241,8 +260,10 @@ def build_index(
         "releaseChannel": "unsigned-ci-candidate",
         "platforms": platforms,
         "summary": {
-            "requiredPlatformCount": len(required_platforms),
-            "verifiedPlatformCount": len(platforms),
+            "requiredPlatformCount": len({platform for platform, _ in required_bundles}),
+            "verifiedPlatformCount": len({item["platform"] for item in platforms}),
+            "requiredBundleCount": len(required_bundles),
+            "verifiedBundleCount": len(platforms),
             "allBundlesIntegrityVerified": True,
             "allSignaturesVerified": all_signatures_verified,
         },

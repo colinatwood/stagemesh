@@ -39,8 +39,17 @@ def _presence(environment: Mapping[str, str], names: tuple[str, ...]) -> tuple[l
     return present, missing
 
 
-def evaluate(platform: str, environment: Mapping[str, str]) -> dict[str, object]:
+def evaluate(
+    platform: str,
+    environment: Mapping[str, str],
+    distribution_channel: str = "standard",
+) -> dict[str, object]:
     normalized = platform.strip().lower()
+    if normalized in {"windows", "win32"}:
+        if distribution_channel not in {"online", "offline"}:
+            raise ValueError("Windows signing readiness requires the online or offline distribution channel")
+    elif distribution_channel != "standard":
+        raise ValueError("only Windows signing readiness may use online or offline distribution channels")
     if normalized in {"windows", "win32"}:
         mode = str(environment.get("STAGEMESH_WINDOWS_SIGNING_MODE", "")).strip().lower()
         required = WINDOWS_PFX if mode == "pfx" else WINDOWS_AZURE if mode == "azure-artifact-signing" else ()
@@ -52,6 +61,7 @@ def evaluate(platform: str, environment: Mapping[str, str]) -> dict[str, object]
         return {
             "schemaVersion": 1,
             "platform": "windows",
+            "distributionChannel": distribution_channel,
             "mode": mode or None,
             "readyForPlatformSigning": ready,
             "presentInputs": present,
@@ -88,6 +98,7 @@ def evaluate(platform: str, environment: Mapping[str, str]) -> dict[str, object]
         return {
             "schemaVersion": 1,
             "platform": "macos",
+            "distributionChannel": distribution_channel,
             "mode": "developer-id",
             "notarizationMode": notarization_mode,
             "readyForPlatformSigning": not certificate_missing and notarization_mode is not None,
@@ -101,6 +112,7 @@ def evaluate(platform: str, environment: Mapping[str, str]) -> dict[str, object]
         return {
             "schemaVersion": 1,
             "platform": "linux",
+            "distributionChannel": distribution_channel,
             "mode": "checksums-only",
             "readyForPlatformSigning": False,
             "presentInputs": [],
@@ -114,11 +126,16 @@ def evaluate(platform: str, environment: Mapping[str, str]) -> dict[str, object]
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--platform", required=True)
+    parser.add_argument(
+        "--distribution-channel",
+        choices=("standard", "online", "offline"),
+        default="standard",
+    )
     parser.add_argument("--output", type=Path)
     parser.add_argument("--require-ready", action="store_true")
     args = parser.parse_args()
     try:
-        report = evaluate(args.platform, os.environ)
+        report = evaluate(args.platform, os.environ, args.distribution_channel)
     except ValueError as exc:
         parser.error(str(exc))
     payload = json.dumps(report, indent=2, sort_keys=True) + "\n"

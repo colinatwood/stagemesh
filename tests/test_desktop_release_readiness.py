@@ -82,6 +82,7 @@ class DesktopReleaseReadinessTests(unittest.TestCase):
                 "product": "StageMesh",
                 "version": "0.1.0",
                 "platform": "test-os",
+                "distributionChannel": "standard",
                 "sourceCommit": "a" * 40,
                 "signed": False,
                 "qualification": {
@@ -105,6 +106,7 @@ class DesktopReleaseReadinessTests(unittest.TestCase):
                 "product": "StageMesh",
                 "version": "0.1.0",
                 "platform": "test-os",
+                "distributionChannel": "standard",
                 "sourceCommit": "a" * 40,
                 "signed": True,
                 "qualification": {
@@ -118,7 +120,14 @@ class DesktopReleaseReadinessTests(unittest.TestCase):
             self.assertFalse(report["passed"])
             self.assertIn("signed=false", " ".join(report["blockers"]))
 
-    def artifact_evidence(self, root: Path, commit: str = "a" * 40):
+    def artifact_evidence(
+        self,
+        root: Path,
+        commit: str = "a" * 40,
+        *,
+        platform: str = "test-os",
+        distribution_channel: str = "standard",
+    ):
         artifacts = root / "artifacts"
         artifacts.mkdir()
         inventory = artifacts / "desktop-dependencies.json"
@@ -141,12 +150,41 @@ class DesktopReleaseReadinessTests(unittest.TestCase):
         manifest_result = subprocess.run([
             sys.executable, str(MANIFEST_SCRIPT),
             "--directory", str(artifacts),
-            "--platform", "test-os",
+            "--platform", platform,
+            "--distribution-channel", distribution_channel,
             "--commit", "a" * 40,
             "--version", "0.1.0",
         ], cwd=ROOT, capture_output=True, text=True)
         self.assertEqual(manifest_result.returncode, 0, manifest_result.stderr)
         return artifacts / "desktop-artifacts.json", inventory, sbom
+
+    def test_windows_online_manifest_requires_download_bootstrapper_config(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.fixture(root)
+            config_path = root / "desktop" / "src-tauri" / "tauri.conf.json"
+            config = json.loads(config_path.read_text(encoding="utf-8"))
+            config["bundle"]["windows"]["webviewInstallMode"]["type"] = (
+                "downloadBootstrapper"
+            )
+            config_path.write_text(json.dumps(config), encoding="utf-8")
+            manifest, inventory, sbom = self.artifact_evidence(
+                root,
+                platform="Windows",
+                distribution_channel="online",
+            )
+            report = load_script().evaluate(root, "v0.1.0", manifest, inventory, sbom)
+            self.assertTrue(report["passed"], report["blockers"])
+            self.assertEqual(report["windowsWebViewInstallMode"], "downloadBootstrapper")
+            self.assertEqual(report["artifactManifest"]["distributionChannel"], "online")
+
+            config["bundle"]["windows"]["webviewInstallMode"]["type"] = "offlineInstaller"
+            config_path.write_text(json.dumps(config), encoding="utf-8")
+            mismatched = load_script().evaluate(
+                root, "v0.1.0", manifest, inventory, sbom
+            )
+            self.assertFalse(mismatched["passed"])
+            self.assertIn("downloadBootstrapper", " ".join(mismatched["blockers"]))
 
     def test_dependency_inventory_is_validated_and_bound_to_manifest(self):
         with tempfile.TemporaryDirectory() as temporary:

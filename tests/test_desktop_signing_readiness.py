@@ -29,19 +29,20 @@ class DesktopSigningReadinessTests(unittest.TestCase):
             "STAGEMESH_WINDOWS_CERTIFICATE_THUMBPRINT": "A" * 40,
             "STAGEMESH_WINDOWS_TIMESTAMP_URL": "https://timestamp.example.test",
         }
-        report = load_script().evaluate("Windows", environment)
+        report = load_script().evaluate("Windows", environment, "offline")
         self.assertTrue(report["readyForPlatformSigning"])
+        self.assertEqual(report["distributionChannel"], "offline")
         self.assertEqual(report["missingInputs"], [])
         self.assertFalse(report["secretValuesIncluded"])
         self.assertNotIn(secret, json.dumps(report))
 
     def test_windows_requires_mode_and_complete_inputs(self):
-        no_mode = load_script().evaluate("windows", {})
+        no_mode = load_script().evaluate("windows", {}, "online")
         self.assertFalse(no_mode["readyForPlatformSigning"])
         incomplete = load_script().evaluate("windows", {
             "STAGEMESH_WINDOWS_SIGNING_MODE": "azure-artifact-signing",
             "AZURE_CLIENT_ID": "configured",
-        })
+        }, "online")
         self.assertFalse(incomplete["readyForPlatformSigning"])
         self.assertIn("AZURE_CLIENT_SECRET", incomplete["missingInputs"])
 
@@ -80,6 +81,25 @@ class DesktopSigningReadinessTests(unittest.TestCase):
                 sys.executable, str(SCRIPT), "--platform", "Linux", "--require-ready"
             ], capture_output=True, text=True)
             self.assertNotEqual(required.returncode, 0)
+
+    def test_distribution_channel_matches_platform(self):
+        script = load_script()
+        with self.assertRaisesRegex(ValueError, "online or offline"):
+            script.evaluate("Windows", {})
+        with self.assertRaisesRegex(ValueError, "only Windows"):
+            script.evaluate("Linux", {}, "offline")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "readiness.json"
+            result = subprocess.run([
+                sys.executable,
+                str(SCRIPT),
+                "--platform", "Windows",
+                "--distribution-channel", "online",
+                "--output", str(output),
+            ], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(json.loads(output.read_text())["distributionChannel"], "online")
 
 
 if __name__ == "__main__":

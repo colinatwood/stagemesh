@@ -66,7 +66,7 @@ def _require_digest(value: Any, label: str) -> str:
     return value
 
 
-def _index_platforms(index: dict[str, Any]) -> dict[str, dict[str, Any]]:
+def _index_platforms(index: dict[str, Any]) -> dict[tuple[str, str], dict[str, Any]]:
     if (
         index.get("documentType") != INDEX_DOCUMENT_TYPE
         or index.get("schemaVersion") != 1
@@ -89,13 +89,19 @@ def _index_platforms(index: dict[str, Any]) -> dict[str, dict[str, Any]]:
     entries = index.get("platforms")
     if not isinstance(entries, list):
         raise ValueError("release index platforms are invalid")
-    result: dict[str, dict[str, Any]] = {}
+    result: dict[tuple[str, str], dict[str, Any]] = {}
+    channelled = any(isinstance(entry, dict) and "distributionChannel" in entry for entry in entries)
     for entry in entries:
         if not isinstance(entry, dict) or entry.get("platform") not in EVIDENCE_DOCUMENT_TYPES:
             raise ValueError("release index platform entry is invalid")
         platform = str(entry["platform"])
-        if platform in result:
-            raise ValueError(f"release index contains duplicate {platform} platform entries")
+        channel = entry.get("distributionChannel") if channelled else "legacy"
+        allowed = {"online", "offline"} if platform == "Windows" else {"standard"}
+        if channelled and channel not in allowed:
+            raise ValueError(f"release index {platform} distribution channel is invalid")
+        key = (platform, str(channel))
+        if key in result:
+            raise ValueError(f"release index contains duplicate {platform}/{channel} platform entries")
         manifest = entry.get("artifactManifest")
         if not isinstance(manifest, dict):
             raise ValueError(f"release index {platform} manifest binding is invalid")
@@ -105,9 +111,11 @@ def _index_platforms(index: dict[str, Any]) -> dict[str, dict[str, Any]]:
         qualification = entry.get("qualification")
         if not isinstance(qualification, dict) or qualification.get("cleanHostInstallQualified") is not False:
             raise ValueError(f"release index {platform} qualification boundary is invalid")
-        result[platform] = entry
-    if set(result) != set(EVIDENCE_DOCUMENT_TYPES):
-        raise ValueError("release index must contain exactly Linux, macOS, and Windows")
+        result[key] = entry
+    expected = ({("Linux", "standard"), ("macOS", "standard"), ("Windows", "online"), ("Windows", "offline")}
+                if channelled else {(platform, "legacy") for platform in EVIDENCE_DOCUMENT_TYPES})
+    if set(result) != expected:
+        raise ValueError("release index must contain exactly the required platform/channel bundles")
     return result
 
 
@@ -115,7 +123,7 @@ def _evidence_summary(
     path: Path,
     evidence: dict[str, Any],
     index: dict[str, Any],
-    platforms: dict[str, dict[str, Any]],
+    platforms: dict[tuple[str, str], dict[str, Any]],
 ) -> dict[str, Any]:
     document_type = evidence.get("documentType")
     candidates = [name for name, expected in EVIDENCE_DOCUMENT_TYPES.items() if expected == document_type]
@@ -134,12 +142,17 @@ def _evidence_summary(
     if candidate.get("sourceCommit") != index["sourceCommit"]:
         raise ValueError(f"{path.name}: candidate source commit does not match the release index")
 
-    expected_manifest = platforms[str(platform)]["artifactManifest"]
     manifest = candidate.get("manifest")
     if not isinstance(manifest, dict):
         raise ValueError(f"{path.name}: candidate manifest binding is invalid")
-    if manifest.get("sha256") != expected_manifest["sha256"] or manifest.get("bytes") != expected_manifest["bytes"]:
-        raise ValueError(f"{path.name}: candidate manifest does not match the release index")
+    matches = [channel for (name, channel), entry in platforms.items()
+               if name == platform and manifest.get("sha256") == entry["artifactManifest"]["sha256"]
+               and manifest.get("bytes") == entry["artifactManifest"]["bytes"]]
+    if len(matches) != 1:
+        raise ValueError(f"{path.name}: candidate manifest does not match exactly one release index bundle")
+    channel = matches[0]
+    if "distributionChannel" in candidate and candidate["distributionChannel"] != channel:
+        raise ValueError(f"{path.name}: candidate distribution channel does not match its manifest")
 
     installer = candidate.get("installer")
     if not isinstance(installer, dict):
@@ -213,6 +226,7 @@ def _evidence_summary(
 
     return {
         "platform": platform,
+        "distributionChannel": channel,
         "installer": {
             "name": installer["name"],
             "format": installer_format,
@@ -236,7 +250,10 @@ def build_review(index_path: Path, evidence_paths: list[Path]) -> dict[str, Any]
     if not evidence_paths:
         raise ValueError("at least one clean-host evidence file is required")
 
-    tracks: dict[tuple[str, str], dict[str, Any]] = {}
+    required_tracks = tuple((platform, channel, installer_format)
+                            for platform, installer_format in REQUIRED_TRACKS
+                            for name, channel in platforms if name == platform)
+    tracks: dict[tuple[str, str, str], dict[str, Any]] = {}
     for evidence_path in evidence_paths:
         path = Path(evidence_path)
         summary = _evidence_summary(
@@ -245,12 +262,14 @@ def build_review(index_path: Path, evidence_paths: list[Path]) -> dict[str, Any]
             index,
             platforms,
         )
-        key = (str(summary["platform"]), str(summary["installer"]["format"]))
+        key = (str(summary["platform"]), str(summary["distributionChannel"]), str(summary["installer"]["format"]))
         if key in tracks:
-            raise ValueError(f"duplicate clean-host evidence track {key[0]}/{key[1]}")
+            raise ValueError(f"duplicate clean-host evidence track {key[0]}/{key[1]}/{key[2]}")
         tracks[key] = summary
 
-    missing = [f"{platform}/{installer_format}" for platform, installer_format in REQUIRED_TRACKS if (platform, installer_format) not in tracks]
+    missing = [f"{platform}/{installer_format}" + (f"/{channel}" if channel != "legacy" else "")
+               for platform, channel, installer_format in required_tracks
+               if (platform, channel, installer_format) not in tracks]
     complete = not missing
     blockers = []
     if missing:
@@ -274,12 +293,12 @@ def build_review(index_path: Path, evidence_paths: list[Path]) -> dict[str, Any]
             },
         },
         "requiredTracks": [
-            {"platform": platform, "installerFormat": installer_format}
-            for platform, installer_format in REQUIRED_TRACKS
+            {"platform": platform, "distributionChannel": channel, "installerFormat": installer_format}
+            for platform, channel, installer_format in required_tracks
         ],
-        "evidence": [tracks[key] for key in REQUIRED_TRACKS if key in tracks],
+        "evidence": [tracks[key] for key in required_tracks if key in tracks],
         "summary": {
-            "requiredTrackCount": len(REQUIRED_TRACKS),
+            "requiredTrackCount": len(required_tracks),
             "reviewReadyTrackCount": len(tracks),
             "allEvidenceBoundToCandidate": True,
             "allRequiredTracksReviewReady": complete,
