@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import subprocess
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -28,6 +29,8 @@ class NativeHostEvidenceTests(unittest.TestCase):
             self.assertEqual(report["savedTranscripts"][0]["sha256"], hashlib.sha256(transcript.read_bytes()).hexdigest())
             self.assertTrue(report["source"]["worktreeDirty"])
             self.assertEqual(report["hardwareInventory"]["scanStatus"], "partial-or-unavailable")
+            for field in ("readOnlyCollection", "regularFileInputs", "distinctInputIdentities", "unambiguousInputNames", "inputFilesStableDuringHashing"):
+                self.assertIs(report["evidenceBoundary"][field], True)
             for field in ("binaryExecuted", "audioCaptured", "physicalOutputsArmed", "testsPassedInferred", "binarySourceBindingVerified", "transcriptSourceBindingVerified", "physicalHardwareQualified"):
                 self.assertIs(report["evidenceBoundary"][field], False)
             self.assertNotIn(str(root), json.dumps(report))
@@ -58,6 +61,53 @@ class NativeHostEvidenceTests(unittest.TestCase):
             binary.write_bytes(b"")
             with self.assertRaisesRegex(ValueError, "empty"):
                 module.file_observation(binary)
+
+    def test_rejects_duplicate_names_file_aliases_and_symlinks_before_inventory(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            binary = root / "build" / "native_capture_smoke.exe"
+            binary.parent.mkdir()
+            binary.write_bytes(b"binary")
+            other = root / "logs" / binary.name
+            other.parent.mkdir()
+            other.write_bytes(b"transcript")
+            alias = root / "capture-alias.exe"
+            alias.hardlink_to(binary)
+            symlink = root / "capture-link.exe"
+            symlink.symlink_to(binary)
+            with patch.object(module, "source_observation") as source, patch.object(module, "diagnose_hardware") as inventory:
+                with self.assertRaisesRegex(ValueError, "names are ambiguous"):
+                    module.collect(root, binary, [other])
+                with self.assertRaisesRegex(ValueError, "same file"):
+                    module.collect(root, binary, [alias])
+                with self.assertRaisesRegex(ValueError, "must not be a symlink"):
+                    module.collect(root, symlink, [])
+                source.assert_not_called()
+                inventory.assert_not_called()
+
+    def test_rejects_file_mutation_detected_during_hashing(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "capture.txt"
+            path.write_bytes(b"stable bytes")
+            real_fstat = module.os.fstat
+            calls = 0
+
+            def changing_fstat(descriptor):
+                nonlocal calls
+                calls += 1
+                observed = real_fstat(descriptor)
+                return SimpleNamespace(
+                    st_mode=observed.st_mode,
+                    st_dev=observed.st_dev,
+                    st_ino=observed.st_ino,
+                    st_size=observed.st_size,
+                    st_mtime=observed.st_mtime,
+                    st_mtime_ns=observed.st_mtime_ns + (1 if calls > 1 else 0),
+                )
+
+            with patch.object(module.os, "fstat", side_effect=changing_fstat):
+                with self.assertRaisesRegex(ValueError, "changed while being hashed"):
+                    module.file_observation(path)
 
     def test_cli_preserves_inputs_and_existing_sessions(self):
         with tempfile.TemporaryDirectory() as temporary:

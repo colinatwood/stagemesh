@@ -90,8 +90,12 @@ unavailable; they are not proof that devices are absent.
 To bind the identity of saved console files, add `--transcript` once per
 existing transcript. A new run must use a new output filename; the collector
 refuses to overwrite an earlier session or any input. File hashes identify
-observed bytes, and do not establish that a binary was built from the observed
-commit or that a transcript belongs to that build. Preserve the actual build
+observed bytes. Evidence inputs must be distinct regular files with distinct
+filenames; symlinks, repeated files, ambiguous filenames, and files that change
+while hashing fail closed. Copy separately named, stable transcripts into the
+session evidence directory before collection rather than passing aliases. These
+checks do not establish that a binary was built from the observed commit or that
+a transcript belongs to that build. Preserve the actual build
 and test commands, timestamps, exit codes and opt-ins for owner review.
 Firmware, Apogee Control version, Windows edition, endpoint settings, cables,
 gain and routing still require operator notes. Collect these notes before
