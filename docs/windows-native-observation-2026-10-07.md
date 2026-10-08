@@ -39,7 +39,10 @@ The operator supplied an aligned 48 kHz, stereo, 24-bit reference/capture report
 with 54,121-frame alignment. It observed zero clipped samples, dropouts, or
 discontinuities, approximately 66.12 dB minimum reference-residual SNR, approximately
 88.36 dB tone SNR, and approximately -88.36 dB THD+N. The measured gain ratio was
-approximately -1.006 on each channel, indicating polarity inversion. The report itself
+approximately -1.006 on each channel. With a periodic sine reference, this may
+reflect phase-alignment ambiguity or polarity inversion; this observation does
+not distinguish the two. A separately synchronized or nonperiodic reference
+is needed before concluding that the physical routing inverts polarity. The report itself
 keeps threshold application, owner review, conversion qualification, and physical
 hardware qualification false. Preserve the original WAVs, JSON report, hashes, and
 bench notes with the owner’s evidence bundle; this repository note does not replace
@@ -64,3 +67,32 @@ For a repeatable follow-up, record:
 
 Successful hosted/software tests and PnP visibility remain separate from physical
 audio/MIDI acceptance.
+
+## Read-only provenance collector
+
+From the repository, collect the source snapshot, binary SHA-256, Windows
+release/version/architecture, and the existing privacy-preserving USB/audio
+endpoint/installed-driver inventory:
+
+```powershell
+cd C:\Users\djgre\src\stagemesh
+py -3 .\scripts\native-host-evidence.py `
+  --binary .\build\native\Release\native_capture_smoke.exe `
+  --output .\evidence\windows-native-host-session.json
+```
+
+The collector resolves Git from its repository even if the shell starts in
+another directory. Input/output paths still resolve from the shell's working
+directory. It does not run the binary, capture audio, request microphone
+access, or change device settings. Failed inventory probes remain reported as
+unavailable; they are not proof that devices are absent.
+
+To bind the identity of saved console files, add `--transcript` once per
+existing transcript. A new run must use a new output filename; the collector
+refuses to overwrite an earlier session or any input. File hashes identify
+observed bytes, and do not establish that a binary was built from the observed
+commit or that a transcript belongs to that build. Preserve the actual build
+and test commands, timestamps, exit codes and opt-ins for owner review.
+Firmware, Apogee Control version, Windows edition, endpoint settings, cables,
+gain and routing still require operator notes. Collect these notes before
+closing unrelated audio applications and repeating the capture test.
