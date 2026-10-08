@@ -52,6 +52,13 @@ runtime again against the same data directory, and verifies the template's
 identity, name, revision, state, and object payload before a second graceful
 shutdown. This proves package composition, port-collision recovery, packaged
 persistence restart, and software startup/shutdown behavior only.
+The same smoke then replaces the temporary test store with malformed JSON and
+requires the packaged runtime to fail startup without modifying that evidence.
+After the exact known-good bytes are restored, the runtime must start again and
+return the unchanged template before shutting down cleanly. An incomplete
+same-directory temporary write is fenced in the same way. This is deterministic
+software coverage for corruption detection and evidence preservation; it does
+not qualify recovery of an installed package on a clean host.
 It does not qualify a physical device, audible output, recording quality,
 drivers, signing identity, or target-OS hardware behavior. Those remain
 separate external qualification gates.
