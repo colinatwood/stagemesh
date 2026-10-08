@@ -147,6 +147,7 @@
     const blob = new Blob([JSON.stringify({version: 1, name: "StageMesh stage template", objects}, null, 2)], {type: "application/json"});
     const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "stagemesh-stage-template.json"; link.click(); URL.revokeObjectURL(link.href);
   });
+  q("#templateImportButton").addEventListener("click", () => q("#templateImport").click());
   q("#templateImport").addEventListener("change", async (event) => {
     const file = event.target.files?.[0]; if (!file) return;
     try { const parsed = JSON.parse(await file.text()); if (!Array.isArray(parsed.objects)) throw new Error("objects array missing"); objects = parsed.objects.filter((item) => item && typeof item.label === "string").map((item) => ({id: String(item.id || `object-${Date.now()}-${Math.random()}`), type: String(item.type || "marker"), label: item.label.slice(0, 48), x: Number(item.x) || 50, y: Number(item.y) || 50})); selectedId = null; save(); render(); q("#templateHint").textContent = "Template imported into the local draft."; }
