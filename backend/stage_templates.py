@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 import json
+import math
 from pathlib import Path
 from threading import RLock
 from time import time
@@ -13,17 +14,97 @@ class StageTemplateConflict(RuntimeError):
     """A template changed since the caller last read it."""
 
 
+class StageTemplateStoreCorrupt(RuntimeError):
+    """The persisted template store cannot be trusted or safely replaced."""
+
+
 class StageTemplateStore:
     def __init__(self, path: Path):
         self.path, self._lock = path, RLock()
         self._templates = self._load()
 
     def _load(self):
+        temporary = self.path.with_suffix(".tmp")
+        if temporary.exists():
+            raise StageTemplateStoreCorrupt(
+                "stage template store has an incomplete temporary write"
+            )
         try:
-            data = json.loads(self.path.read_text())
-            return data if isinstance(data, dict) else {}
-        except (FileNotFoundError, json.JSONDecodeError):
+            serialized = self.path.read_text(encoding="utf-8")
+        except FileNotFoundError:
             return {}
+        except (OSError, UnicodeDecodeError) as exc:
+            raise StageTemplateStoreCorrupt(
+                "stage template store is unreadable or malformed"
+            ) from exc
+        try:
+            data = json.loads(serialized)
+        except json.JSONDecodeError as exc:
+            raise StageTemplateStoreCorrupt(
+                "stage template store is unreadable or malformed"
+            ) from exc
+        self._validate_loaded(data)
+        return data
+
+    @staticmethod
+    def _validate_loaded(data):
+        if not isinstance(data, dict):
+            raise StageTemplateStoreCorrupt(
+                "stage template store is unreadable or malformed"
+            )
+        for template_id, document in data.items():
+            if not isinstance(template_id, str) or not template_id:
+                raise StageTemplateStoreCorrupt(
+                    "stage template store is unreadable or malformed"
+                )
+            if not isinstance(document, dict):
+                raise StageTemplateStoreCorrupt(
+                    "stage template store is unreadable or malformed"
+                )
+            revision = document.get("revision")
+            updated_at = document.get("updatedAt")
+            objects = document.get("objects")
+            if (
+                document.get("version") != 1
+                or not isinstance(document.get("name"), str)
+                or not document["name"]
+                or type(revision) is not int
+                or revision < 1
+                or document.get("state") not in {"draft", "published"}
+                or isinstance(updated_at, bool)
+                or not isinstance(updated_at, (int, float))
+                or not math.isfinite(updated_at)
+                or not isinstance(objects, list)
+                or len(objects) > 5000
+            ):
+                raise StageTemplateStoreCorrupt(
+                    "stage template store is unreadable or malformed"
+                )
+            for item in objects:
+                x = item.get("x") if isinstance(item, dict) else None
+                y = item.get("y") if isinstance(item, dict) else None
+                if (
+                    not isinstance(item, dict)
+                    or not isinstance(item.get("id"), str)
+                    or not item["id"]
+                    or not isinstance(item.get("type"), str)
+                    or not item["type"]
+                    or len(item["type"]) > 32
+                    or not isinstance(item.get("label"), str)
+                    or not item["label"].strip()
+                    or len(item["label"]) > 128
+                    or isinstance(x, bool)
+                    or not isinstance(x, (int, float))
+                    or not math.isfinite(x)
+                    or not 0 <= x <= 100
+                    or isinstance(y, bool)
+                    or not isinstance(y, (int, float))
+                    or not math.isfinite(y)
+                    or not 0 <= y <= 100
+                ):
+                    raise StageTemplateStoreCorrupt(
+                        "stage template store is unreadable or malformed"
+                    )
 
     def _save(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
