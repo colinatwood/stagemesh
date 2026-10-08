@@ -46,8 +46,8 @@ This runbook records 100 concrete execution checks against merged main commit `7
 | EX3-034 | Runtime/sidecar | graceful sidecar exit | CI/software evidence verified |
 | EX3-035 | Runtime/sidecar | bounded force fallback | CI/software evidence verified |
 | EX3-036 | Runtime/sidecar | unexpected sidecar exit | CI/software evidence verified |
-| EX3-037 | Runtime/sidecar | restart recovery | Prepared; external exercise pending |
-| EX3-038 | Runtime/sidecar | port collision | Prepared; external exercise pending |
+| EX3-037 | Runtime/sidecar | restart recovery | CI/software evidence verified |
+| EX3-038 | Runtime/sidecar | port collision | CI/software evidence verified |
 | EX3-039 | Runtime/sidecar | malformed request | CI/software evidence verified |
 | EX3-040 | Runtime/sidecar | log redaction | CI/software evidence verified |
 | EX3-041 | Persistence | create template | CI/software evidence verified |
