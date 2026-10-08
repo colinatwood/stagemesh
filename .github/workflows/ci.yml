@@ -70,7 +70,7 @@ jobs:
           STAGEMESH_ALLOW_UNAVAILABLE_NATIVE_MIDI: '1'
       - name: Run native tests without unavailable hosted macOS endpoint streams
         if: runner.os == 'macOS'
-        run: ctest --test-dir build -C Release -E 'native_playback|native_capture' --output-on-failure
+        run: ctest --test-dir build -C Release -E '^(native_playback|native_capture)$' --output-on-failure
         env:
           STAGEMESH_ALLOW_SILENT_ENDPOINT_TEST: '1'
           STAGEMESH_ALLOW_ENDPOINT_CAPTURE_TEST: '1'

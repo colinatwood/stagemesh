@@ -113,3 +113,23 @@ direction)` for exact pinned native capability readback. It never falls back to
 the default or silently follows a rebound identity. Hosted macOS uses non-default
 aggregate capabilities for native playback/capture and rejects the removed pin
 while a default remains available. Probing does not authorize execution.
+
+## Audio smoke command help
+
+`native_playback_smoke --help` and `native_capture_smoke --help` (or `-h`)
+print usage and the required endpoint opt-in without discovering or activating
+devices. Unknown or extra arguments exit with status 2 before device access.
+Running either tool with no arguments retains the existing smoke-test behavior.
+
+In PowerShell, use the binaries built for the selected configuration:
+
+```powershell
+.\build\native\Release\native_playback_smoke.exe --help
+.\build\native\Release\native_capture_smoke.exe --help
+```
+
+Playback requires `STAGEMESH_ALLOW_SILENT_ENDPOINT_TEST=1` when a default
+endpoint is present. Capture requires `STAGEMESH_ALLOW_ENDPOINT_CAPTURE_TEST=1`;
+macOS capture also depends on microphone authorization. These smoke tests
+observe lifecycle and callback delivery, and do not qualify audible output or
+recording quality.
