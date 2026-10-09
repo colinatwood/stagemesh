@@ -62,6 +62,49 @@ class StageTemplateStoreTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.store.create({"objects": [{}] * 5001})
 
+    def test_explicit_fields_are_strict_and_never_silently_coerced_or_truncated(self):
+        invalid_documents = (
+            {"version": 2, "name": "Future", "objects": []},
+            {"name": 42, "objects": []},
+            {"name": " " * 4, "objects": []},
+            {"name": "N" * 129, "objects": []},
+            {"objects": [{"label": 42}]},
+            {"objects": [{"label": "L" * 129}]},
+            {"objects": [{"label": "Lead", "id": 42}]},
+            {"objects": [{"label": "Lead", "type": 42}]},
+            {"objects": [{"label": "Lead", "type": "T" * 33}]},
+            {"objects": [{"label": "Lead", "x": "50"}]},
+            {"objects": [{"label": "Lead", "x": True}]},
+            {"objects": [{"label": "Lead", "y": float("nan")}]},
+            {"objects": [{"label": "Lead", "y": float("inf")}]},
+        )
+        for document in invalid_documents:
+            with self.subTest(document=document), self.assertRaises(ValueError):
+                self.store.create(document)
+        self.assertEqual(self.store.list(), [])
+        self.assertFalse(self.path.exists())
+
+    def test_omitted_object_fields_keep_version_one_compatibility_defaults(self):
+        created = self.store.create({"objects": [{"label": "Lead"}]})
+        self.assertEqual(created["version"], 1)
+        self.assertEqual(created["name"], "Untitled stage template")
+        self.assertEqual(created["objects"][0]["type"], "marker")
+        self.assertEqual(created["objects"][0]["x"], 50.0)
+        self.assertEqual(created["objects"][0]["y"], 50.0)
+        self.assertTrue(created["objects"][0]["id"])
+
+    def test_strict_validation_rejects_update_before_mutating_memory_or_disk(self):
+        created = self.store.create(self.document())
+        before = self.path.read_bytes()
+        with self.assertRaises(ValueError):
+            self.store.update(
+                created["templateId"],
+                created["revision"],
+                {"name": "Unsafe", "objects": [{"label": "Lead", "x": "50"}]},
+            )
+        self.assertEqual(self.path.read_bytes(), before)
+        self.assertEqual(self.store.get(created["templateId"]), created)
+
     def test_duplicate_object_ids_reject_create_and_update_without_mutation(self):
         created = self.store.create(self.document())
         before = self.path.read_bytes()
