@@ -100,3 +100,28 @@ and test commands, timestamps, exit codes and opt-ins for owner review.
 Firmware, Apogee Control version, Windows edition, endpoint settings, cables,
 gain and routing still require operator notes. Collect these notes before
 closing unrelated audio applications and repeating the capture test.
+
+## Bound exercise runner
+
+For the fresh rerun, prefer the execution wrapper when the operator is ready to
+open the endpoint. It removes inherited `STAGEMESH_*` controls, admits only the
+documented native-test opt-ins, captures stdout/stderr and the exit code itself,
+and refuses to publish if the binary, source revision, or Git dirty-state flag
+changes during the run:
+
+```powershell
+py -3 .\scripts\native-host-exercise.py `
+  --binary .\build\native\Release\native_capture_smoke.exe `
+  --output .\evidence\windows-boom-capture-session `
+  --opt-in STAGEMESH_ALLOW_ENDPOINT_CAPTURE_TEST=1
+```
+
+Use `--` after the wrapper options if the smoke binary needs its own arguments.
+The new output directory contains `report.json` and the directly captured
+`transcript.txt`; an existing directory is never overwritten. A zero exit is
+recorded as process success, not as proof of binary origin, audible quality, or
+physical-hardware qualification. Keep the read-only collector available for
+existing transcripts and sessions where executing a binary is not intended.
+Run from a clean worktree for commit-bound evidence; a dirty worktree is
+rejected by default. `--allow-dirty` is available for diagnostic-only runs and
+records that override; dirty content stability is deliberately not inferred.
