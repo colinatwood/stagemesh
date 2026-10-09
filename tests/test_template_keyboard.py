@@ -1,0 +1,69 @@
+"""Run canvas object handlers to verify keyboard and pointer ownership behavior."""
+from pathlib import Path
+import shutil
+import subprocess
+import unittest
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+@unittest.skipUnless(shutil.which("node"), "Node.js required for frontend behavior checks")
+class TemplateKeyboardTests(unittest.TestCase):
+    def test_import_button_opens_existing_chooser_and_keeps_shared_validator(self):
+        source = (ROOT / "frontend/stage-template.js").read_text()
+        self.assertEqual(source.count("const validateTemplateDocument ="), 1)
+        self.assertNotIn("const validateImport =", source)
+        html = (ROOT / "frontend/app.html").read_text()
+        self.assertIn('<button id="templateImportButton" type="button">', html)
+        registration = next(line for line in source.splitlines()
+                            if 'q("#templateImportButton").addEventListener' in line)
+        result = subprocess.run(["node", "-e", r'''
+const vm=require('node:vm'), assert=require('node:assert/strict');
+let handler, clicks=0;
+const q=selector=>selector==='#templateImportButton'
+  ? {addEventListener:(type,callback)=>{assert.equal(type,'click');handler=callback;}}
+  : {click:()=>clicks++};
+vm.runInNewContext(process.argv[1],{q});
+handler();assert.equal(clicks,1);
+''', registration], cwd=ROOT, text=True, capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_selection_movement_and_pointer_capture_keep_the_same_node(self):
+        result = subprocess.run(["node", "-e", r'''
+const fs=require('node:fs'), vm=require('node:vm'), assert=require('node:assert/strict');
+const source=fs.readFileSync('frontend/stage-template.js','utf8');
+const start=source.indexOf('      node.setAttribute("aria-label"');
+const end=source.indexOf('      canvas.appendChild(node);',start);
+assert.ok(start>0 && end>start);
+const handlers={}, attributes={}, hint={}, del={disabled:true};
+let saved=0, focused=0, capture;
+const item={id:'lead',label:'Vocal',type:'performer',x:50,y:50};
+const node={dataset:{id:'lead'},style:{},classList:{toggle:()=>{}},setAttribute:(key,value)=>attributes[key]=value,
+  addEventListener:(type,callback)=>handlers[type]=callback,focus:()=>focused++,setPointerCapture:id=>capture=id};
+const context={item,node,selectedId:null,drag:null,esc:value=>value,
+  canvas:{querySelectorAll:()=>[node],getBoundingClientRect:()=>({left:0,top:0,width:100,height:100})},
+  q:selector=>selector==='#templateDelete'?del:hint,save:()=>saved++,render:()=>{throw Error('must not replace captured/focused node');}};
+vm.runInNewContext(source.slice(start,end),context);
+handlers.click();assert.equal(context.selectedId,'lead');assert.equal(del.disabled,false);assert.equal(attributes['aria-pressed'],'true');
+function key(key,extra={}) {let prevented=false;handlers.keydown({key,preventDefault:()=>prevented=true,...extra});return prevented;}
+assert.equal(key('ArrowLeft'),true);assert.equal(item.x,49);assert.equal(saved,1);
+key('ArrowDown',{shiftKey:true});assert.equal(item.y,60);
+for(let i=0;i<15;i++)key('ArrowRight',{shiftKey:true});assert.equal(item.x,100);
+for(let i=0;i<15;i++)key('ArrowUp',{shiftKey:true});assert.equal(item.y,0);
+assert.equal(node.style.left,'100%');assert.equal(node.style.top,'0%');
+const before=saved;assert.equal(key('ArrowRight',{ctrlKey:true}),false);assert.equal(key('Enter'),false);assert.equal(saved,before);
+handlers.pointerdown({button:2});assert.equal(context.drag,null);
+handlers.pointerdown({button:0,pointerId:7,preventDefault(){}});assert.equal(capture,7);assert.equal(focused,1);
+handlers.pointermove({pointerId:8,clientX:25,clientY:25});assert.equal(item.x,100);
+handlers.pointermove({pointerId:7,clientX:25,clientY:25});assert.equal(item.x,25);assert.equal(item.y,25);
+handlers.pointercancel();assert.equal(item.x,100);assert.equal(item.y,0);assert.equal(context.drag,null);assert.equal(saved,before);
+handlers.pointerdown({button:0,pointerId:9,preventDefault(){}});
+handlers.pointermove({pointerId:9,clientX:35,clientY:45});handlers.pointerup();
+assert.equal(context.drag,null);assert.equal(item.x,35);assert.equal(item.y,45);assert.equal(saved,before+1);
+console.log('template keyboard and pointer behavior passed');
+'''], cwd=ROOT, text=True, capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+
+if __name__ == "__main__":
+    unittest.main()
