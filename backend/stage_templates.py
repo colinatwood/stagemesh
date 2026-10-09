@@ -80,6 +80,7 @@ class StageTemplateStore:
                 raise StageTemplateStoreCorrupt(
                     "stage template store is unreadable or malformed"
                 )
+            object_ids = set()
             for item in objects:
                 x = item.get("x") if isinstance(item, dict) else None
                 y = item.get("y") if isinstance(item, dict) else None
@@ -87,6 +88,7 @@ class StageTemplateStore:
                     not isinstance(item, dict)
                     or not isinstance(item.get("id"), str)
                     or not item["id"]
+                    or item["id"] in object_ids
                     or not isinstance(item.get("type"), str)
                     or not item["type"]
                     or len(item["type"]) > 32
@@ -105,6 +107,7 @@ class StageTemplateStore:
                     raise StageTemplateStoreCorrupt(
                         "stage template store is unreadable or malformed"
                     )
+                object_ids.add(item["id"])
 
     def _save(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -118,11 +121,15 @@ class StageTemplateStore:
         objects = document.get("objects", [])
         if not isinstance(objects, list) or len(objects) > 5000: raise ValueError("objects must be a bounded array")
         normalized = []
+        object_ids = set()
         for item in objects:
             if not isinstance(item, dict) or not str(item.get("label", "")).strip(): raise ValueError("each object needs a label")
             x, y = float(item.get("x", 50)), float(item.get("y", 50))
             if not 0 <= x <= 100 or not 0 <= y <= 100: raise ValueError("object coordinates must be 0..100")
-            normalized.append({"id": str(item.get("id") or uuid4()), "type": str(item.get("type") or "marker")[:32], "label": str(item["label"])[:128], "x": x, "y": y})
+            object_id = str(item.get("id") or uuid4())
+            if object_id in object_ids: raise ValueError("object IDs must be unique within a template")
+            object_ids.add(object_id)
+            normalized.append({"id": object_id, "type": str(item.get("type") or "marker")[:32], "label": str(item["label"])[:128], "x": x, "y": y})
         return {"version": 1, "name": str(document.get("name") or "Untitled stage template")[:128], "objects": normalized}
 
     def list(self):

@@ -53,6 +53,8 @@ PR #120 splits Windows desktop candidates into explicit `online` and `offline` W
 
 PR #124 closes the remaining self-description gap in those clean-host evidence files. Windows collectors now require and record the manifest-declared `online` or `offline` channel; macOS and Linux collectors require and record `standard`; and the cross-platform reviewer rejects both missing and mismatched channel claims for current indexes while preserving legacy-index compatibility. The broad Python suite passes 792 tests with 24 expected skips, and all four required workflows and their 13 jobs passed. This is evidence-contract hardening only and does not qualify an installed host or any external release gate.
 
+A 2026-10-08 persistence follow-up rejects duplicate object IDs within each template before create/update can mutate memory or disk. Existing ambiguous persisted layouts fail closed while preserving their source bytes for explicit recovery; missing IDs are still generated, and separate templates may reuse an ID. This prevents selecting/deleting one identity from silently affecting multiple components. It adds no clean-host or hardware acceptance claim.
+
 ## Build / verification entry points
 
 From repository root:
