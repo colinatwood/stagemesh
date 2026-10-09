@@ -63,7 +63,20 @@ void require(bool condition, const char* message) {
 
 } // namespace
 
-int main() {
+int main(int argc, char** argv) {
+    if (argc != 1) {
+        if (argc == 2 && (std::string(argv[1]) == "--help" || std::string(argv[1]) == "-h")) {
+            std::cout << "Usage: midi_hardware_smoke [--help|-h]\n"
+                      << "macOS CoreMIDI input callback observation; waits up to 15 seconds for a real event.\n"
+                      << "Set STAGEMESH_MIDI_DEVICE_NAME to narrow the source name (default: FLkey Mini).\n"
+                      << "Opens the selected input when run without arguments; does not send MIDI output.\n"
+                      << "Callback observation does not qualify physical hardware.\n"
+                      << "Help exits before MIDI discovery or input attachment.\n";
+            return 0;
+        }
+        std::cerr << "Unsupported arguments; use --help for usage.\n";
+        return 2;
+    }
     try {
         const char* configured = std::getenv("STAGEMESH_MIDI_DEVICE_NAME");
         const std::string needle = configured && *configured ? configured : "FLkey Mini";
