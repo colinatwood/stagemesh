@@ -62,6 +62,39 @@ class StageTemplateStoreTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.store.create({"objects": [{}] * 5001})
 
+    def test_duplicate_object_ids_reject_create_and_update_without_mutation(self):
+        created = self.store.create(self.document())
+        before = self.path.read_bytes()
+        duplicate = {"name": "Ambiguous", "objects": [
+            {"id": "same", "label": "Lead", "x": 20, "y": 30},
+            {"id": "same", "label": "Drums", "x": 70, "y": 40},
+        ]}
+        with self.assertRaisesRegex(ValueError, "object IDs must be unique"):
+            self.store.create(duplicate)
+        with self.assertRaisesRegex(ValueError, "object IDs must be unique"):
+            self.store.update(created["templateId"], 1, duplicate)
+        self.assertEqual(self.path.read_bytes(), before)
+        self.assertEqual(self.store.get(created["templateId"]), created)
+        self.assertEqual(len(self.store.list()), 1)
+
+    def test_duplicate_persisted_object_ids_fail_closed_and_preserve_source(self):
+        created = self.store.create(self.document())
+        saved = json.loads(self.path.read_text())
+        first = saved[created["templateId"]]["objects"][0]
+        saved[created["templateId"]]["objects"].append({**first, "label": "Other component"})
+        self.path.write_text(json.dumps(saved))
+        before = self.path.read_bytes()
+        with self.assertRaises(StageTemplateStoreCorrupt):
+            StageTemplateStore(self.path)
+        self.assertEqual(self.path.read_bytes(), before)
+
+    def test_object_ids_are_unique_per_template_and_missing_ids_are_generated(self):
+        document = {"name": "Distinct", "objects": [{"label": "Lead"}, {"label": "Drums"}]}
+        first = self.store.create(document)
+        self.assertEqual(len({item["id"] for item in first["objects"]}), 2)
+        second = self.store.create({"name": "Other", "objects": first["objects"]})
+        self.assertEqual(second["objects"], first["objects"])
+
     def test_failed_create_and_publish_roll_back_memory(self):
         with patch.object(self.store, "_save", side_effect=OSError("disk full")):
             with self.assertRaises(OSError):
