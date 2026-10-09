@@ -131,7 +131,9 @@
       node.addEventListener("keydown", (event) => {
         const direction = {ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1]}[event.key];
         if (!direction || event.ctrlKey || event.altKey || event.metaKey || event.isComposing) return;
-        event.preventDefault(); selectObject();
+        event.preventDefault();
+        if (drag) return;
+        selectObject();
         const step = event.shiftKey ? 10 : 1;
         item.x = Math.max(0, Math.min(100, item.x + direction[0] * step));
         item.y = Math.max(0, Math.min(100, item.y + direction[1] * step));
@@ -140,9 +142,12 @@
       });
       node.innerHTML = `<strong>${esc(item.label)}</strong><small>${esc(item.type)}</small>`;
       node.addEventListener("pointerdown", (event) => {
-        if (event.button !== undefined && event.button !== 0) return;
-        event.preventDefault(); selectObject(); node.focus();
-        drag = {id: item.id, pointerId: event.pointerId, x: item.x, y: item.y}; node.setPointerCapture(event.pointerId);
+        if (drag || (event.button !== undefined && event.button !== 0)) return;
+        event.preventDefault();
+        try { node.setPointerCapture(event.pointerId); }
+        catch { q("#templateHint").textContent = "Move could not start. Previous position preserved."; return; }
+        selectObject(); node.focus();
+        drag = {id: item.id, pointerId: event.pointerId, x: item.x, y: item.y};
       });
       node.addEventListener("pointermove", (event) => {
         if (!drag || drag.id !== item.id || drag.pointerId !== event.pointerId) return;
@@ -151,13 +156,18 @@
         item.y = Math.max(7, Math.min(93, ((event.clientY - rect.top) / rect.height) * 100));
         node.style.left = `${item.x}%`; node.style.top = `${item.y}%`;
       });
-      node.addEventListener("pointerup", () => { if (drag?.id === item.id) { drag = null; save(); q("#templateHint").textContent = "Position saved to this local draft."; } });
-      node.addEventListener("pointercancel", () => {
-        if (drag?.id !== item.id) return;
+      node.addEventListener("pointerup", (event) => {
+        if (drag?.id !== item.id || drag.pointerId !== event.pointerId) return;
+        drag = null; save(); q("#templateHint").textContent = "Position saved to this local draft.";
+      });
+      const cancelMove = (event) => {
+        if (drag?.id !== item.id || drag.pointerId !== event.pointerId) return;
         item.x = drag.x; item.y = drag.y; drag = null;
         node.style.left = `${item.x}%`; node.style.top = `${item.y}%`;
         q("#templateHint").textContent = "Move cancelled. Previous position preserved.";
-      });
+      };
+      node.addEventListener("pointercancel", cancelMove);
+      node.addEventListener("lostpointercapture", cancelMove);
       canvas.appendChild(node);
     });
   };
