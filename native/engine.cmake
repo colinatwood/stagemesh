@@ -98,6 +98,21 @@ if(APPLE)
     add_executable(midi_hardware_smoke midi_hardware_smoke.cpp)
     target_link_libraries(midi_hardware_smoke PRIVATE stagemesh_core)
     target_compile_features(midi_hardware_smoke PRIVATE cxx_std_20)
+    foreach(flag --help -h)
+        if(flag STREQUAL "--help")
+            set(help_test midi_hardware_help)
+        else()
+            set(help_test midi_hardware_short_help)
+        endif()
+        add_test(NAME ${help_test} COMMAND midi_hardware_smoke ${flag})
+        set_tests_properties(${help_test} PROPERTIES TIMEOUT 5
+            PASS_REGULAR_EXPRESSION "Help exits before MIDI discovery or input attachment"
+            ENVIRONMENT "STAGEMESH_MIDI_DEVICE_NAME=StageMesh nonexistent CLI test source")
+    endforeach()
+    add_test(NAME midi_hardware_invalid_arguments
+        COMMAND ${CMAKE_COMMAND} -DSMOKE=$<TARGET_FILE:midi_hardware_smoke>
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/audio_smoke_cli_test.cmake)
+    set_tests_properties(midi_hardware_invalid_arguments PROPERTIES TIMEOUT 15)
 endif()
 
 # Report serialization is portable; no MIDI hardware is needed for this test.
