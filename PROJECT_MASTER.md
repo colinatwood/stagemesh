@@ -100,6 +100,10 @@ Use this file to prevent progress loss when a ChatGPT/project session reaches it
 - **Exact next action:** Repeat the BOOM capture test on Windows from merged commit `028a3d8` using `scripts/native-host-exercise.py` from a clean worktree and the host/device fields listed in `docs/windows-native-observation-2026-10-07.md`; preserve the build transcript separately because binary-source provenance remains unverified. Preserve `0x800700AA` as an open endpoint-ownership/configuration diagnosis unless the bound rerun resolves it. Continue the exact attested-candidate clean-host exercises on fresh Windows 11 x64, macOS 14+ Apple Silicon, and Ubuntu 22.04/24.04 x64 hosts. Exercise Windows online/offline NSIS and MSI, macOS, Linux Debian, and Linux AppImage as seven separate tracks; record baseline, install, readiness, save/restart recovery, and uninstall evidence. Keep real-version upgrade phases open until a distinct prior StageMesh desktop version exists. In parallel, run the physical BOOM loopback in `docs/audio-conversion-quality.md`; do not close either gate from software-only evidence.
 - **External evidence still needed:** AUD-034 conversion measurements, physical audio/MIDI, deployed LAN/TLS/IdP, licensed plugin fixtures, clean-host release qualification, assistive-technology exercise, owner license decisions, and independent-host witness evidence. See `docs/remaining-data-requirements.md`.
 
+## CI runner efficiency follow-up (2026-10-08)
+
+All four software workflows group only revisions of the same pull request for cancellation of superseded runs. Main pushes and manual runs use unique run IDs and retain their independent build/evidence execution. This reduces redundant Windows/native/package work during active PR edits while still requiring every check on the exact latest head before merge.
+
 ## Backup policy
 
 The GitHub repository is the durable project backup. A checkpoint is not considered safely preserved until its source changes and this continuity record (when the handoff changes) are committed to GitHub. Chat transcripts are working context, not project storage.
