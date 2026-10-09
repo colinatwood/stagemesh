@@ -80,6 +80,7 @@ class StageTemplateStore:
                 raise StageTemplateStoreCorrupt(
                     "stage template store is unreadable or malformed"
                 )
+            object_ids = set()
             for item in objects:
                 x = item.get("x") if isinstance(item, dict) else None
                 y = item.get("y") if isinstance(item, dict) else None
@@ -87,6 +88,7 @@ class StageTemplateStore:
                     not isinstance(item, dict)
                     or not isinstance(item.get("id"), str)
                     or not item["id"]
+                    or item["id"] in object_ids
                     or not isinstance(item.get("type"), str)
                     or not item["type"]
                     or len(item["type"]) > 32
@@ -105,6 +107,7 @@ class StageTemplateStore:
                     raise StageTemplateStoreCorrupt(
                         "stage template store is unreadable or malformed"
                     )
+                object_ids.add(item["id"])
 
     def _save(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -115,15 +118,51 @@ class StageTemplateStore:
     @staticmethod
     def validate(document):
         if not isinstance(document, dict): raise ValueError("template must be an object")
+        if "version" in document and document["version"] != 1:
+            raise ValueError("supported template version 1 required")
+        name = document.get("name")
+        if name is None or name == "":
+            name = "Untitled stage template"
+        elif not isinstance(name, str) or not name.strip() or len(name) > 128:
+            raise ValueError("template name must contain 1..128 characters")
         objects = document.get("objects", [])
         if not isinstance(objects, list) or len(objects) > 5000: raise ValueError("objects must be a bounded array")
         normalized = []
+        object_ids = set()
         for item in objects:
-            if not isinstance(item, dict) or not str(item.get("label", "")).strip(): raise ValueError("each object needs a label")
-            x, y = float(item.get("x", 50)), float(item.get("y", 50))
-            if not 0 <= x <= 100 or not 0 <= y <= 100: raise ValueError("object coordinates must be 0..100")
-            normalized.append({"id": str(item.get("id") or uuid4()), "type": str(item.get("type") or "marker")[:32], "label": str(item["label"])[:128], "x": x, "y": y})
-        return {"version": 1, "name": str(document.get("name") or "Untitled stage template")[:128], "objects": normalized}
+            if not isinstance(item, dict):
+                raise ValueError("each object must be an object record")
+            label = item.get("label")
+            if not isinstance(label, str) or not label.strip() or len(label) > 128:
+                raise ValueError("each object label must contain 1..128 characters")
+            coordinates = []
+            for axis in ("x", "y"):
+                value = item.get(axis, 50)
+                if (
+                    isinstance(value, bool)
+                    or not isinstance(value, (int, float))
+                    or not math.isfinite(value)
+                    or not 0 <= value <= 100
+                ):
+                    raise ValueError("object coordinates must be finite numbers in 0..100")
+                coordinates.append(float(value))
+            x, y = coordinates
+            raw_id = item.get("id")
+            if raw_id is None or raw_id == "":
+                object_id = str(uuid4())
+            elif not isinstance(raw_id, str):
+                raise ValueError("object ID must be a string")
+            else:
+                object_id = raw_id
+            if object_id in object_ids: raise ValueError("object IDs must be unique within a template")
+            object_ids.add(object_id)
+            object_type = item.get("type")
+            if object_type is None or object_type == "":
+                object_type = "marker"
+            elif not isinstance(object_type, str) or len(object_type) > 32:
+                raise ValueError("object type must contain 1..32 characters")
+            normalized.append({"id": object_id, "type": object_type, "label": label, "x": x, "y": y})
+        return {"version": 1, "name": name, "objects": normalized}
 
     def list(self):
         with self._lock: return [{"templateId": key, **deepcopy(value)} for key, value in self._templates.items()]

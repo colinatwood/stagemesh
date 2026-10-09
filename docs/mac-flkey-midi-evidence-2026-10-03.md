@@ -12,6 +12,8 @@ export STAGEMESH_MIDI_DEVICE_NAME="MIDI Out FLkey Mini"
 ./build-mac-hardware/native/midi_hardware_smoke 2>&1 | tee midi-hardware-smoke.json
 ```
 
+For usage without device discovery or input attachment, run `./build-mac-hardware/native/midi_hardware_smoke --help` (or `-h`). Unsupported arguments exit with status 2 before hardware access. Running without arguments retains the input callback observation above.
+
 ## Observed result
 
 ```json

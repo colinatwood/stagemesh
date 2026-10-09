@@ -15,8 +15,12 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const source = fs.readFileSync('frontend/stage-template.js', 'utf8');
-const code = source.slice(source.indexOf('  const validateImport ='), source.indexOf('  canvas.addEventListener("dragover"'));
-assert.ok(code.includes('validateImport'), 'import callback must exist');
+const validatorStart = source.indexOf('  const validateTemplateDocument =');
+const validatorEnd = source.indexOf('  const save =', validatorStart);
+const importStart = source.indexOf('  q("#templateImport").addEventListener');
+const importEnd = source.indexOf('  canvas.addEventListener("dragover"', importStart);
+const code = source.slice(validatorStart, validatorEnd) + source.slice(importStart, importEnd);
+assert.ok(code.includes('validateTemplateDocument') && code.includes('Template imported'), 'import callback must exist');
 const original = [{id:'old',type:'marker',label:'Existing',x:10,y:20}];
 const name = {value:'Existing draft'};
 const hint = {};
@@ -55,6 +59,49 @@ const invalid=[
   assert.equal(name.value,'Imported tour');
   console.log('template import preservation passed');
 })().catch(error=>{console.error(error);process.exitCode=1;});
+'''], cwd=ROOT, text=True, capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_local_draft_load_uses_strict_validation_without_rewriting_source(self):
+        result = subprocess.run(["node", "-e", r'''
+const fs = require('node:fs');
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
+const source = fs.readFileSync('frontend/stage-template.js', 'utf8');
+const start = source.indexOf('  const validateTemplateDocument =');
+const end = source.indexOf('  const selected =', start);
+assert.ok(start > 0 && end > start, 'local draft loader must exist');
+const code = source.slice(start, end) + '\nthis.loadDraft = load;';
+function run(raw) {
+  const name = {value:'Default name'}, hint = {};
+  let writes = 0;
+  const context = {objects:[{id:'before'}], serverTemplateId:null, serverDirty:false, storageKey:'draft',
+    q: selector => selector === '#templateName' ? name : hint,
+    localStorage:{getItem:key=>{assert.equal(key,'draft');return raw;},setItem:()=>writes++}};
+  vm.runInNewContext(code, context); context.loadDraft();
+  return {objects:context.objects,name:name.value,hint:hint.textContent,writes};
+}
+const valid = {version:1,name:'Recovered tour',objects:[
+  {id:'lead',type:'performer',label:'Lead',x:0,y:100,metadata:{instrument:'bass'}},
+  {id:'wash',type:'light',label:'Wash',x:75,y:12}
+]};
+let result = run(JSON.stringify(valid));
+assert.equal(result.objects.length,2);assert.equal(result.objects[0].metadata.instrument,'bass');
+assert.equal(result.name,'Recovered tour');assert.equal(result.hint,undefined);assert.equal(result.writes,0);
+const invalid = [
+  '{broken', JSON.stringify({...valid,version:2}),
+  JSON.stringify({...valid,objects:[valid.objects[0],{...valid.objects[1],id:'lead'}]}),
+  JSON.stringify({...valid,objects:[{label:'Missing internal fields'}]}),
+  JSON.stringify({...valid,objects:[{...valid.objects[0],x:'0'}]}),
+  JSON.stringify({...valid,objects:Array(5001).fill(valid.objects[0])})
+];
+for (const raw of invalid) {
+  result=run(raw);assert.equal(result.objects.length,0);assert.equal(result.name,'Default name');
+  assert.match(result.hint,/Local draft rejected:.*Stored data was preserved for recovery\./);
+  assert.equal(result.writes,0);
+}
+result=run(null);assert.deepEqual(result.objects,[{id:'before'}]);assert.equal(result.hint,undefined);assert.equal(result.writes,0);
+console.log('local template load validation passed');
 '''], cwd=ROOT, text=True, capture_output=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 

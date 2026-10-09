@@ -9,6 +9,25 @@ ROOT = Path(__file__).resolve().parents[1]
 
 @unittest.skipUnless(shutil.which("node"), "Node.js required for frontend behavior checks")
 class TemplateKeyboardTests(unittest.TestCase):
+    def test_import_button_opens_existing_chooser_and_keeps_shared_validator(self):
+        source = (ROOT / "frontend/stage-template.js").read_text()
+        self.assertEqual(source.count("const validateTemplateDocument ="), 1)
+        self.assertNotIn("const validateImport =", source)
+        html = (ROOT / "frontend/app.html").read_text()
+        self.assertIn('<button id="templateImportButton" type="button">', html)
+        registration = next(line for line in source.splitlines()
+                            if 'q("#templateImportButton").addEventListener' in line)
+        result = subprocess.run(["node", "-e", r'''
+const vm=require('node:vm'), assert=require('node:assert/strict');
+let handler, clicks=0;
+const q=selector=>selector==='#templateImportButton'
+  ? {addEventListener:(type,callback)=>{assert.equal(type,'click');handler=callback;}}
+  : {click:()=>clicks++};
+vm.runInNewContext(process.argv[1],{q});
+handler();assert.equal(clicks,1);
+''', registration], cwd=ROOT, text=True, capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_selection_movement_and_pointer_capture_keep_the_same_node(self):
         result = subprocess.run(["node", "-e", r'''
 const fs=require('node:fs'), vm=require('node:vm'), assert=require('node:assert/strict');
