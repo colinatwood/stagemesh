@@ -56,10 +56,32 @@ handlers.pointerdown({button:2});assert.equal(context.drag,null);
 handlers.pointerdown({button:0,pointerId:7,preventDefault(){}});assert.equal(capture,7);assert.equal(focused,1);
 handlers.pointermove({pointerId:8,clientX:25,clientY:25});assert.equal(item.x,100);
 handlers.pointermove({pointerId:7,clientX:25,clientY:25});assert.equal(item.x,25);assert.equal(item.y,25);
-handlers.pointercancel();assert.equal(item.x,100);assert.equal(item.y,0);assert.equal(context.drag,null);assert.equal(saved,before);
+handlers.pointercancel({pointerId:7});assert.equal(item.x,100);assert.equal(item.y,0);assert.equal(context.drag,null);assert.equal(saved,before);
 handlers.pointerdown({button:0,pointerId:9,preventDefault(){}});
-handlers.pointermove({pointerId:9,clientX:35,clientY:45});handlers.pointerup();
+handlers.pointermove({pointerId:9,clientX:35,clientY:45});handlers.pointerup({pointerId:9});
 assert.equal(context.drag,null);assert.equal(item.x,35);assert.equal(item.y,45);assert.equal(saved,before+1);
+// A second pointer and keyboard movement cannot take ownership of an active drag.
+const savedAfterCommit=saved;
+handlers.pointerdown({button:0,pointerId:10,preventDefault(){}});
+handlers.pointerdown({button:0,pointerId:11,preventDefault(){throw Error('secondary pointer must be ignored');}});
+assert.equal(context.drag.pointerId,10);assert.equal(capture,10);
+key('ArrowRight');assert.equal(item.x,35);assert.equal(saved,savedAfterCommit);
+handlers.pointermove({pointerId:10,clientX:55,clientY:65});
+handlers.pointerup({pointerId:11});handlers.pointercancel({pointerId:11});handlers.lostpointercapture({pointerId:11});
+assert.equal(context.drag.pointerId,10);assert.ok(Math.abs(item.x-55)<1e-9);assert.equal(saved,savedAfterCommit);
+handlers.lostpointercapture({pointerId:10});
+assert.equal(context.drag,null);assert.equal(item.x,35);assert.equal(item.y,45);assert.equal(saved,savedAfterCommit);
+assert.equal(node.style.left,'35%');assert.equal(node.style.top,'45%');
+// Successful completion is not rolled back by the browser's subsequent capture release.
+handlers.pointerdown({button:0,pointerId:12,preventDefault(){}});
+handlers.pointermove({pointerId:12,clientX:60,clientY:70});handlers.pointerup({pointerId:12});
+handlers.lostpointercapture({pointerId:12});
+assert.equal(item.x,60);assert.equal(item.y,70);assert.equal(saved,savedAfterCommit+1);
+// Capture refusal leaves no active gesture or changed position.
+node.setPointerCapture=()=>{throw Error('capture refused');};
+handlers.pointerdown({button:0,pointerId:13,preventDefault(){}});
+assert.equal(context.drag,null);assert.equal(item.x,60);assert.equal(saved,savedAfterCommit+1);
+assert.match(hint.textContent,/Move could not start/);
 console.log('template keyboard and pointer behavior passed');
 '''], cwd=ROOT, text=True, capture_output=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
