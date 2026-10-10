@@ -40,12 +40,17 @@ let saved=0, focused=0, capture, failSave=false;
 const item={id:'lead',label:'Vocal',type:'performer',x:50,y:50};
 const node={dataset:{id:'lead'},style:{},classList:{toggle:()=>{}},setAttribute:(key,value)=>attributes[key]=value,
   addEventListener:(type,callback)=>handlers[type]=callback,focus:()=>focused++,setPointerCapture:id=>capture=id};
-const context={item,node,selectedId:null,drag:null,esc:value=>value,
+const context={item,node,selectedId:null,drag:null,pendingAction:null,esc:value=>value,
   canvas:{querySelectorAll:()=>[node],getBoundingClientRect:()=>({left:0,top:0,width:100,height:100})},
   q:selector=>selector==='#templateDelete'?del:hint,save:()=>{if(failSave)throw Error('disk full');saved++;},render:()=>{throw Error('must not replace captured/focused node');}};
 vm.runInNewContext(source.slice(start,end),context);
 handlers.click();assert.equal(context.selectedId,'lead');assert.equal(del.disabled,false);assert.equal(attributes['aria-pressed'],'true');
 function key(key,extra={}) {let prevented=false;handlers.keydown({key,preventDefault:()=>prevented=true,...extra});return prevented;}
+context.pendingAction={action:'server save'};
+assert.equal(key('ArrowLeft'),true);assert.equal(item.x,50);assert.equal(saved,0);
+handlers.pointerdown({button:0,pointerId:6,preventDefault(){throw Error('pending action must block capture');}});
+assert.equal(context.drag,null);assert.equal(capture,undefined);assert.match(hint.textContent,/wait for server save to finish/);
+context.pendingAction=null;
 assert.equal(key('ArrowLeft'),true);assert.equal(item.x,49);assert.equal(saved,1);
 key('ArrowDown',{shiftKey:true});assert.equal(item.y,60);
 for(let i=0;i<15;i++)key('ArrowRight',{shiftKey:true});assert.equal(item.x,100);

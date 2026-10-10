@@ -52,11 +52,14 @@ vm.runInNewContext(code,context);
         self.run_node(r'''
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const source=fs.readFileSync('frontend/stage-template.js','utf8');
+const helperStart=source.indexOf('  let persistedName =');
+const helperEnd=source.indexOf('  const load =',helperStart);
 const start=source.indexOf('  const deleteServer =');
 const end=source.indexOf('  const renderStatus =',start);
-const code=source.slice(start,end)+'\nthis.deleteServer=deleteServer;';
+const code=source.slice(helperStart,helperEnd)+source.slice(start,end)+'\nthis.deleteServer=deleteServer;';
 const select={value:'server-old'},hint={};let apiCalls=0,refreshes=0,renders=0,failDelete=false;
-const context={drag:null,serverTemplateId:'server-old',serverRevision:4,serverDirty:true,
+const context={objects:[],selectedId:null,drag:null,storageKey:'draft',serverTemplateId:'server-old',serverRevision:4,serverDirty:true,
+  localStorage:{setItem:()=>{}},
   q:selector=>selector==='#templateSaved'?select:hint,
   api:async(method,path,body)=>{apiCalls++;assert.equal(method,'DELETE');
     if(failDelete){assert.equal(path,'/api/v1/templates/server-new');assert.equal(body.expectedRevision,1);throw Error('conflict');}
@@ -72,6 +75,39 @@ vm.runInNewContext(code,context);
   assert.equal(context.serverRevision,1);assert.equal(select.value,'server-new');assert.equal(refreshes,1);assert.equal(renders,1);
   failDelete=false;context.drag={id:'lead',pointerId:7};
   await assert.rejects(context.deleteServer(),/finish or cancel the active object move/);assert.equal(apiCalls,2);
+})().catch(error=>{console.error(error);process.exitCode=1;});
+''')
+
+    def test_pending_server_action_serializes_editor_mutations(self):
+        self.run_node(r'''
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const source=fs.readFileSync('frontend/stage-template.js','utf8');
+const helperStart=source.indexOf('  let persistedName =');
+const helperEnd=source.indexOf('  const load =',helperStart);
+const loadStart=source.indexOf('  const loadSaved =');
+const loadEnd=source.indexOf('  const renderStatus =',loadStart);
+const code=source.slice(helperStart,helperEnd)+source.slice(loadStart,loadEnd)+
+  '\nthis.loadSaved=loadSaved;this.saveServer=saveServer;this.deleteServer=deleteServer;this.assertEditorAvailable=assertEditorAvailable;';
+const original=[{id:'lead',type:'performer',label:'Lead',x:50,y:40}];
+const name={value:'Tour'},hint={},saved={value:'server-old'},deleteButton={disabled:false};
+let release,apiCalls=0,writes=0,renders=0;
+const response=new Promise(resolve=>release=resolve);
+const context={objects:original,selectedId:'lead',drag:null,serverTemplateId:'server-old',serverRevision:2,serverDirty:true,storageKey:'draft',
+  q:selector=>selector==='#templateName'?name:selector==='#templateSaved'?saved:selector==='#templateDeleteServer'?deleteButton:hint,
+  localStorage:{setItem:()=>writes++},
+  api:async()=>{apiCalls++;return response;},refreshSaved:async()=>[],render:()=>renders++};
+vm.runInNewContext(code,context);
+(async()=>{
+  const first=context.saveServer();await Promise.resolve();
+  assert.equal(apiCalls,1);assert.equal(writes,1);assert.equal(renders,0);
+  await assert.rejects(context.saveServer(),/wait for server save to finish/);
+  await assert.rejects(context.loadSaved('server-new'),/wait for server save to finish/);
+  await assert.rejects(context.deleteServer(),/wait for server save to finish/);
+  assert.throws(()=>context.assertEditorAvailable('adding an object'),/wait for server save to finish/);
+  assert.equal(apiCalls,1);assert.equal(writes,1);assert.equal(context.serverRevision,2);
+  release({templateId:'server-old',revision:3});await first;
+  assert.equal(context.serverRevision,3);assert.equal(context.serverDirty,false);assert.equal(renders,1);
+  assert.doesNotThrow(()=>context.assertEditorAvailable('adding an object'));
 })().catch(error=>{console.error(error);process.exitCode=1;});
 ''')
 

@@ -25,7 +25,7 @@ const original = [{id:'old',type:'marker',label:'Existing',x:10,y:20}];
 const name = {value:'Existing draft'};
 const hint = {};
 let handler, disk, failWrite=false, renders=0;
-const context = {objects:original, selectedId:'old', serverTemplateId:'server-old', serverDirty:false, storageKey:'draft',
+const context = {objects:original, selectedId:'old', drag:null, serverTemplateId:'server-old', serverDirty:false, storageKey:'draft',
   q: selector => selector === '#templateName' ? name : selector === '#templateHint' ? hint : {addEventListener:(type,callback)=>{assert.equal(type,'change');handler=callback;}},
   localStorage: {setItem:(key,value)=>{if(failWrite)throw Error('disk full');disk=value;}}, render:()=>renders++};
 vm.runInNewContext(code, context);
@@ -58,6 +58,38 @@ const invalid=[
   assert.equal(context.objects[0].x,50);assert.equal(context.objects[0].type,'marker');assert.ok(context.objects[0].id);
   assert.equal(name.value,'Imported tour');
   console.log('template import preservation passed');
+})().catch(error=>{console.error(error);process.exitCode=1;});
+'''], cwd=ROOT, text=True, capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_import_read_serializes_against_overlapping_replacements(self):
+        result = subprocess.run(["node", "-e", r'''
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const source=fs.readFileSync('frontend/stage-template.js','utf8');
+const validatorStart=source.indexOf('  const validateTemplateDocument =');
+const validatorEnd=source.indexOf('  const save =',validatorStart);
+const importStart=source.indexOf('  q("#templateImport").addEventListener');
+const importEnd=source.indexOf('  canvas.addEventListener("dragover"',importStart);
+const code=source.slice(validatorStart,validatorEnd)+source.slice(importStart,importEnd);
+const original=[{id:'old',type:'marker',label:'Existing',x:10,y:20}];
+const incoming={version:1,name:'Imported',objects:[{id:'new',type:'performer',label:'Lead',x:50,y:40}]};
+const name={value:'Original'},hint={};let handler,release,writes=0,renders=0;
+const context={objects:original,selectedId:'old',drag:null,serverTemplateId:null,serverDirty:false,storageKey:'draft',
+  q:selector=>selector==='#templateName'?name:selector==='#templateHint'?hint:{addEventListener:(type,callback)=>handler=callback},
+  localStorage:{setItem:()=>writes++},render:()=>renders++};
+vm.runInNewContext(code,context);
+const firstTarget={files:[{text:()=>new Promise(resolve=>release=resolve)}],value:'first.json'};
+const blockedTarget=()=>({files:[{text:async()=>JSON.stringify(incoming)}],value:'blocked.json'});
+(async()=>{
+  const first=handler({target:firstTarget});await Promise.resolve();
+  const second=blockedTarget();await handler({target:second});
+  assert.match(hint.textContent,/wait for template import to finish/);assert.equal(second.value,'');
+  const third=blockedTarget();await handler({target:third});
+  assert.match(hint.textContent,/wait for template import to finish/);assert.equal(third.value,'');
+  assert.equal(writes,0);assert.equal(renders,0);assert.equal(context.objects,original);
+  release(JSON.stringify(incoming));await first;
+  assert.equal(firstTarget.value,'');assert.equal(writes,1);assert.equal(renders,1);
+  assert.equal(context.objects[0].id,'new');assert.equal(name.value,'Imported');
 })().catch(error=>{console.error(error);process.exitCode=1;});
 '''], cwd=ROOT, text=True, capture_output=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
