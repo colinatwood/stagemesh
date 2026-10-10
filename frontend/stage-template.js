@@ -43,8 +43,16 @@
     });
     return {version: 1, name: parsed.name === undefined ? fallbackName : parsed.name, objects: normalized};
   };
+  const writeDraft = (nextObjects = objects, nextName = q("#templateName").value) => {
+    localStorage.setItem(storageKey, JSON.stringify({version: 1, name: nextName, objects: nextObjects}));
+  };
   const save = () => {
-    localStorage.setItem(storageKey, JSON.stringify({version: 1, name: q("#templateName").value, objects}));
+    writeDraft();
+    if (serverTemplateId) serverDirty = true;
+  };
+  const replaceLocalDraft = (nextObjects, nextSelectedId, nextName = q("#templateName").value) => {
+    writeDraft(nextObjects, nextName);
+    objects = nextObjects; selectedId = nextSelectedId; q("#templateName").value = nextName;
     if (serverTemplateId) serverDirty = true;
   };
   const load = () => {
@@ -82,9 +90,10 @@
   };
   const loadSaved = async (templateId) => {
     const item = await api("GET", "/api/v1/templates/" + encodeURIComponent(templateId));
+    writeDraft(item.objects, item.name);
     serverTemplateId = item.templateId; serverRevision = item.revision; serverDirty = false;
     objects = item.objects; selectedId = null; q("#templateName").value = item.name;
-    save(); serverDirty = false; render();
+    render();
     q("#templateDeleteServer").disabled = false;
     q("#templateHint").textContent = "Loaded server revision " + serverRevision + ". Local edits must be saved as a new revision.";
   };
@@ -189,7 +198,13 @@
     });
   };
   const makeObjects = (preset) => preset.objects.map(([type, label, x, y], index) => ({id: `${type}-${Date.now()}-${index}-${Math.random().toString(16).slice(2)}`, type, label, x, y}));
-  const applyPreset = (key) => { const preset = presets[key]; if (!preset) return; objects = makeObjects(preset); selectedId = null; save(); render(); q("#templateHint").textContent = `${preset.name} loaded into the local draft. Customize before export.`; };
+  const applyPreset = (key) => {
+    const preset = presets[key]; if (!preset) return;
+    try {
+      replaceLocalDraft(makeObjects(preset), null); render();
+      q("#templateHint").textContent = `${preset.name} loaded into the local draft. Customize before export.`;
+    } catch (error) { q("#templateHint").textContent = `Preset not applied: ${error.message}. Previous draft preserved.`; }
+  };
   const renderPresets = () => {
     const host = q("#templatePresets");
     Object.entries(presets).forEach(([key, preset]) => {
@@ -206,7 +221,7 @@
   });
   q("#templateLoadSaved").addEventListener("click", async () => {
     try { await loadSaved(q("#templateSaved").value); }
-    catch (error) { q("#templateHint").textContent = "Load failed: " + error.message; }
+    catch (error) { q("#templateHint").textContent = "Load failed: " + error.message + ". Previous local draft preserved."; }
   });
   q("#templateSaveServer").addEventListener("click", async () => {
     try { await saveServer(); }
@@ -220,10 +235,22 @@
     const type = q("#templateObjectType").value;
     const label = q("#templateObjectLabel").value.trim() || "New object";
     const item = {id: `${type}-${Date.now()}-${Math.random().toString(16).slice(2)}`, type, label, x: 50, y: 50};
-    objects.push(item); selectedId = item.id; save(); render(); q("#templateHint").textContent = `${label} added. Drag it to position it.`;
+    try {
+      replaceLocalDraft([...objects, item], item.id); render();
+      q("#templateHint").textContent = `${label} added. Drag it to position it.`;
+    } catch (error) { q("#templateHint").textContent = `Object not added: ${error.message}. Previous draft preserved.`; }
   });
-  q("#templateDelete").addEventListener("click", () => { if (!selected()) return; objects = objects.filter((item) => item.id !== selectedId); selectedId = null; save(); render(); });
-  q("#templateReset").addEventListener("click", () => { objects = []; selectedId = null; save(); render(); q("#templateHint").textContent = "Draft reset. No backend or hardware state was changed."; });
+  q("#templateDelete").addEventListener("click", () => {
+    if (!selected()) return;
+    try { replaceLocalDraft(objects.filter((item) => item.id !== selectedId), null); render(); }
+    catch (error) { q("#templateHint").textContent = `Object not deleted: ${error.message}. Previous draft preserved.`; }
+  });
+  q("#templateReset").addEventListener("click", () => {
+    try {
+      replaceLocalDraft([], null); render();
+      q("#templateHint").textContent = "Draft reset. No backend or hardware state was changed.";
+    } catch (error) { q("#templateHint").textContent = `Draft not reset: ${error.message}. Previous draft preserved.`; }
+  });
   q("#templateExport").addEventListener("click", () => {
     const blob = new Blob([JSON.stringify({version: 1, name: q("#templateName").value, objects}, null, 2)], {type: "application/json"});
     const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "stagemesh-stage-template.json"; link.click(); URL.revokeObjectURL(link.href);
@@ -234,7 +261,7 @@
     try {
       const imported = validateTemplateDocument(JSON.parse(await file.text()), {allowObjectDefaults: true, fallbackName: q("#templateName").value});
       // Persist the complete validated replacement before changing the visible draft.
-      localStorage.setItem(storageKey, JSON.stringify(imported));
+      writeDraft(imported.objects, imported.name);
       objects = imported.objects; selectedId = null; q("#templateName").value = imported.name;
       if (serverTemplateId) serverDirty = true;
       render(); q("#templateHint").textContent = "Template imported into the local draft.";
