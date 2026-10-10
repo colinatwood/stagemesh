@@ -44,6 +44,20 @@
     return {version: 1, name: parsed.name === undefined ? fallbackName : parsed.name, objects: normalized};
   };
   let persistedName = q("#templateName").value;
+  let pendingAction = null;
+  const assertEditorAvailable = (action) => {
+    if (drag) throw new Error(`finish or cancel the active object move before ${action}`);
+    if (pendingAction) throw new Error(`wait for ${pendingAction.action} to finish before ${action}`);
+  };
+  const beginAsyncAction = (action) => {
+    assertEditorAvailable(action);
+    const operation = {action};
+    pendingAction = operation;
+    return operation;
+  };
+  const endAsyncAction = (operation) => {
+    if (pendingAction === operation) pendingAction = null;
+  };
   const writeDraft = (nextObjects = objects, nextName = q("#templateName").value) => {
     if (typeof nextName !== "string" || !nextName.trim() || nextName.length > 128) throw new Error("template name must contain 1–128 characters");
     localStorage.setItem(storageKey, JSON.stringify({version: 1, name: nextName, objects: nextObjects}));
@@ -93,43 +107,53 @@
     return data.templates || [];
   };
   const loadSaved = async (templateId) => {
-    const item = await api("GET", "/api/v1/templates/" + encodeURIComponent(templateId));
-    writeDraft(item.objects, item.name);
-    serverTemplateId = item.templateId; serverRevision = item.revision; serverDirty = false;
-    objects = item.objects; selectedId = null; q("#templateName").value = item.name;
-    render();
-    q("#templateDeleteServer").disabled = false;
-    q("#templateHint").textContent = "Loaded server revision " + serverRevision + ". Local edits must be saved as a new revision.";
+    const action = "server load";
+    const operation = beginAsyncAction(action);
+    try {
+      const item = await api("GET", "/api/v1/templates/" + encodeURIComponent(templateId));
+      writeDraft(item.objects, item.name);
+      serverTemplateId = item.templateId; serverRevision = item.revision; serverDirty = false;
+      objects = item.objects; selectedId = null; q("#templateName").value = item.name;
+      render();
+      q("#templateDeleteServer").disabled = false;
+      q("#templateHint").textContent = "Loaded server revision " + serverRevision + ". Local edits must be saved as a new revision.";
+    } finally { endAsyncAction(operation); }
   };
   const saveServer = async () => {
-    if (drag) throw new Error("finish or cancel the active object move before saving");
-    const nameInput = q("#templateName");
-    const document = {name: nameInput.value.trim() || "Untitled stage template", objects: objects};
-    try { replaceLocalDraft(objects, selectedId, document.name); }
-    catch (error) { nameInput.value = persistedName; throw error; }
-    const item = serverTemplateId
-      ? await api("PATCH", "/api/v1/templates/" + encodeURIComponent(serverTemplateId), {expectedRevision: serverRevision, document: document})
-      : await api("POST", "/api/v1/templates", document);
-    serverTemplateId = item.templateId; serverRevision = item.revision; serverDirty = false;
-    let refreshError = null;
-    try { await refreshSaved(serverTemplateId); }
-    catch (error) { refreshError = error; }
-    render();
-    q("#templateHint").textContent = "Saved revision " + serverRevision + " to the StageMesh server. Physical outputs remain disarmed."
-      + (refreshError ? " Saved-template list refresh failed: " + refreshError.message + "." : "");
+    const action = "server save";
+    const operation = beginAsyncAction(action);
+    try {
+      const nameInput = q("#templateName");
+      const document = {name: nameInput.value.trim() || "Untitled stage template", objects: objects};
+      try { replaceLocalDraft(objects, selectedId, document.name); }
+      catch (error) { nameInput.value = persistedName; throw error; }
+      const item = serverTemplateId
+        ? await api("PATCH", "/api/v1/templates/" + encodeURIComponent(serverTemplateId), {expectedRevision: serverRevision, document: document})
+        : await api("POST", "/api/v1/templates", document);
+      serverTemplateId = item.templateId; serverRevision = item.revision; serverDirty = false;
+      let refreshError = null;
+      try { await refreshSaved(serverTemplateId); }
+      catch (error) { refreshError = error; }
+      render();
+      q("#templateHint").textContent = "Saved revision " + serverRevision + " to the StageMesh server. Physical outputs remain disarmed."
+        + (refreshError ? " Saved-template list refresh failed: " + refreshError.message + "." : "");
+    } finally { endAsyncAction(operation); }
   };
   const deleteServer = async () => {
     if (!serverTemplateId) return;
-    if (drag) throw new Error("finish or cancel the active object move before deleting");
-    await api("DELETE", "/api/v1/templates/" + encodeURIComponent(serverTemplateId), {expectedRevision: serverRevision});
-    serverTemplateId = null; serverRevision = null; serverDirty = false;
-    q("#templateSaved").value = "";
-    let refreshError = null;
-    try { await refreshSaved(""); }
-    catch (error) { refreshError = error; }
-    render();
-    q("#templateHint").textContent = "Saved template deleted. The local draft remains available."
-      + (refreshError ? " Saved-template list refresh failed: " + refreshError.message + "." : "");
+    const action = "server delete";
+    const operation = beginAsyncAction(action);
+    try {
+      await api("DELETE", "/api/v1/templates/" + encodeURIComponent(serverTemplateId), {expectedRevision: serverRevision});
+      serverTemplateId = null; serverRevision = null; serverDirty = false;
+      q("#templateSaved").value = "";
+      let refreshError = null;
+      try { await refreshSaved(""); }
+      catch (error) { refreshError = error; }
+      render();
+      q("#templateHint").textContent = "Saved template deleted. The local draft remains available."
+        + (refreshError ? " Saved-template list refresh failed: " + refreshError.message + "." : "");
+    } finally { endAsyncAction(operation); }
   };
   const renderStatus = () => {
     const stateLabel = serverTemplateId ? "SERVER r" + serverRevision + (serverDirty ? " · UNSAVED" : "") : "LOCAL DRAFT";
@@ -162,7 +186,7 @@
         const direction = {ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1]}[event.key];
         if (!direction || event.ctrlKey || event.altKey || event.metaKey || event.isComposing) return;
         event.preventDefault();
-        if (drag) return;
+        if (drag || pendingAction) return;
         selectObject();
         const step = event.shiftKey ? 10 : 1;
         const previous = {x: item.x, y: item.y};
@@ -180,7 +204,10 @@
       });
       node.innerHTML = `<strong>${esc(item.label)}</strong><small>${esc(item.type)}</small>`;
       node.addEventListener("pointerdown", (event) => {
-        if (drag || (event.button !== undefined && event.button !== 0)) return;
+        if (drag || pendingAction || (event.button !== undefined && event.button !== 0)) {
+          if (pendingAction) q("#templateHint").textContent = `Move not started: wait for ${pendingAction.action} to finish.`;
+          return;
+        }
         event.preventDefault();
         try { node.setPointerCapture(event.pointerId); }
         catch { q("#templateHint").textContent = "Move could not start. Previous position preserved."; return; }
@@ -222,6 +249,7 @@
   const applyPreset = (key) => {
     const preset = presets[key]; if (!preset) return;
     try {
+      assertEditorAvailable("applying a preset");
       replaceLocalDraft(makeObjects(preset), null); render();
       q("#templateHint").textContent = `${preset.name} loaded into the local draft. Customize before export.`;
     } catch (error) { q("#templateHint").textContent = `Preset not applied: ${error.message}. Previous draft preserved.`; }
@@ -240,6 +268,11 @@
     if (drag) {
       q("#templateName").value = persistedName;
       q("#templateHint").textContent = "Name not saved while an object is moving. Finish or cancel the move, then rename.";
+      return;
+    }
+    if (pendingAction) {
+      q("#templateName").value = persistedName;
+      q("#templateHint").textContent = `Name not saved: wait for ${pendingAction.action} to finish. Previous name restored.`;
       return;
     }
     try {
@@ -271,17 +304,19 @@
     const label = q("#templateObjectLabel").value.trim() || "New object";
     const item = {id: `${type}-${Date.now()}-${Math.random().toString(16).slice(2)}`, type, label, x: 50, y: 50};
     try {
+      assertEditorAvailable("adding an object");
       replaceLocalDraft([...objects, item], item.id); render();
       q("#templateHint").textContent = `${label} added. Drag it to position it.`;
     } catch (error) { q("#templateHint").textContent = `Object not added: ${error.message}. Previous draft preserved.`; }
   });
   q("#templateDelete").addEventListener("click", () => {
     if (!selected()) return;
-    try { replaceLocalDraft(objects.filter((item) => item.id !== selectedId), null); render(); }
+    try { assertEditorAvailable("deleting an object"); replaceLocalDraft(objects.filter((item) => item.id !== selectedId), null); render(); }
     catch (error) { q("#templateHint").textContent = `Object not deleted: ${error.message}. Previous draft preserved.`; }
   });
   q("#templateReset").addEventListener("click", () => {
     try {
+      assertEditorAvailable("resetting the draft");
       replaceLocalDraft([], null); render();
       q("#templateHint").textContent = "Draft reset. No backend or hardware state was changed.";
     } catch (error) { q("#templateHint").textContent = `Draft not reset: ${error.message}. Previous draft preserved.`; }
@@ -293,7 +328,10 @@
   q("#templateImportButton").addEventListener("click", () => q("#templateImport").click());
   q("#templateImport").addEventListener("change", async (event) => {
     const file = event.target.files?.[0]; if (!file) return;
+    const action = "template import";
+    let operation = null;
     try {
+      operation = beginAsyncAction(action);
       const imported = validateTemplateDocument(JSON.parse(await file.text()), {allowObjectDefaults: true, fallbackName: q("#templateName").value});
       // Persist the complete validated replacement before changing the visible draft.
       writeDraft(imported.objects, imported.name);
@@ -301,7 +339,7 @@
       if (serverTemplateId) serverDirty = true;
       render(); q("#templateHint").textContent = "Template imported into the local draft.";
     } catch (error) { q("#templateHint").textContent = `Import rejected: ${error.message}`; }
-    event.target.value = "";
+    finally { endAsyncAction(operation); event.target.value = ""; }
   });
   canvas.addEventListener("dragover", (event) => { if (event.dataTransfer.types.includes("application/x-stagemesh-template")) { event.preventDefault(); canvas.classList.add("dropTarget"); } });
   canvas.addEventListener("dragleave", () => canvas.classList.remove("dropTarget"));

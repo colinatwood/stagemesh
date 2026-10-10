@@ -29,7 +29,7 @@ const actionStart=source.indexOf('  q("#templateAdd").addEventListener');
 const actionEnd=source.indexOf('  q("#templateExport").addEventListener',actionStart);
 assert.ok([helperStart,helperEnd,selectedStart,selectedEnd,presetStart,presetEnd,actionStart,actionEnd].every(value=>value>0));
 const code=source.slice(helperStart,helperEnd)+source.slice(selectedStart,selectedEnd)+
-  source.slice(presetStart,presetEnd)+'\nthis.applyPreset=applyPreset;\n'+source.slice(actionStart,actionEnd);
+  source.slice(presetStart,presetEnd)+'\nthis.applyPreset=applyPreset;this.beginAction=beginAsyncAction;this.endAction=endAsyncAction;\n'+source.slice(actionStart,actionEnd);
 const handlers={},name={value:'Original'},hint={},type={value:'marker'},label={value:'Added'};
 const original=[{id:'old',type:'marker',label:'Existing',x:10,y:20}];
 let failWrite=true,disk,renders=0;
@@ -39,7 +39,7 @@ const controls={
   '#templateDelete':{addEventListener:(kind,callback)=>handlers.delete=callback},
   '#templateReset':{addEventListener:(kind,callback)=>handlers.reset=callback}
 };
-const context={objects:original,selectedId:'old',serverTemplateId:'server-old',serverDirty:false,storageKey:'draft',
+const context={objects:original,selectedId:'old',drag:null,serverTemplateId:'server-old',serverDirty:false,storageKey:'draft',
   presets:{club:{name:'Club',objects:[["performer","Lead",50,40]]}},q:selector=>controls[selector],
   localStorage:{setItem:(key,value)=>{assert.equal(key,'draft');if(failWrite)throw Error('disk full');disk=JSON.parse(value);}},
   render:()=>renders++};
@@ -52,7 +52,15 @@ handlers.reset();assert.equal(context.objects,original);assert.equal(context.sel
 assert.match(hint.textContent,/Draft not reset: disk full.*Previous draft preserved/);
 context.applyPreset('club');assert.equal(context.objects,original);assert.equal(context.selectedId,'old');assert.equal(renders,0);
 assert.match(hint.textContent,/Preset not applied: disk full.*Previous draft preserved/);
-failWrite=false;handlers.add();assert.equal(context.objects.length,2);assert.equal(context.objects[0],original[0]);
+failWrite=false;context.drag={id:'old',pointerId:4,x:10,y:20};
+handlers.add();handlers.delete();handlers.reset();context.applyPreset('club');
+assert.equal(context.objects,original);assert.equal(renders,0);assert.equal(disk,undefined);
+assert.match(hint.textContent,/finish or cancel the active object move/);context.drag=null;
+const operation=context.beginAction('server save');
+handlers.add();handlers.delete();handlers.reset();context.applyPreset('club');
+assert.equal(context.objects,original);assert.equal(renders,0);assert.equal(disk,undefined);
+assert.match(hint.textContent,/wait for server save to finish/);context.endAction(operation);
+handlers.add();assert.equal(context.objects.length,2);assert.equal(context.objects[0],original[0]);
 assert.equal(context.selectedId,context.objects[1].id);assert.equal(context.serverDirty,true);assert.equal(renders,1);
 assert.equal(disk.objects.length,2);assert.equal(disk.name,'Original');
 handlers.delete();assert.equal(context.objects.length,1);assert.equal(context.objects[0],original[0]);assert.equal(context.selectedId,null);assert.equal(renders,2);
@@ -75,7 +83,7 @@ const code=source.slice(helperStart,helperEnd)+source.slice(loadStart,loadEnd)+'
 const original=[{id:'old',type:'marker',label:'Existing',x:10,y:20}];
 const incoming={templateId:'server-new',revision:3,name:'Server draft',objects:[{id:'new',type:'performer',label:'Lead',x:50,y:40}]};
 const name={value:'Original'},hint={},deleteServer={disabled:true};let failWrite=true,disk,renders=0;
-const context={objects:original,selectedId:'old',serverTemplateId:'server-old',serverRevision:2,serverDirty:false,storageKey:'draft',
+const context={objects:original,selectedId:'old',drag:null,serverTemplateId:'server-old',serverRevision:2,serverDirty:false,storageKey:'draft',
   q:selector=>selector==='#templateName'?name:selector==='#templateHint'?hint:deleteServer,
   localStorage:{setItem:(key,value)=>{assert.equal(key,'draft');if(failWrite)throw Error('disk full');disk=JSON.parse(value);}},
   api:async()=>incoming,render:()=>renders++};
