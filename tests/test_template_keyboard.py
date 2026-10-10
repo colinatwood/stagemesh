@@ -36,13 +36,13 @@ const start=source.indexOf('      node.setAttribute("aria-label"');
 const end=source.indexOf('      canvas.appendChild(node);',start);
 assert.ok(start>0 && end>start);
 const handlers={}, attributes={}, hint={}, del={disabled:true};
-let saved=0, focused=0, capture;
+let saved=0, focused=0, capture, failSave=false;
 const item={id:'lead',label:'Vocal',type:'performer',x:50,y:50};
 const node={dataset:{id:'lead'},style:{},classList:{toggle:()=>{}},setAttribute:(key,value)=>attributes[key]=value,
   addEventListener:(type,callback)=>handlers[type]=callback,focus:()=>focused++,setPointerCapture:id=>capture=id};
 const context={item,node,selectedId:null,drag:null,esc:value=>value,
   canvas:{querySelectorAll:()=>[node],getBoundingClientRect:()=>({left:0,top:0,width:100,height:100})},
-  q:selector=>selector==='#templateDelete'?del:hint,save:()=>saved++,render:()=>{throw Error('must not replace captured/focused node');}};
+  q:selector=>selector==='#templateDelete'?del:hint,save:()=>{if(failSave)throw Error('disk full');saved++;},render:()=>{throw Error('must not replace captured/focused node');}};
 vm.runInNewContext(source.slice(start,end),context);
 handlers.click();assert.equal(context.selectedId,'lead');assert.equal(del.disabled,false);assert.equal(attributes['aria-pressed'],'true');
 function key(key,extra={}) {let prevented=false;handlers.keydown({key,preventDefault:()=>prevented=true,...extra});return prevented;}
@@ -77,10 +77,21 @@ handlers.pointerdown({button:0,pointerId:12,preventDefault(){}});
 handlers.pointermove({pointerId:12,clientX:60,clientY:70});handlers.pointerup({pointerId:12});
 handlers.lostpointercapture({pointerId:12});
 assert.equal(item.x,60);assert.equal(item.y,70);assert.equal(saved,savedAfterCommit+1);
+// A failed keyboard persistence attempt restores both model and rendered position.
+failSave=true;key('ArrowLeft');
+assert.equal(item.x,60);assert.equal(item.y,70);assert.equal(node.style.left,'60%');assert.equal(node.style.top,'70%');
+assert.equal(saved,savedAfterCommit+1);assert.match(hint.textContent,/Move not saved: disk full.*Previous position restored/);
+// A failed pointer persistence attempt also ends the gesture and restores its origin.
+handlers.pointerdown({button:0,pointerId:14,preventDefault(){}});
+handlers.pointermove({pointerId:14,clientX:80,clientY:85});handlers.pointerup({pointerId:14});
+assert.equal(context.drag,null);assert.equal(item.x,60);assert.equal(item.y,70);
+assert.equal(node.style.left,'60%');assert.equal(node.style.top,'70%');assert.equal(saved,savedAfterCommit+1);
+assert.match(hint.textContent,/Move not saved: disk full.*Previous position restored/);
+failSave=false;key('ArrowRight');assert.equal(item.x,61);assert.equal(saved,savedAfterCommit+2);
 // Capture refusal leaves no active gesture or changed position.
 node.setPointerCapture=()=>{throw Error('capture refused');};
 handlers.pointerdown({button:0,pointerId:13,preventDefault(){}});
-assert.equal(context.drag,null);assert.equal(item.x,60);assert.equal(saved,savedAfterCommit+1);
+assert.equal(context.drag,null);assert.equal(item.x,61);assert.equal(saved,savedAfterCommit+2);
 assert.match(hint.textContent,/Move could not start/);
 console.log('template keyboard and pointer behavior passed');
 '''], cwd=ROOT, text=True, capture_output=True)
