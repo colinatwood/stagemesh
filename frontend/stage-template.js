@@ -102,20 +102,34 @@
     q("#templateHint").textContent = "Loaded server revision " + serverRevision + ". Local edits must be saved as a new revision.";
   };
   const saveServer = async () => {
-    const document = {name: q("#templateName").value.trim() || "Untitled stage template", objects: objects};
+    if (drag) throw new Error("finish or cancel the active object move before saving");
+    const nameInput = q("#templateName");
+    const document = {name: nameInput.value.trim() || "Untitled stage template", objects: objects};
+    try { replaceLocalDraft(objects, selectedId, document.name); }
+    catch (error) { nameInput.value = persistedName; throw error; }
     const item = serverTemplateId
       ? await api("PATCH", "/api/v1/templates/" + encodeURIComponent(serverTemplateId), {expectedRevision: serverRevision, document: document})
       : await api("POST", "/api/v1/templates", document);
     serverTemplateId = item.templateId; serverRevision = item.revision; serverDirty = false;
-    await refreshSaved(serverTemplateId); render();
-    q("#templateHint").textContent = "Saved revision " + serverRevision + " to the StageMesh server. Physical outputs remain disarmed.";
+    let refreshError = null;
+    try { await refreshSaved(serverTemplateId); }
+    catch (error) { refreshError = error; }
+    render();
+    q("#templateHint").textContent = "Saved revision " + serverRevision + " to the StageMesh server. Physical outputs remain disarmed."
+      + (refreshError ? " Saved-template list refresh failed: " + refreshError.message + "." : "");
   };
   const deleteServer = async () => {
     if (!serverTemplateId) return;
+    if (drag) throw new Error("finish or cancel the active object move before deleting");
     await api("DELETE", "/api/v1/templates/" + encodeURIComponent(serverTemplateId), {expectedRevision: serverRevision});
     serverTemplateId = null; serverRevision = null; serverDirty = false;
-    await refreshSaved(""); render();
-    q("#templateHint").textContent = "Saved template deleted. The local draft remains available.";
+    q("#templateSaved").value = "";
+    let refreshError = null;
+    try { await refreshSaved(""); }
+    catch (error) { refreshError = error; }
+    render();
+    q("#templateHint").textContent = "Saved template deleted. The local draft remains available."
+      + (refreshError ? " Saved-template list refresh failed: " + refreshError.message + "." : "");
   };
   const renderStatus = () => {
     const stateLabel = serverTemplateId ? "SERVER r" + serverRevision + (serverDirty ? " · UNSAVED" : "") : "LOCAL DRAFT";
