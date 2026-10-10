@@ -19,7 +19,7 @@ class TemplateLocalMutationTests(unittest.TestCase):
         self.run_node(r'''
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const source=fs.readFileSync('frontend/stage-template.js','utf8');
-const helperStart=source.indexOf('  const writeDraft =');
+const helperStart=source.indexOf('  let persistedName =');
 const helperEnd=source.indexOf('  const load =',helperStart);
 const selectedStart=source.indexOf('  const selected =');
 const selectedEnd=source.indexOf('  const api =',selectedStart);
@@ -66,7 +66,7 @@ console.log('local template mutations are persist-first');
         self.run_node(r'''
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const source=fs.readFileSync('frontend/stage-template.js','utf8');
-const helperStart=source.indexOf('  const writeDraft =');
+const helperStart=source.indexOf('  let persistedName =');
 const helperEnd=source.indexOf('  const load =',helperStart);
 const loadStart=source.indexOf('  const loadSaved =');
 const loadEnd=source.indexOf('  const saveServer =',loadStart);

@@ -43,8 +43,11 @@
     });
     return {version: 1, name: parsed.name === undefined ? fallbackName : parsed.name, objects: normalized};
   };
+  let persistedName = q("#templateName").value;
   const writeDraft = (nextObjects = objects, nextName = q("#templateName").value) => {
+    if (typeof nextName !== "string" || !nextName.trim() || nextName.length > 128) throw new Error("template name must contain 1–128 characters");
     localStorage.setItem(storageKey, JSON.stringify({version: 1, name: nextName, objects: nextObjects}));
+    persistedName = nextName;
   };
   const save = () => {
     writeDraft();
@@ -62,6 +65,7 @@
       const parsed = validateTemplateDocument(JSON.parse(serialized), {fallbackName: q("#templateName").value});
       objects = parsed.objects;
       q("#templateName").value = parsed.name;
+      persistedName = parsed.name;
     } catch (error) {
       objects = [];
       q("#templateHint").textContent = `Local draft rejected: ${error.message}. Stored data was preserved for recovery.`;
@@ -113,13 +117,16 @@
     await refreshSaved(""); render();
     q("#templateHint").textContent = "Saved template deleted. The local draft remains available.";
   };
+  const renderStatus = () => {
+    const stateLabel = serverTemplateId ? "SERVER r" + serverRevision + (serverDirty ? " · UNSAVED" : "") : "LOCAL DRAFT";
+    q("#templateStatus").textContent = objects.length + " OBJECT" + (objects.length === 1 ? "" : "S") + " · " + stateLabel;
+  };
   const render = () => {
     canvas.querySelectorAll(".templateObject").forEach((node) => node.remove());
     q("#templateDelete").disabled = !selected();
     q("#templateLoadSaved").disabled = !q("#templateSaved").value;
     q("#templateDeleteServer").disabled = !serverTemplateId || q("#templateSaved").value !== serverTemplateId;
-    const stateLabel = serverTemplateId ? "SERVER r" + serverRevision + (serverDirty ? " · UNSAVED" : "") : "LOCAL DRAFT";
-    q("#templateStatus").textContent = objects.length + " OBJECT" + (objects.length === 1 ? "" : "S") + " · " + stateLabel;
+    renderStatus();
     const empty = q(".templateEmpty");
     if (empty) empty.hidden = objects.length > 0;
     objects.forEach((item) => {
@@ -215,6 +222,20 @@
       host.appendChild(card);
     });
   };
+  q("#templateName").addEventListener("change", () => {
+    if (drag) {
+      q("#templateName").value = persistedName;
+      q("#templateHint").textContent = "Name not saved while an object is moving. Finish or cancel the move, then rename.";
+      return;
+    }
+    try {
+      save(); renderStatus();
+      q("#templateHint").textContent = "Template name saved to this local draft. Save to the server to create a new revision.";
+    } catch (error) {
+      q("#templateName").value = persistedName;
+      q("#templateHint").textContent = `Name not saved: ${error.message}. Previous name restored.`;
+    }
+  });
   q("#templateSaved").addEventListener("change", () => {
     q("#templateLoadSaved").disabled = !q("#templateSaved").value;
     q("#templateDeleteServer").disabled = !serverTemplateId || q("#templateSaved").value !== serverTemplateId;
