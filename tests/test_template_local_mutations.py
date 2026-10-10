@@ -19,7 +19,7 @@ class TemplateLocalMutationTests(unittest.TestCase):
         self.run_node(r'''
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const source=fs.readFileSync('frontend/stage-template.js','utf8');
-const helperStart=source.indexOf('  let persistedName =');
+const helperStart=source.indexOf('  const validateTemplateDocument =');
 const helperEnd=source.indexOf('  const load =',helperStart);
 const selectedStart=source.indexOf('  const selected =');
 const selectedEnd=source.indexOf('  const api =',selectedStart);
@@ -74,14 +74,14 @@ console.log('local template mutations are persist-first');
         self.run_node(r'''
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const source=fs.readFileSync('frontend/stage-template.js','utf8');
-const helperStart=source.indexOf('  let persistedName =');
+const helperStart=source.indexOf('  const validateTemplateDocument =');
 const helperEnd=source.indexOf('  const load =',helperStart);
 const loadStart=source.indexOf('  const loadSaved =');
 const loadEnd=source.indexOf('  const saveServer =',loadStart);
 assert.ok(helperStart>0&&helperEnd>helperStart&&loadStart>0&&loadEnd>loadStart);
 const code=source.slice(helperStart,helperEnd)+source.slice(loadStart,loadEnd)+'\nthis.loadSaved=loadSaved;';
 const original=[{id:'old',type:'marker',label:'Existing',x:10,y:20}];
-const incoming={templateId:'server-new',revision:3,name:'Server draft',objects:[{id:'new',type:'performer',label:'Lead',x:50,y:40}]};
+let incoming={version:1,templateId:'server-new',revision:3,name:'Server draft',objects:[{id:'new',type:'performer',label:'Lead',x:50,y:40}]};
 const name={value:'Original'},hint={},deleteServer={disabled:true};let failWrite=true,disk,renders=0;
 const context={objects:original,selectedId:'old',drag:null,serverTemplateId:'server-old',serverRevision:2,serverDirty:false,storageKey:'draft',
   q:selector=>selector==='#templateName'?name:selector==='#templateHint'?hint:deleteServer,
@@ -94,10 +94,31 @@ vm.runInNewContext(code,context);
   assert.equal(context.serverRevision,2);assert.equal(context.serverDirty,false);assert.equal(name.value,'Original');
   assert.equal(renders,0);assert.equal(disk,undefined);assert.equal(deleteServer.disabled,true);
   failWrite=false;await context.loadSaved('server-new');
-  assert.equal(context.objects,incoming.objects);assert.equal(context.selectedId,null);assert.equal(context.serverTemplateId,'server-new');
+  assert.equal(JSON.stringify(context.objects),JSON.stringify(incoming.objects));assert.equal(context.selectedId,null);assert.equal(context.serverTemplateId,'server-new');
   assert.equal(context.serverRevision,3);assert.equal(context.serverDirty,false);assert.equal(name.value,'Server draft');
   assert.equal(renders,1);assert.equal(deleteServer.disabled,false);assert.deepEqual(disk,{version:1,name:'Server draft',objects:incoming.objects});
   assert.match(hint.textContent,/Loaded server revision 3/);
+  const committed=JSON.stringify(disk),loadedObjects=context.objects;
+  incoming={...incoming,templateId:'wrong-server'};
+  await assert.rejects(context.loadSaved('server-new'),/server template identity or revision is invalid/);
+  assert.equal(JSON.stringify(disk),committed);assert.equal(context.objects,loadedObjects);assert.equal(renders,1);
+  incoming={version:1,templateId:'server-new',revision:4,name:'Invalid server draft',objects:[
+    {id:'duplicate',type:'marker',label:'One',x:10,y:20},{id:'duplicate',type:'marker',label:'Two',x:30,y:40}
+  ]};
+  await assert.rejects(context.loadSaved('server-new'),/nonempty unique ID required/);
+  assert.equal(JSON.stringify(disk),committed);assert.equal(context.objects,loadedObjects);assert.equal(renders,1);
+  const valid={version:1,templateId:'server-new',revision:4,name:'Updated server',objects:[{id:'new',type:'performer',label:'Lead',x:0,y:100,metadata:{instrument:'bass'}}]};
+  for (const invalid of [
+    {...valid,version:2}, {...valid,revision:0}, {...valid,revision:'4'},
+    {...valid,name:42}, {...valid,objects:[{...valid.objects[0],x:'0'}]}
+  ]) {
+    incoming=invalid;await assert.rejects(context.loadSaved('server-new'));
+    assert.equal(JSON.stringify(disk),committed);assert.equal(context.objects,loadedObjects);
+    assert.equal(context.serverRevision,3);assert.equal(context.serverTemplateId,'server-new');assert.equal(renders,1);
+  }
+  incoming=valid;await context.loadSaved('server-new');
+  assert.equal(context.serverRevision,4);assert.equal(context.objects[0].x,0);
+  assert.equal(context.objects[0].metadata.instrument,'bass');assert.equal(renders,2);
   console.log('server load persists before replacing local draft');
 })().catch(error=>{console.error(error);process.exitCode=1;});
 ''')

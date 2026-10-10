@@ -103,7 +103,7 @@ const run=setup({raw});run.fail(true);run.rename('Refused');
 assert.equal(run.name.value,'Restored');assert.equal(run.disk(),raw);assert.equal(run.writes(),0);
 run.fail(false);run.context.replaceDraft(run.original,null,'Imported');
 run.fail(true);run.rename('Refused again');assert.equal(run.name.value,'Imported');
-run.fail(false);run.incoming({templateId:'server-new',revision:5,name:'Loaded server',objects:run.original});
+run.fail(false);run.incoming({version:1,templateId:'server-new',revision:5,name:'Loaded server',objects:run.original});
 (async()=>{
   await run.context.loadSaved('server-new');
   const serverDisk=run.disk();run.fail(true);run.rename('Refused server rename');
