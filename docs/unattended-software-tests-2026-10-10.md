@@ -1,6 +1,6 @@
 # Unattended software checks — 2026-10-10
 
-Base: current `main` at `63dfbe7caf378d205d8b00a1004548a97dd9caa0` (PR #151), plus the template interchange changes in this pull request. This session runs in a managed Linux x86-64 container, Python 3.12.14. It has no connection to the operator's Windows PC or attached devices. Source-native tests use pinned CMake 4.4.3; the frozen runtime uses pinned PyInstaller 6.16.0. Tool installation and builds use temporary directories.
+Base: current `main` at `ccd24c3eaaca30afeee0db2729e6d85fb27b596d` (PR #152). PR #152 exact head `6810e088408f2f5af59a85dc4bc2409657b2b421` passed all four workflows/13 jobs, including all 827 Python tests on hosted Linux without skips. This session runs in a managed Linux x86-64 container, Python 3.12.14. It has no connection to the operator's Windows PC or attached devices. Source-native tests use pinned CMake 4.4.3; the frozen runtime uses pinned PyInstaller 6.16.0. Tool installation and builds use temporary directories.
 
 ## Results
 
@@ -23,6 +23,9 @@ Base: current `main` at `63dfbe7caf378d205d8b00a1004548a97dd9caa0` (PR #151), pl
 | Driver-catalog date audit, as of 2026-10-10 | **Passed: 5 current, 0 stale/invalid/unreviewed** | Checks the repository's review metadata; does not refresh vendor claims or qualify installed drivers. |
 | Rendered Chromium workflow/accessibility-tree reference | **Blocked** | No Chromium executable. Playwright installed, but Chromium download failed with a truncated/non-ZIP archive. No rendered-browser or assistive-technology pass is claimed. |
 | Live HTTP workload, default settings | **Failed twice** | Rate-policy model and normal burst passed; neither abuse burst observed a 429. Details below. |
+| Live HTTP workload, 3,200-request extension | **Failed** | Observed 2,002 HTTP 429 responses, but one request timed out; the transport error correctly kept the overall workload failed. |
+| Live HTTP workload, bounded persistent-client follow-up | **Passed twice** | Two sequential 1,200-request observations produced 632 and 672 HTTP 429 responses with no transport errors. The production rate policy was unchanged. |
+| Follow-up complete Python discovery | **830 passed; 24 skipped** | Includes three bounded-client workload regressions. Environment-dependent skips remain explicit; exact-head hosted CI must supply its separate native/package matrix. |
 
 ## HTTP evidence requiring follow-up
 
@@ -33,7 +36,18 @@ Both executions used the unchanged command `python scripts/stagemesh-http-worklo
 | Initial | 120/120 HTTP 200 | 43.863 ms | 320/320 HTTP 200 | 1,079.247 ms | 0 |
 | Repeat | 120/120 HTTP 200 | 46.865 ms | 320/320 HTTP 200 | 1,132.946 ms | 0 |
 
-These results do not establish why the live burst failed. Reproduce on a suitable host and inspect arrival timing/rate-limiter integration before accepting a fresh live rate-policy qualification. Historical SEC-037 evidence is retained, but this run supplies **no new live abuse qualification**. Neither workload run qualifies physical controllers or deployed LAN service. The rate policy and fail-closed criteria were not changed to obtain a pass.
+The 3,200-request extension then observed 2,002 HTTP 429 responses and 1,197 HTTP 200 responses, but one timeout kept the workload failed. That result confirms that throttling can occur on this loopback host, but it is not a passing observation because every request must complete with an expected status.
+
+Investigation found an environment-sensitive measurement flaw in the original client. It opened a fresh TCP connection for every request, so accept/connect latency controlled the offered rate. The production peer policy has a 200-request burst and refills at 100 requests per second; on a slow host, a 320-request sequence can therefore complete without draining the bucket even though its nominal concurrency is high. The two zero-429 runs remain valid failed observations, but they do not establish a product limiter defect.
+
+The follow-up changes only the qualification client: one synchronized persistent connection per bounded worker, eight abusive workers, and 1,200 requests by default. It also records duration, completed-request rate, observation status, and the fact that the production policy is unchanged. Two clean sequential executions completed as follows:
+
+| Run | Normal burst | Normal p95 | Abuse burst | Abuse p95 | Throttled | Transport errors |
+| --- | --- | --- | --- | --- | --- | --- |
+| Persistent 1 | 120/120 HTTP 200 | 50.146 ms | 568 HTTP 200; 632 HTTP 429 | 49.325 ms | 632 | 0 |
+| Persistent 2 | 120/120 HTTP 200 | 51.214 ms | 528 HTTP 200; 672 HTTP 429 | 48.008 ms | 672 | 0 |
+
+These are passing loopback software observations, not a universal throughput promise or deployed-service qualification. They do not qualify physical controllers, reverse proxies, LAN behavior, or target hardware. The rate policy and fail-closed criteria were not weakened to obtain a pass.
 
 ## Reproduction
 

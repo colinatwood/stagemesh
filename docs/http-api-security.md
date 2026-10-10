@@ -49,6 +49,8 @@ same-origin resource policy, no-referrer and a disabled browser-permissions poli
 
 The same tool launches the real StageMesh loopback bridge and runs a mixed normal burst plus a separate abusive burst. The checkpoint reference passed 120/120 normal requests with 22.903 ms p95 latency. A 320-request abusive burst produced 33 explicit `429` responses and no unexpected status codes. The measured timing is host/load dependent and is preserved as reference evidence rather than a universal performance promise.
 
+The current default live observation uses eight synchronized persistent abusive clients for 1,200 requests and records the observation duration and completed-request rate. Reusing bounded connections avoids making the offered rate primarily a measurement of host TCP setup latency. The production limiter remains unchanged. A transport error still fails the observation even when throttling is seen, and at least one explicit HTTP 429 is required. See `unattended-software-tests-2026-10-10.md` for the preserved failed fresh-connection runs and the later bounded-client evidence.
+
 The report always marks `physicalControllerQualified=false` and `deployedLanQualified=false`. It does not replace end-to-end controller timing/reconnect measurement, proxy/IdP/firewall deployment qualification, or named-hardware evidence.
 
 ### Astra checkpoint 37: bounded expensive operation admission
