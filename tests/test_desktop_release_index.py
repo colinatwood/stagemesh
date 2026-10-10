@@ -245,7 +245,7 @@ class DesktopReleaseIndexTests(unittest.TestCase):
         )
         self.assertIn("release-candidate:", workflow)
         self.assertIn("needs: build", workflow)
-        self.assertIn("actions/download-artifact@v4", workflow)
+        self.assertRegex(workflow, r"actions/download-artifact@[0-9a-f]{40}")
         self.assertIn("include-hidden-files: true", workflow)
         self.assertIn("scripts/desktop-release-index.py", workflow)
         self.assertIn("stagemesh-desktop-release-index-${{ github.sha }}", workflow)
@@ -259,7 +259,7 @@ class DesktopReleaseIndexTests(unittest.TestCase):
         )
         release_job = workflow.split("  release-candidate:", maxsplit=1)[1]
         self.assertIn("Attest release-candidate index", release_job)
-        self.assertIn("uses: actions/attest@v4", release_job)
+        self.assertRegex(release_job, r"uses: actions/attest@[0-9a-f]{40}")
         self.assertIn("subject-path: desktop-release-index.json", release_job)
         self.assertIn("id-token: write", release_job)
         self.assertIn("attestations: write", release_job)

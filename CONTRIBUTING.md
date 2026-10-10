@@ -45,6 +45,8 @@ silent endpoints, or mocked peripherals as physical qualification.
 - Do not add credentials, signing material, copyrighted media, proprietary SDKs,
   or licensed plugin binaries.
 - Record tests actually run and any expected skips or unavailable platforms.
+- Pin third-party GitHub Actions to full commit SHAs. Dependabot proposes updates;
+  keep the readable major-version comment beside each pin.
 - Call out changes that need clean-host, accessibility, hardware, legal, or
   signing review instead of asserting those reviews passed.
 
