@@ -223,6 +223,11 @@
     });
   };
   q("#templateName").addEventListener("change", () => {
+    if (drag) {
+      q("#templateName").value = persistedName;
+      q("#templateHint").textContent = "Name not saved while an object is moving. Finish or cancel the move, then rename.";
+      return;
+    }
     try {
       save(); renderStatus();
       q("#templateHint").textContent = "Template name saved to this local draft. Save to the server to create a new revision.";
