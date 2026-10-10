@@ -1,19 +1,4 @@
-Warning: truncated output (original token count: 42735)
-Total output lines: 1716
-
 # Changelog
-
-## Desktop WebView least authority — 2026-10-10
-
-- Disable the unused global Tauri JavaScript API and remove the unused desktop
-  invoke command instead of exposing a privileged bridge to WebView content.
-- Add an explicit restrictive CSP for bundled fallback assets while preserving
-  the runtime-served loopback UI's independent HTTP CSP.
-- Make desktop release readiness fail closed if the global API, remote-domain
-  IPC, or bundled-content CSP boundary regresses.
-
-This is software hardening only. It does not establish signing, clean-host,
-accessibility, physical hardware, or external release qualification.
 
 ## StageMesh identity migration — 2026-10-06
 
@@ -914,7 +899,172 @@ qualification, physical audio/MIDI support, or audible/recording quality.
   checks with a 64 MiB reserve before copying audio.
 - Reject growth beyond reserved source sizes; release reservations on cleanup
   and preparation failure. Repeated source/hash pairs share one copy.
-- Fixed repeated region references changing s…2735 tokens truncated…e sampler preload, capture/dropout and native MIDI execution state.
+- Fixed repeated region references changing snapshot lookup keys.
+- Added budget exhaustion/reuse, low-disk and failed-hash tests.
+
+## Developer-alpha media snapshot checkpoint
+
+- Playback and export now copy plan audio sources into operation-owned temporary
+  storage and verify the copied bytes against declared hashes before use.
+- Reads use those copies throughout the operation; export receipts include hashes
+  calculated for legacy unhashed sources too. Copies are removed on completion,
+  startup failure or cancellation after the playback worker exits.
+- Added source-replacement tests proving stable export output and playback samples.
+- Whole-file snapshots add startup time and temporary disk usage; hardware and
+  visual browser qualification remain open.
+
+## Developer-alpha playback/export integrity checkpoint
+
+- Verify declared audio content hashes before arrangement start or offline export,
+  using bounded reads and checking each source/hash pair once per plan.
+- Changed media fails before stopping playback or replacing an existing export.
+- Extended native-backed restart coverage for changed-media playback/export rejection.
+- Visual browser validation was blocked by local-URL access in the available browser.
+
+## Developer-alpha recovery HTTP checkpoint
+
+- Added a live local HTTP acceptance test for discovery, recovery, preserved source
+  bytes, WAV output, invalid paths and serving the recovery panel script.
+- Fixed missing partial files closing the HTTP connection: recovery now returns
+  a JSON validation error prompting a list refresh.
+- Visual browser and hardware qualification remain open.
+
+## Developer-alpha recovery panel checkpoint
+
+- Added interrupted-recording discovery and a recover-copy panel in the DAW.
+- Candidate scans exclude symlinks, stop at 1,000 directory entries and report
+  truncation; pending capture blocks discovery and recovery.
+- Panel displays completion/errors and prevents duplicate in-flight requests.
+- Added candidate-list and JavaScript DOM-harness workflow tests. Full visual
+  browser qualification remains open.
+
+## Developer-alpha partial recording recovery checkpoint
+
+- Added Linux recovery for fixed-header stereo 32-bit PCM / 192 kHz partial spools.
+  Copies complete on-disk frames into a separate WAV without replacing the source.
+- Recovery reports trailing-byte truncation and unverified continuity; refuses
+  unsupported headers, symlinks, non-regular files and pending runtime capture.
+- Exposed recover through the existing capture API without requiring a native engine.
+- Added stale-header, source-preservation, path and pending-capture tests.
+
+## Developer-alpha native recording fence checkpoint
+
+- Added an atomic recording writer gate. Disarm closes admission and waits on the
+  control thread for an admitted submit to publish before returning.
+- Submit never waits for the gate; arm waits for disarm before resetting queue
+  indices and advancing the recording generation.
+- Added 100 concurrent disarm/rearm test rounds checking stable submission counts,
+  drained tail contents and old-generation rejection.
+- Physical input shutdown latency and partial-file recovery remain unqualified.
+
+## Developer-alpha capture tail checkpoint
+
+- Finish now disarms and drains available queued/in-flight blocks before finalizing;
+  abort continues to cancel immediately. Empty-queue observation is reported as
+  queueDrained. Drain work is bounded to 65 blocks after finish is requested.
+- Added deterministic queued-tail coverage and updated stalled-finish recovery tests.
+- Native callback/disarm fencing and partial-file recovery remain open.
+
+## Developer-alpha capture failure checkpoint
+
+- Capture worker exceptions now produce a failed state, preserve error evidence,
+  request disarming, and prevent finalization as a successful take.
+- Only native empty-queue responses are retryable; other input errors terminate
+  capture. Disarm failures are reported separately without claiming disarm success.
+- Validate finite samples, channel lengths and PCM byte/frame consistency.
+- Added injected disk, native-input and malformed-data regression coverage.
+
+## Developer-alpha capture shutdown checkpoint
+
+- Serialize capture start/finish/abort and require pending takes, including
+  completed punch takes, to be finalized or aborted before starting another.
+- Disarm capture before waiting for the worker. On timeout, retain worker and spool,
+  report the failure, and block take publication/deletion until the worker exits.
+- Discard blocks returned after cancellation; continue native runtime cleanup
+  before reporting capture shutdown errors.
+- Added stalled finish/abort, completed punch preservation and cleanup tests.
+
+## Developer-alpha producer shutdown checkpoint
+
+- Serialize arrangement start/stop operations and retain stalled workers on join
+  timeout. Restart remains blocked until the old worker exits.
+- Recheck cancellation after media reads and native status calls, and stop native
+  playback when a cancelled worker exits.
+- Runtime close completes native cleanup before reporting a producer stop error.
+- Added stalled-reader recovery and runtime-cleanup regression tests.
+
+## Developer-alpha loop production checkpoint
+
+- Routed runtime loop control through the arrangement producer so it supplies
+  repeated blocks instead of merely setting the native loop range.
+- Loop control restarts at the requested beginning. Loop lengths must be multiples
+  of 256 canonical frames; invalid ranges are rejected before stopping playback.
+- Added native-backed acceptance coverage for repeated production, invalid-range
+  preservation and stopping/joining the producer. Audible loop timing remains unqualified.
+
+## Developer-alpha managed import checkpoint
+
+- Fixed the native protocol test's automation wait to observe the requested
+  parameter, rather than an unrelated parameter registered by an earlier test step.
+- Reject corrupted existing managed objects during deduplicated import.
+- Verify copied bytes before publication; reject source changes during copying
+  and remove incomplete temporary objects.
+- Extended runtime acceptance through managed import, original-file removal,
+  reopen, native arrangement queue submission and non-silent 32-bit PCM export
+  at 192 kHz. This does not qualify physical playback or live recording.
+
+## Developer-alpha session restart checkpoint
+
+- Added runtime acceptance coverage for save, native MIDI Learn, close/reopen,
+  restored sampler preload, render planning and native sample submission.
+- Added changed-media restart coverage: retain the mapping without promoting an
+  invalid sample into native execution. Physical outputs remain disarmed.
+- Browser import, audible playback, looping and recording qualification remain open.
+
+## Developer-alpha packaging checkpoint
+
+- Fixed installed qualification-helper backend discovery.
+- Added custom build-directory selection and fail-before-write checks for unsupported prefixes, relative staging paths and missing engines.
+- Added staged installation/reinstallation checks for helper execution, frontend presence, loopback service configuration and user-data preservation. No services are enabled by installation.
+
+## Core 5.6.2 — Delay Graph Control Contract Hardening
+
+- Mark delay-graph status as a control-thread prototype with no connected audio graph or verified live alignment; normalize native numeric and boolean status fields for JSON clients.
+- Serialize HTTP-side control and enforce primary/witness authority, reject pending-plan overwrite, enforce native 16-path capacity, and reject ambiguous IDs or non-integer latencies.
+- Derive activation time from platform transport rather than a client-supplied future timestamp. This is still explicit control-thread activation, not scheduled callback activation.
+- Concurrent native bank reclamation, block-wide snapshots and actual processing-path integration remain unfinished. ABI and engine handshake are unchanged.
+
+## Core 5.6.1 — Preserve Essential Effects Under Overload
+
+- Removed automatic whole-chain bypass from the output callback. Effects have no optional-work classification or latency-preserving transition contract, so they must not be silently removed under load.
+- Kept deadline, non-finite sample and queue-pressure telemetry. Exposed advisory-only overload policy and disabled automatic effect shedding in runtime status.
+- Added source-level integration regression guards. Selective shedding, hardware qualification and debug allocator/lock probes remain incomplete; ABI 1.63 and handshake 4.6 are unchanged.
+
+## Core 5.6 — Real-Time Audit & Overload Shedding
+
+- Added allocation-free per-output callback auditing for duration/deadline misses, consecutive misses, maximum duration, non-finite samples, input-ring pressure, optional-work shedding and recovery.
+- Sanitized non-finite callback output to silence with explicit evidence instead of allowing invalid samples downstream.
+- Added deterministic overload policy: optional effect processing sheds after three consecutive misses, escalates after ten and resumes after 128 on-time callbacks. Audio routing, transport, sampler and playback remain protected.
+- Added native/Python/HTTP status surfaces. Engine handshake is 4.6 and public C ABI is 1.63 with `org.upp.core.realtime-audit/1`; added one schema. Auditing never arms output.
+
+## Core 5.5 — Atomic Plugin Delay Graph Generations
+
+- Added double-buffered native plugin delay graphs for up to 16 dry, send and parallel paths with 65,536 frames of bounded compensation.
+- Latency/topology changes prepare completely in the inactive bank and publish atomically at an explicit Show-Time boundary; callbacks cannot observe partial alignment.
+- Added stale-generation rejection plus active/prepared generation, maximum latency, swap and rejection telemetry.
+- Added authenticated native/Python/HTTP controls. Engine handshake is 4.5 and public C ABI is 1.62 with `org.upp.audio.plugin-delay-graph/1`; added one schema. No operation arms output.
+
+## Core 5.4 — Replaceable Streaming Sample Banks
+
+- Added 16 replaceable banks of up to 64 long audio-file entries, removing the 65,536-frame native preload ceiling for performance clips.
+- Reused the generation-fenced 256-frame arrangement producer and native playback queue; hashing, file access, decoding and conversion remain outside the audio callback.
+- Bank replacement advances a generation and preserves stable clip-based mappings. Registration and every trigger verify media content identity, so missing or changed media fails closed until relink/replacement.
+- Added a bounded 256-action replay window so retried triggers cannot restart or double-fire a long clip.
+- Advanced public C ABI to 1.61 with `org.upp.audio.streaming-sample-bank/1`; added one schema. Physical output arming remains separate.
+
+## Core 5.3 — Core-Authoritative Stage Launcher
+
+- Added a responsive stage launcher projection over authoritative transport, native sampler preload, capture/dropout and native MIDI execution state.
 - Added large low-error Play/Pause, Stop and eight bounded sample-pad controls with shared touch, keyboard and MIDI telemetry. Space, Escape and keys 1–8 cover the critical keyboard flow without precision gestures.
 - Launcher actions carry bounded replay-safe action IDs. Repeated delivery returns current state without toggling transport or retriggering a sample.
 - Sample pads expose only verified preloaded native assets and dispatch into the native sampler Show Event path. The browser does not own playback timing or sample voices.
