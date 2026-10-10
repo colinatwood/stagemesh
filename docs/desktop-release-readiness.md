@@ -22,7 +22,10 @@ python scripts/desktop-release-readiness.py \
 The check fails closed for mismatched desktop versions, a tag that does not
 match those versions, missing `LICENSE` or `THIRD_PARTY_NOTICES.md`, malformed
 artifact metadata, unsafe manifest paths, or a manifest that claims clean-host
-or physical-hardware qualification. A passing result means only that the
+or physical-hardware qualification. It also requires a least-authority Tauri
+shell: the global JavaScript API and remote-domain IPC grants remain disabled,
+and bundled fallback assets have an explicit restrictive content security
+policy. A passing result means only that the
 software inputs are internally consistent and suitable for unsigned,
 controlled testing. It does not make a signing, notarization, open-source,
 installer, or hardware claim.

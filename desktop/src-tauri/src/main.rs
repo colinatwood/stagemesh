@@ -2,7 +2,7 @@
 
 mod runtime;
 
-use runtime::{runtime_status, RuntimeSupervisor};
+use runtime::RuntimeSupervisor;
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 
 fn main() {
@@ -42,7 +42,6 @@ fn main() {
                 window.state::<RuntimeSupervisor>().shutdown();
             }
         })
-        .invoke_handler(tauri::generate_handler![runtime_status])
         .run(tauri::generate_context!())
         .expect("error while running StageMesh desktop application");
 }

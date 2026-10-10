@@ -47,6 +47,36 @@ class DesktopReleaseReadinessTests(unittest.TestCase):
         self.assertFalse(report["readyForPublication"])
         self.assertEqual(report["version"], "0.1.0")
         self.assertEqual(report["windowsWebViewInstallMode"], "offlineInstaller")
+        self.assertEqual(report["desktopWebviewSecurity"], {
+            "globalTauriApiDisabled": True,
+            "bundledContentSecurityPolicyConfigured": True,
+            "remoteDomainIpcAccessDisabled": True,
+        })
+
+    def test_desktop_webview_security_fails_closed(self):
+        mutations = (
+            ("global Tauri API", lambda config: config["app"].update(withGlobalTauri=True)),
+            ("bundled-content CSP", lambda config: config["app"]["security"].update(csp=None)),
+            (
+                "remote-domain IPC",
+                lambda config: config["app"]["security"].update(
+                    dangerousRemoteDomainIpcAccess=[{"scheme": "https", "domain": "example.com"}]
+                ),
+            ),
+        )
+        for expected, mutate in mutations:
+            with self.subTest(expected=expected), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                self.fixture(root)
+                config_path = root / "desktop" / "src-tauri" / "tauri.conf.json"
+                config = json.loads(config_path.read_text(encoding="utf-8"))
+                mutate(config)
+                config_path.write_text(json.dumps(config), encoding="utf-8")
+
+                report = load_script().evaluate(root, "v0.1.0")
+
+                self.assertFalse(report["passed"])
+                self.assertIn(expected, " ".join(report["blockers"]))
 
     def test_windows_readiness_rejects_network_dependent_webview_bootstrapper(self):
         with tempfile.TemporaryDirectory() as temporary:

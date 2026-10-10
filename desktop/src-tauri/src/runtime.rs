@@ -1,4 +1,3 @@
-use serde::Serialize;
 use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream};
@@ -12,8 +11,7 @@ use tauri::Manager;
 const DATA_DIRECTORIES: &[&str] = &["sessions", "media", "preferences", "logs", "tmp"];
 const READINESS_TIMEOUT: Duration = Duration::from_secs(15);
 
-#[derive(Clone, Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug)]
 pub struct RuntimeStatus {
     pub state: String,
     pub endpoint: Option<String>,
@@ -166,35 +164,6 @@ impl RuntimeSupervisor {
             .as_ref()
             .ok_or_else(|| "desktop session is unavailable".to_string())?;
         Ok(format!("{endpoint}/app.html#stagemesh-session={token}"))
-    }
-
-    pub fn status(&self) -> Result<RuntimeStatus, String> {
-        let mut inner = self
-            .inner
-            .lock()
-            .map_err(|_| "runtime supervisor lock is poisoned".to_string())?;
-        let child_state = inner
-            .child
-            .as_mut()
-            .map(|child| child.try_wait().map_err(|error| error.to_string()));
-        match child_state {
-            Some(Ok(Some(exit))) => {
-                inner.status.state = "exited".into();
-                inner.status.pid = None;
-                inner.status.error = Some(format!("runtime exited with {exit}"));
-                inner.child = None;
-                inner.bootstrap_token = None;
-                inner.api_token = None;
-                inner.port = None;
-            }
-            Some(Ok(None)) => inner.status.state = "running".into(),
-            Some(Err(error)) => {
-                inner.status.state = "unknown".into();
-                inner.status.error = Some(format!("could not inspect runtime: {error}"));
-            }
-            None => {}
-        }
-        Ok(inner.status.clone())
     }
 
     pub fn shutdown(&self) {
@@ -362,11 +331,6 @@ fn request_graceful_shutdown(
         }
     }
     false
-}
-
-#[tauri::command]
-pub fn runtime_status(supervisor: tauri::State<'_, RuntimeSupervisor>) -> Result<RuntimeStatus, String> {
-    supervisor.status()
 }
 
 #[cfg(test)]
