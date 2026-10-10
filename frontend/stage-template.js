@@ -135,10 +135,18 @@
         if (drag) return;
         selectObject();
         const step = event.shiftKey ? 10 : 1;
+        const previous = {x: item.x, y: item.y};
         item.x = Math.max(0, Math.min(100, item.x + direction[0] * step));
         item.y = Math.max(0, Math.min(100, item.y + direction[1] * step));
         node.style.left = `${item.x}%`; node.style.top = `${item.y}%`;
-        save(); q("#templateHint").textContent = `${item.label}: ${item.x}%, ${item.y}%. Position saved to this local draft.`;
+        try {
+          save();
+          q("#templateHint").textContent = `${item.label}: ${item.x}%, ${item.y}%. Position saved to this local draft.`;
+        } catch (error) {
+          item.x = previous.x; item.y = previous.y;
+          node.style.left = `${item.x}%`; node.style.top = `${item.y}%`;
+          q("#templateHint").textContent = `Move not saved: ${error.message}. Previous position restored.`;
+        }
       });
       node.innerHTML = `<strong>${esc(item.label)}</strong><small>${esc(item.type)}</small>`;
       node.addEventListener("pointerdown", (event) => {
@@ -158,7 +166,16 @@
       });
       node.addEventListener("pointerup", (event) => {
         if (drag?.id !== item.id || drag.pointerId !== event.pointerId) return;
-        drag = null; save(); q("#templateHint").textContent = "Position saved to this local draft.";
+        const previous = drag;
+        drag = null;
+        try {
+          save();
+          q("#templateHint").textContent = "Position saved to this local draft.";
+        } catch (error) {
+          item.x = previous.x; item.y = previous.y;
+          node.style.left = `${item.x}%`; node.style.top = `${item.y}%`;
+          q("#templateHint").textContent = `Move not saved: ${error.message}. Previous position restored.`;
+        }
       });
       const cancelMove = (event) => {
         if (drag?.id !== item.id || drag.pointerId !== event.pointerId) return;
