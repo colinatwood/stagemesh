@@ -111,9 +111,15 @@
     const operation = beginAsyncAction(action);
     try {
       const item = await api("GET", "/api/v1/templates/" + encodeURIComponent(templateId));
-      writeDraft(item.objects, item.name);
+      if (!item || typeof item !== "object" || Array.isArray(item)
+          || typeof item.templateId !== "string" || item.templateId !== templateId
+          || !Number.isInteger(item.revision) || item.revision < 1) {
+        throw new Error("server template identity or revision is invalid");
+      }
+      const document = validateTemplateDocument(item);
+      writeDraft(document.objects, document.name);
       serverTemplateId = item.templateId; serverRevision = item.revision; serverDirty = false;
-      objects = item.objects; selectedId = null; q("#templateName").value = item.name;
+      objects = document.objects; selectedId = null; q("#templateName").value = document.name;
       render();
       q("#templateDeleteServer").disabled = false;
       q("#templateHint").textContent = "Loaded server revision " + serverRevision + ". Local edits must be saved as a new revision.";
@@ -322,8 +328,24 @@
     } catch (error) { q("#templateHint").textContent = `Draft not reset: ${error.message}. Previous draft preserved.`; }
   });
   q("#templateExport").addEventListener("click", () => {
-    const blob = new Blob([JSON.stringify({version: 1, name: q("#templateName").value, objects}, null, 2)], {type: "application/json"});
-    const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "stagemesh-stage-template.json"; link.click(); URL.revokeObjectURL(link.href);
+    const nameInput = q("#templateName");
+    let exported;
+    try {
+      assertEditorAvailable("exporting the draft");
+      exported = validateTemplateDocument({version: 1, name: nameInput.value, objects});
+    } catch (error) {
+      q("#templateHint").textContent = `Export not created: ${error.message}. Local draft preserved.`;
+      return;
+    }
+    let href = null;
+    try {
+      const blob = new Blob([JSON.stringify(exported, null, 2)], {type: "application/json"});
+      const link = document.createElement("a");
+      href = URL.createObjectURL(blob); link.href = href; link.download = "stagemesh-stage-template.json"; link.click();
+      q("#templateHint").textContent = "Template export download requested.";
+    } catch (error) {
+      q("#templateHint").textContent = `Export could not start: ${error.message}. Local draft preserved.`;
+    } finally { if (href) URL.revokeObjectURL(href); }
   });
   q("#templateImportButton").addEventListener("click", () => q("#templateImport").click());
   q("#templateImport").addEventListener("change", async (event) => {
