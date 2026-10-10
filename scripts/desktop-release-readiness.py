@@ -27,6 +27,15 @@ WINDOWS_WEBVIEW_INSTALL_MODES = {
     "offline": "offlineInstaller",
     "online": "downloadBootstrapper",
 }
+REQUIRED_DESKTOP_CSP = {
+    "default-src": "'self' customprotocol: asset:",
+    "connect-src": "ipc: http://ipc.localhost",
+    "font-src": "'self'",
+    "img-src": "'self' asset: http://asset.localhost blob: data:",
+    "object-src": "'none'",
+    "script-src": "'self'",
+    "style-src": "'self' 'unsafe-inline'",
+}
 
 
 def _windows_webview_install_mode(
@@ -47,6 +56,39 @@ def _windows_webview_install_mode(
             f"(found {mode!r})"
         )
     return mode, None
+
+
+def _desktop_webview_security(root: Path) -> tuple[dict[str, bool], str | None]:
+    config_path = root / "desktop" / "src-tauri" / "tauri.conf.json"
+    report = {
+        "globalTauriApiDisabled": False,
+        "bundledContentSecurityPolicyConfigured": False,
+        "remoteDomainIpcAccessDisabled": False,
+    }
+    try:
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return report, f"desktop WebView security configuration is invalid: {exc}"
+    app = config.get("app") if isinstance(config, dict) else None
+    if not isinstance(app, dict):
+        return report, "desktop WebView app configuration must be an object"
+    if app.get("withGlobalTauri") is not False:
+        return report, "desktop WebView must keep the global Tauri API disabled"
+    report["globalTauriApiDisabled"] = True
+    security = app.get("security")
+    if not isinstance(security, dict):
+        return report, "desktop WebView security configuration must be an object"
+    remote_ipc = security.get("dangerousRemoteDomainIpcAccess")
+    if remote_ipc not in (None, []):
+        return report, "desktop WebView must not grant remote-domain IPC access"
+    report["remoteDomainIpcAccessDisabled"] = True
+    csp = security.get("csp")
+    if csp != REQUIRED_DESKTOP_CSP:
+        return report, "desktop bundled-content CSP does not match the least-authority policy"
+    report["bundledContentSecurityPolicyConfigured"] = True
+    return report, None
+
+
 DEPENDENCY_INVENTORY_NAME = "desktop-dependencies.json"
 SBOM_NAME = "desktop-sbom.cdx.json"
 REQUIRED_DEPENDENCY_INPUTS = {
@@ -356,6 +398,10 @@ def evaluate(
     if windows_webview_error:
         blockers.append(windows_webview_error)
 
+    desktop_webview_security, desktop_webview_error = _desktop_webview_security(root)
+    if desktop_webview_error:
+        blockers.append(desktop_webview_error)
+
     dependency_report: dict[str, Any] | None = None
     inventory_document: dict[str, Any] | None = None
     if manifest_path is not None and dependency_inventory_path is None:
@@ -444,6 +490,7 @@ def evaluate(
         "manifests": version_report.get("manifests") if version_report else None,
         "distributionFilesPresent": not missing,
         "windowsWebViewInstallMode": windows_webview_mode,
+        "desktopWebviewSecurity": desktop_webview_security,
         "artifactManifest": manifest_report,
         "dependencyInventory": dependency_report,
         "sbom": sbom_report,

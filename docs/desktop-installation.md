@@ -16,6 +16,13 @@ engine. Startup is fail-closed: the desktop window opens only after an
 authenticated loopback health check succeeds. No public network listener is
 created.
 
+The desktop shell does not expose Tauri's global JavaScript API or any invoke
+command to the runtime-served page, and it grants no remote-domain IPC access.
+Tauri's explicit CSP protects bundled fallback assets; the main loopback page
+is independently protected by the runtime's HTTP CSP and session/API-token
+boundary. The desktop release-readiness check fails if these least-authority
+settings regress.
+
 Current CI installers are unsigned and are for development and controlled
 testing only. Public desktop publication remains blocked until the owner
 selects platform signing providers and the Linux package-signing policy,
