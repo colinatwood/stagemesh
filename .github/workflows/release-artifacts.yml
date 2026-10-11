@@ -36,7 +36,7 @@ jobs:
         run: |
           tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner -C dist/rootfs -czf dist/stagemesh-linux.tar.gz .
           sha256sum dist/stagemesh-linux.tar.gz > dist/SHA256SUMS
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: stagemesh-linux-${{ github.sha }}
           path: dist/

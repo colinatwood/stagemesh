@@ -326,7 +326,7 @@ jobs:
           sbom-path: desktop/src-tauri/target/release/bundle/desktop-sbom.cdx.json
 
       - name: Upload installer artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: stagemesh-desktop-${{ matrix.os }}-${{ matrix.distribution_channel }}
           path: desktop/src-tauri/target/release/bundle/
@@ -371,7 +371,7 @@ jobs:
           subject-path: desktop-release-index.json
 
       - name: Upload release-candidate index
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: stagemesh-desktop-release-index-${{ github.sha }}
           path: desktop-release-index.json
