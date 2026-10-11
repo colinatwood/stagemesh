@@ -126,13 +126,13 @@ jobs:
             distribution_channel: offline
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 20
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
 
       - name: Verify pinned desktop Rust dependencies
         run: >-
@@ -142,7 +142,7 @@ jobs:
           --format-version 1
           --no-deps
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.11"
 
@@ -320,13 +320,13 @@ jobs:
           --directory desktop/src-tauri/target/release/bundle
 
       - name: Attest desktop bundle provenance and SBOM
-        uses: actions/attest@v4
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
           subject-checksums: desktop/src-tauri/target/release/bundle/SHA256SUMS
           sbom-path: desktop/src-tauri/target/release/bundle/desktop-sbom.cdx.json
 
       - name: Upload installer artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: stagemesh-desktop-${{ matrix.os }}-${{ matrix.distribution_channel }}
           path: desktop/src-tauri/target/release/bundle/
@@ -344,14 +344,14 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.11"
 
       - name: Download exact platform bundles
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           pattern: stagemesh-desktop-*
           path: release-candidate
@@ -366,12 +366,12 @@ jobs:
           --output desktop-release-index.json
 
       - name: Attest release-candidate index
-        uses: actions/attest@v4
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
           subject-path: desktop-release-index.json
 
       - name: Upload release-candidate index
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: stagemesh-desktop-release-index-${{ github.sha }}
           path: desktop-release-index.json

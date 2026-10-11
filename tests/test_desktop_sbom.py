@@ -141,7 +141,7 @@ class DesktopSbomTests(unittest.TestCase):
     def test_desktop_workflow_attests_bundle_checksums_and_sbom(self):
         workflow = (ROOT / ".github" / "workflows" / "desktop.yml").read_text(encoding="utf-8")
         self.assertIn("Attest desktop bundle provenance and SBOM", workflow)
-        self.assertIn("uses: actions/attest@v4", workflow)
+        self.assertRegex(workflow, r"uses: actions/attest@[0-9a-f]{40}")
         self.assertIn("subject-checksums: desktop/src-tauri/target/release/bundle/SHA256SUMS", workflow)
         self.assertIn("sbom-path: desktop/src-tauri/target/release/bundle/desktop-sbom.cdx.json", workflow)
         self.assertIn("id-token: write", workflow)
