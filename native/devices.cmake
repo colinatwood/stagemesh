@@ -20,6 +20,7 @@ target_include_directories(stagemesh_devices PUBLIC
 
 if(WIN32)
   include(CheckCXXSourceCompiles)
+  include(CMakePushCheckState)
   check_cxx_source_compiles(
     "#include <windows.h>\n#include <mmdeviceapi.h>\nint main(){ (void)PKEY_AudioEndpoint_StableId; return 0; }"
     STAGEMESH_HAS_AUDIOENDPOINT_STABLEID)
@@ -28,10 +29,16 @@ if(WIN32)
   else()
     target_compile_definitions(stagemesh_devices PRIVATE STAGEMESH_HAS_AUDIOENDPOINT_STABLEID=0)
   endif()
+  # check_cxx_source_compiles links its probe executable. CM_Register_Notification
+  # is declared by cfgmgr32.h but implemented by cfgmgr32.lib, so omitting the
+  # required library produces a false negative on otherwise capable SDKs.
+  cmake_push_check_state(RESET)
+  set(CMAKE_REQUIRED_LIBRARIES cfgmgr32)
   check_cxx_source_compiles(
     "#include <windows.h>\n#include <cfgmgr32.h>\nint main(){ CM_NOTIFY_FILTER filter{}; HCMNOTIFICATION notification{}; return CM_Register_Notification(&filter, nullptr, nullptr, &notification); }"
-    STAGEMESH_HAS_CM_NOTIFY)
-  if(STAGEMESH_HAS_CM_NOTIFY)
+    STAGEMESH_HAS_CM_NOTIFY_API)
+  cmake_pop_check_state()
+  if(STAGEMESH_HAS_CM_NOTIFY_API)
     target_compile_definitions(stagemesh_devices PRIVATE STAGEMESH_HAS_CM_NOTIFY=1)
   else()
     target_compile_definitions(stagemesh_devices PRIVATE STAGEMESH_HAS_CM_NOTIFY=0)

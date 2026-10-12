@@ -28,6 +28,8 @@ SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 VERSION_PATTERN = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$")
 PLATFORM_FORMATS = {"macOS": {"dmg"}, "Linux": {"deb", "appimage"}}
+LINUX_DEBIAN_PACKAGE = "stage-mesh"
+LINUX_DESKTOP_EXECUTABLE = Path("/usr/bin/stagemesh-desktop")
 
 
 def _sha256_bytes(payload: bytes) -> str:
@@ -403,6 +405,25 @@ def _installed_record(path: Path) -> dict[str, Any] | None:
     }
 
 
+def _linux_stagemesh_process_count(proc_root: Path = Path("/proc")) -> int:
+    names = {"stagemesh", "stagemesh-desktop", "stagemesh-runtime", "stagemesh_engine"}
+    count = 0
+    try:
+        entries = list(proc_root.iterdir())
+    except OSError as exc:
+        raise RuntimeError("could not enumerate Linux process state") from exc
+    for entry in entries:
+        if not entry.name.isdigit():
+            continue
+        try:
+            name = (entry / "comm").read_text(encoding="utf-8").strip()
+        except (OSError, UnicodeError):
+            continue
+        if Path(name).name.lower() in names:
+            count += 1
+    return count
+
+
 def collect_posix_snapshot(
     installed_executable: Path | None = None,
     observed_version: str | None = None,
@@ -445,16 +466,16 @@ def collect_posix_snapshot(
         identity = f"{machine_id}\0{os.getuid()}".encode("utf-8")
         applications = [installed_executable] if installed_executable else [
             Path.home() / ".local" / "bin" / "StageMesh.AppImage",
-            Path("/usr/bin/stagemesh"),
+            LINUX_DESKTOP_EXECUTABLE,
         ]
         package_entries = []
         package_query = subprocess.run(
-            ["dpkg-query", "-W", "-f=${Status}\t${Version}\n", "stagemesh"],
+            ["dpkg-query", "-W", "-f=${Status}\t${Version}\n", LINUX_DEBIAN_PACKAGE],
             capture_output=True, text=True,
         )
         if package_query.returncode == 0 and package_query.stdout.startswith("install ok installed\t"):
             package_version = package_query.stdout.split("\t", 1)[1].strip().split("-", 1)[0]
-            package_entries.append({"package": "stagemesh", "version": package_version})
+            package_entries.append({"package": LINUX_DEBIAN_PACKAGE, "version": package_version})
             if observed_version is None and VERSION_PATTERN.fullmatch(package_version):
                 observed_version = package_version
         detected_version = observed_version
@@ -469,11 +490,16 @@ def collect_posix_snapshot(
         }
 
     installed = [record for item in applications if item is not None for record in [_installed_record(item)] if record is not None]
-    processes = subprocess.run(["ps", "-A", "-o", "comm="], capture_output=True, text=True, check=True)
-    process_count = sum(
-        1 for name in processes.stdout.splitlines()
-        if Path(name.strip()).name.lower() in {"stagemesh", "stagemesh-runtime", "stagemesh_engine"}
-    )
+    if sys.platform == "linux":
+        process_count = _linux_stagemesh_process_count()
+    else:
+        processes = subprocess.run(["ps", "-A", "-o", "comm="], capture_output=True, text=True, check=True)
+        process_count = sum(
+            1 for name in processes.stdout.splitlines()
+            if Path(name.strip()).name.lower() in {
+                "stagemesh", "stagemesh-desktop", "stagemesh-runtime", "stagemesh_engine"
+            }
+        )
     return {
         "runnerIdHash": "sha256:" + _sha256_bytes(identity),
         "os": {
