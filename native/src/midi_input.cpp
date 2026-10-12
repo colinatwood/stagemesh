@@ -396,8 +396,11 @@ bool MidiInputManager::attach(std::string_view device_id, std::string_view playe
 #elif defined(_WIN32)
     if (slot->native_index == 0xffffffffu) return false;
     HMIDIIN handle = nullptr;
-    if (midiInOpen(&handle, static_cast<UINT>(slot->native_index), reinterpret_cast<DWORD_PTR>(slot),
-                   reinterpret_cast<DWORD_PTR>(&winmm_read), CALLBACK_FUNCTION) != MMSYSERR_NOERROR) return false;
+    // WinMM expects the callback address before the caller-owned instance.
+    // Reversing these two DWORD_PTR values makes Windows execute the slot's
+    // data address as code as soon as the input is opened.
+    if (midiInOpen(&handle, static_cast<UINT>(slot->native_index), reinterpret_cast<DWORD_PTR>(&winmm_read),
+                   reinterpret_cast<DWORD_PTR>(slot), CALLBACK_FUNCTION) != MMSYSERR_NOERROR) return false;
     if (midiInStart(handle) != MMSYSERR_NOERROR) { midiInClose(handle); return false; }
     slot->native_source = reinterpret_cast<std::uintptr_t>(handle);
     slot->attached = true;

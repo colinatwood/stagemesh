@@ -2,8 +2,10 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
+from types import SimpleNamespace
 import tempfile
 import unittest
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -138,6 +140,43 @@ class PosixDesktopCleanHostTests(unittest.TestCase):
             self.assertEqual(report["candidate"]["sourceCommit"], self.commit)
             self.assertEqual(report["candidate"]["distributionChannel"], "standard")
             self.assertNotIn("clean-host-template-canary", json.dumps(report))
+
+    def test_live_linux_snapshot_uses_packaged_deb_identity_and_executable(self):
+        module = load_script()
+        calls = []
+
+        def run(command, **_kwargs):
+            calls.append(command)
+            if command[:2] == ["dpkg-query", "-W"] and command[-1] == "stage-mesh":
+                return SimpleNamespace(returncode=0, stdout="install ok installed\t0.1.0\n")
+            if command[:2] == ["dpkg-query", "-W"]:
+                return SimpleNamespace(returncode=1, stdout="")
+            raise AssertionError(command)
+
+        with mock.patch.object(module.subprocess, "run", side_effect=run), mock.patch.object(
+            module, "_linux_stagemesh_process_count", return_value=0
+        ):
+            snapshot = module.collect_posix_snapshot()
+
+        self.assertEqual(module.LINUX_DEBIAN_PACKAGE, "stage-mesh")
+        self.assertEqual(module.LINUX_DESKTOP_EXECUTABLE, Path("/usr/bin/stagemesh-desktop"))
+        self.assertEqual(
+            snapshot["stageMesh"]["packageEntries"],
+            [{"package": "stage-mesh", "version": "0.1.0"}],
+        )
+        self.assertEqual(snapshot["stageMesh"]["observedVersion"], "0.1.0")
+        self.assertTrue(any(command[-1] == "stage-mesh" for command in calls if command[0] == "dpkg-query"))
+
+    def test_linux_process_count_reads_proc_without_procps(self):
+        module = load_script()
+        with tempfile.TemporaryDirectory() as temporary:
+            proc = Path(temporary)
+            for pid, name in (("10", "stagemesh-desktop\n"), ("11", "stagemesh-runtime\n"), ("12", "bash\n")):
+                directory = proc / pid
+                directory.mkdir()
+                (directory / "comm").write_text(name, encoding="utf-8")
+            (proc / "self").mkdir()
+            self.assertEqual(module._linux_stagemesh_process_count(proc), 2)
 
     def test_distribution_channel_is_required_and_must_be_standard(self):
         with tempfile.TemporaryDirectory() as temporary:
