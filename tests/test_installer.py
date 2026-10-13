@@ -22,8 +22,8 @@ class InstallerTests(unittest.TestCase):
             engine=build/"native/stagemesh_engine"
             engine.write_text("#!/bin/sh\nexit 0\n");engine.chmod(0o755)
             env={**os.environ,"DESTDIR":str(stage),"PREFIX":"/usr",
-                 "STAGE" + "FORGE_BUILD_DIR":str(build)}
-            env.pop("STAGEMESH_BUILD_DIR",None)
+                 "STAGE" + "FORGE_BUILD_DIR":str(build),
+                 "STAGEMESH_BUILD_DIR":str(root/"missing-canonical-build")}
             result=subprocess.run(["sh",str(ROOT/"scripts/install-linux.sh")],env=env,
                                   capture_output=True,text=True)
             self.assertNotEqual(result.returncode,0)

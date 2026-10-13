@@ -29,6 +29,7 @@ def main():
             print("Release prerequisites available")
             return 0
         run([sys.executable, str(ROOT / "scripts/open-source-hygiene.py")])
+        run([sys.executable, str(ROOT / "scripts/stagemesh-backlog-status.py"), "--format", "json"])
         # Never reuse a developer build tree or delete user-selected paths.
         with tempfile.TemporaryDirectory(prefix="stagemesh-release-") as temporary:
             build = Path(temporary) / "build"
