@@ -18,6 +18,12 @@ On Windows and macOS this also builds the native device lifecycle components.
 Their standalone build remains available with `cmake -S native -B build`.
 
 The Linux developer-alpha software gate is `python scripts/release-check.py`.
+
+Validate and summarize the authoritative backlog without editing it:
+
+```bash
+python scripts/stagemesh-backlog-status.py --format markdown
+```
 Install its build requirements from `requirements-release.txt` and provide Node.js.
 Hosted software evidence does not qualify physical audio/MIDI hardware, licensed
 plugins, deployed services, or installed packages. See

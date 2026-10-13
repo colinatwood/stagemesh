@@ -28,6 +28,10 @@ class ReleaseGateTests(unittest.TestCase):
         with patch.object(gate.shutil, "which", return_value="/tool"):
             gate.prerequisites()
 
+    def test_release_gate_validates_authoritative_backlog(self):
+        source = (ROOT / "scripts" / "release-check.py").read_text(encoding="utf-8")
+        self.assertIn("stagemesh-backlog-status.py", source)
+
     def test_every_public_schema_is_valid_json(self):
         schemas=list((ROOT/"schemas").glob("*.json"));self.assertGreater(len(schemas),0)
         for schema in schemas:
