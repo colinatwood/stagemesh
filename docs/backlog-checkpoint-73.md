@@ -1,6 +1,6 @@
 # Checkpoint 73 master backlog amendment
 
-Latest reconciled snapshot: [Checkpoint 83](backlog-checkpoint-83.md).
+Latest reconciled snapshot: [Checkpoint 84](backlog-checkpoint-84.md).
 
 Reconciled against the user-supplied `StageMesh-Master-Backlog-Checkpoint-73.xlsx`.
 That workbook already contains the Checkpoint 73 closure below. The updated

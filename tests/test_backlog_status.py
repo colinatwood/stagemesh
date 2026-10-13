@@ -8,7 +8,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "stagemesh-backlog-status.py"
-WORKBOOK = ROOT / "docs/backlog" / "StageMesh-Master-Backlog-Checkpoint-83.xlsx"
+WORKBOOK = ROOT / "docs/backlog" / "StageMesh-Master-Backlog-Checkpoint-84.xlsx"
 
 
 def load_script():
@@ -24,7 +24,7 @@ class BacklogStatusTests(unittest.TestCase):
         report = module.summarize(module.load_backlog(WORKBOOK), WORKBOOK)
         self.assertEqual(report["totalItems"], 49)
         self.assertEqual(report["openItems"], 25)
-        self.assertEqual(report["statusCounts"], {"Done": 24, "In Progress": 7, "Blocked": 11, "Deferred": 7})
+        self.assertEqual(report["statusCounts"], {"Done": 24, "In Progress": 8, "Blocked": 11, "Deferred": 6})
         self.assertEqual(report["openByPriority"], {"P0": 22, "P1": 3})
         self.assertEqual(report["openByType"], {"Decision": 2, "Qualification": 19, "Software": 4})
 

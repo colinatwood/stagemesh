@@ -101,6 +101,28 @@ class WindowsDesktopCleanHostTests(unittest.TestCase):
         )
         return module, bundle, installer, report
 
+    def test_installed_executable_detection_uses_packaged_tauri_name(self):
+        module = load_script()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            install_directory = root / "Program Files" / "StageMesh"
+            install_directory.mkdir(parents=True)
+            executable = install_directory / "stagemesh-desktop.exe"
+            executable.write_bytes(b"installed desktop")
+
+            detected = module._installed_executable_paths(
+                [str(install_directory), f'"{executable}",0'],
+                {
+                    "LOCALAPPDATA": str(root / "Local"),
+                    "ProgramFiles": str(root / "Program Files"),
+                    "ProgramFiles(x86)": str(root / "Program Files (x86)"),
+                },
+            )
+
+        self.assertEqual(detected, [executable.resolve()])
+        self.assertEqual(module.WINDOWS_DESKTOP_EXECUTABLE, "stagemesh-desktop.exe")
+        self.assertIn("stagemesh-desktop.exe", module.STAGEMESH_PROCESS_NAMES)
+
     def test_complete_phase_sequence_is_review_ready_but_not_qualified(self):
         with tempfile.TemporaryDirectory() as temporary:
             module, _, _, report = self.start(Path(temporary))
