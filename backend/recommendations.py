@@ -89,7 +89,7 @@ def build_recommendations(
         item.get("kind") in {"disconnected", "identity-changed"} and item.get("detached") is False
         for item in midi_hotplug_changes
     )
-    failed_midi_attachments = [item for item in midi_devices if item.get("attachmentFailed")]
+    failed_midi_attachments = [item for item in midi_devices if item.get("attachmentStatus") in {"failed", "retry-wait"} or item.get("attachmentFailed")]
     capacity = max(0.0, min(100.0, float(system.get("capacity", 0.0))))
     mode = str(system.get("mode", "safe"))
     role = str((player or {}).get("role", "show")).lower()
@@ -118,7 +118,7 @@ def build_recommendations(
             "retry-controller-attachment", "Review failed controller attachments",
             "Keep controller-driven actions inactive, then reconnect or explicitly rebind the intended inputs.",
             category="control", priority="high", confidence="high",
-            evidence=[f"{len(failed_midi_attachments)} desired MIDI attachment attempt(s) failed", f"{len(attached_midi)} MIDI input(s) remain attached"],
+            evidence=[f"{len(failed_midi_attachments)} desired MIDI attachment(s) failed or are awaiting retry", f"{len(attached_midi)} MIDI input(s) remain attached"],
             why="A native attachment attempt failed, so a saved binding does not prove that performer control is live.", target="#operations",
         ))
 

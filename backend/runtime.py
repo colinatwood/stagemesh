@@ -181,6 +181,8 @@ class StageMeshRuntime:
         self._midi_scan_lock = RLock()
         self._midi_hotplug_generation = 0
         self._midi_hotplug_changes: list[dict[str, Any]] = []
+        self._midi_attachment_failures: dict[str, int] = {}
+        self._midi_attachment_retry_after: dict[str, float] = {}
         self._audio_devices: list[dict[str, Any]] = []
         self._audio_control_lock = RLock()
         self._audio_scan_lock = RLock()
@@ -2232,6 +2234,10 @@ class StageMeshRuntime:
             self._midi_hotplug_generation = 0
         if not hasattr(self, "_midi_hotplug_changes"):
             self._midi_hotplug_changes = []
+        if not hasattr(self, "_midi_attachment_failures"):
+            self._midi_attachment_failures = {}
+        if not hasattr(self, "_midi_attachment_retry_after"):
+            self._midi_attachment_retry_after = {}
         with self._midi_scan_lock:
             if not self.native.available:
                 self._midi_devices = []
@@ -2240,15 +2246,21 @@ class StageMeshRuntime:
             bindings = (self.state.snapshot().get("midi") or {}).get("bindings") or {}
             previous_by_id = {str(item.get("id", "")): item for item in self._midi_devices}
             previous_ids = set(previous_by_id)
+            observed_at = monotonic()
             for device in devices:
                 device_id = str(device.get("id", ""))
                 device.update(describe_midi_device(device))
                 device["attached"] = bool(device.get("attached"))
                 device["attachmentAttempted"] = False
                 device["attachmentFailed"] = False
+                device["attachmentFailureCount"] = self._midi_attachment_failures.get(device_id, 0)
+                device["attachmentRetryAfterMs"] = max(0, round((self._midi_attachment_retry_after.get(device_id, 0.0) - observed_at) * 1000))
                 device["identityRecorded"] = self.midi_identities.expected(device_id) is not None
             current_by_id = {str(device.get("id", "")): device for device in devices}
             current_ids = set(current_by_id)
+            for stale_id in set(self._midi_attachment_failures) - current_ids:
+                self._midi_attachment_failures.pop(stale_id, None)
+                self._midi_attachment_retry_after.pop(stale_id, None)
             disconnected = previous_ids - current_ids
             prior_identity = {
                 device_id: (previous_by_id.get(device_id) or self.midi_identities.expected(device_id) or {}).get("persistentId")
@@ -2279,18 +2291,36 @@ class StageMeshRuntime:
                 current_id = str(candidate.get("id", ""))
                 claims.setdefault(current_id, []).append((str(desired_id), str(player_id)))
 
+            for unclaimed_id in current_ids - set(claims):
+                self._midi_attachment_failures.pop(unclaimed_id, None)
+                self._midi_attachment_retry_after.pop(unclaimed_id, None)
+                current_by_id[unclaimed_id]["attachmentFailureCount"] = 0
+                current_by_id[unclaimed_id]["attachmentRetryAfterMs"] = 0
+
             if rebind and self.replication.is_primary():
                 for current_id, desired in claims.items():
                     players = {player_id for _, player_id in desired}
                     if len(desired) != 1 or len(players) != 1:
                         continue
                     desired_id, player_id = desired[0]
+                    if self._midi_attachment_retry_after.get(current_id, 0.0) > observed_at:
+                        continue
                     current_by_id[current_id]["attachmentAttempted"] = True
                     try:
                         self.native.attach_midi_input(current_id, player_id)
                         current_by_id[current_id]["attached"] = True
+                        self._midi_attachment_failures.pop(current_id, None)
+                        self._midi_attachment_retry_after.pop(current_id, None)
+                        current_by_id[current_id]["attachmentFailureCount"] = 0
+                        current_by_id[current_id]["attachmentRetryAfterMs"] = 0
                     except (RuntimeError, ValueError):
                         current_by_id[current_id]["attachmentFailed"] = True
+                        failures = min(8, self._midi_attachment_failures.get(current_id, 0) + 1)
+                        retry_seconds = min(30, 2 ** failures)
+                        self._midi_attachment_failures[current_id] = failures
+                        self._midi_attachment_retry_after[current_id] = observed_at + retry_seconds
+                        current_by_id[current_id]["attachmentFailureCount"] = failures
+                        current_by_id[current_id]["attachmentRetryAfterMs"] = retry_seconds * 1000
 
             for device in devices:
                 device_id = str(device.get("id", ""))
@@ -2312,6 +2342,7 @@ class StageMeshRuntime:
                 device["attachmentStatus"] = ("failed" if device["attachmentFailed"] else
                                                 "attached" if device["attached"] else
                                                 "ambiguous" if device["reconnectStatus"] == "ambiguous" else
+                                                "retry-wait" if device["attachmentRetryAfterMs"] > 0 else
                                                 "not-attached")
 
             changes = ([{"kind": "connected", "deviceId": value} for value in sorted(current_ids - previous_ids)]

@@ -60,8 +60,29 @@ class MidiHotplugTests(unittest.TestCase):
             self.assertTrue(devices[0]["attachmentAttempted"])
             self.assertTrue(devices[0]["attachmentFailed"])
             self.assertEqual(devices[0]["attachmentStatus"],"failed")
+            self.assertEqual(devices[0]["attachmentFailureCount"],1)
+            self.assertEqual(devices[0]["attachmentRetryAfterMs"],2000)
             self.assertFalse(devices[0]["attached"])
             self.assertNotIn("native attach failed",repr(devices[0]))
+
+    def test_failed_attachment_uses_bounded_exponential_backoff(self):
+        with tempfile.TemporaryDirectory() as raw:
+            runtime=self.runtime(raw)
+            runtime.native.scan_midi_devices.return_value=[{"id":"win-old","backend":"windows-midi","connected":True,"input":True}]
+            runtime.native.attach_midi_input.side_effect=RuntimeError("native attach failed")
+            with patch("runtime.describe_midi_device",return_value=self.identity()),patch("runtime.monotonic",return_value=100.0):
+                first=runtime._refresh_midi_devices(rebind=True)
+            with patch("runtime.describe_midi_device",return_value=self.identity()),patch("runtime.monotonic",return_value=101.0):
+                waiting=runtime._refresh_midi_devices(rebind=True)
+            self.assertEqual(runtime.native.attach_midi_input.call_count,1)
+            self.assertEqual(first[0]["attachmentStatus"],"failed")
+            self.assertEqual(waiting[0]["attachmentStatus"],"retry-wait")
+            self.assertEqual(waiting[0]["attachmentRetryAfterMs"],1000)
+            with patch("runtime.describe_midi_device",return_value=self.identity()),patch("runtime.monotonic",return_value=102.0):
+                second=runtime._refresh_midi_devices(rebind=True)
+            self.assertEqual(runtime.native.attach_midi_input.call_count,2)
+            self.assertEqual(second[0]["attachmentFailureCount"],2)
+            self.assertEqual(second[0]["attachmentRetryAfterMs"],4000)
 
     def test_same_native_id_identity_change_detaches_and_preserves_pin(self):
         with tempfile.TemporaryDirectory() as raw:

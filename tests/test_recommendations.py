@@ -97,6 +97,14 @@ class RecommendationTests(unittest.TestCase):
         self.assertEqual(report["hardwareSummary"]["failedMidiAttachments"], 1)
         self.assertFalse(any(item["id"] == "restore-performer-controller" for item in report["recommendations"]))
 
+    def test_controller_retry_wait_remains_visible_to_operator(self):
+        self.midi = {
+            "devices": [{"id": "pads", "connected": True, "attached": False, "attachmentStatus": "retry-wait", "attachmentRetryAfterMs": 4000, "playerId": "drums"}],
+            "bindings": {"pads": "drums"},
+        }
+        report = self.build({"playerId": "drums", "goal": "balanced"})
+        self.assertTrue(any(item["id"] == "retry-controller-attachment" for item in report["recommendations"]))
+
     def test_request_validation_rejects_unknown_context(self):
         with self.assertRaisesRegex(ValueError, "must be an object"):
             build_recommendations(self.state, self.audio, self.midi, self.adapters, [])
