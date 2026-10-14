@@ -11,6 +11,34 @@
     }
   ],
   "paths": {
+    "/api/v1/advisor/recommendations": {
+      "post": {
+        "operationId": "generateSetupRecommendations",
+        "summary": "Generate bounded hardware- and performer-aware setup guidance",
+        "description": "Processes optional performer input locally without retention. The result is advisory and cannot mutate routing or arm physical outputs.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "playerId": {"type": "string", "maxLength": 64},
+                  "goal": {"enum": ["balanced", "clarity", "low-latency", "reliability", "recording", "mobility"]},
+                  "notes": {"type": "string", "maxLength": 1000}
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Evidence-backed recommendations with automaticApply and physicalOutputsArmed fixed to false"},
+          "400": {"$ref": "#/components/responses/ValidationError"},
+          "503": {"$ref": "#/components/responses/Unavailable"}
+        }
+      }
+    },
     "/api/v1/witness/recover": {
       "post": {
         "operationId": "recoverPersistentlyFencedNode",

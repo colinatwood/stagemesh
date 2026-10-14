@@ -181,6 +181,8 @@ class StageMeshRuntime:
         self._midi_scan_lock = RLock()
         self._midi_hotplug_generation = 0
         self._midi_hotplug_changes: list[dict[str, Any]] = []
+        self._midi_attachment_failures: dict[str, int] = {}
+        self._midi_attachment_retry_after: dict[str, float] = {}
         self._audio_devices: list[dict[str, Any]] = []
         self._audio_control_lock = RLock()
         self._audio_scan_lock = RLock()
@@ -518,17 +520,28 @@ class StageMeshRuntime:
         prior_identity={device_id:(previous_by_id.get(device_id) or self.audio_identities.expected(device_id) or {}).get("persistentId") for device_id in current_ids}
         identity_changed={device_id for device_id in current_ids if prior_identity.get(device_id) and current_by_id[device_id].get("persistentId") and prior_identity[device_id]!=current_by_id[device_id].get("persistentId") and (device_id not in previous_by_id or previous_by_id[device_id].get("persistentId")!=current_by_id[device_id].get("persistentId"))}
         unsafe_ids=disconnected|identity_changed
-        stopped_outputs=[];stopped_inputs=[]
+        stopped_outputs_by_device={device_id:[] for device_id in unsafe_ids}
+        stopped_inputs_by_device={device_id:[] for device_id in unsafe_ids}
+        failed_outputs_by_device={device_id:[] for device_id in unsafe_ids}
+        failed_inputs_by_device={device_id:[] for device_id in unsafe_ids}
+        output_status_by_slot={}
+        input_status_by_slot={}
         for slot in range(4):
             try:
                 status=self.native.audio_stream_status(slot)
-                if status.get("selected") in unsafe_ids and _physical_audio_execution(status.get("execution")) and status.get("state")=="2":
-                    self.native.deactivate_audio(slot);stopped_outputs.append(slot)
+                output_status_by_slot[slot]=status
+                selected=str(status.get("selected", ""))
+                if selected in unsafe_ids and _physical_audio_execution(status.get("execution")) and status.get("state")=="2":
+                    try:self.native.deactivate_audio(slot);stopped_outputs_by_device[selected].append(slot)
+                    except (RuntimeError,ValueError):failed_outputs_by_device[selected].append(slot)
             except (RuntimeError,ValueError):pass
             try:
                 status=self.native.audio_input_status(slot)
-                if status.get("selected") in unsafe_ids and _physical_audio_execution(status.get("execution")) and status.get("state")=="2":
-                    self.native.deactivate_audio_input(slot);stopped_inputs.append(slot)
+                input_status_by_slot[slot]=status
+                selected=str(status.get("selected", ""))
+                if selected in unsafe_ids and _physical_audio_execution(status.get("execution")) and status.get("state")=="2":
+                    try:self.native.deactivate_audio_input(slot);stopped_inputs_by_device[selected].append(slot)
+                    except (RuntimeError,ValueError):failed_inputs_by_device[selected].append(slot)
             except (RuntimeError,ValueError):pass
         audio_state = self.state.snapshot().get("audio") or {}
         output_configs = self._audio_output_configs(audio_state)
@@ -539,17 +552,21 @@ class StageMeshRuntime:
             for config in output_configs:
                 device_id = str(config.get("deviceId", ""))
                 device=resolved(device_id,"output")
-                if device:
+                slot=int(config.get("slot", 0))
+                selected=str((output_status_by_slot.get(slot) or {}).get("selected", ""))
+                if device and selected!=str(device["id"]):
                     try:
-                        self.native.select_audio_device(str(device["id"]), int(config.get("slot", 0)))
+                        self.native.select_audio_device(str(device["id"]), slot)
                     except (RuntimeError, ValueError):
                         pass
             for config in input_configs:
                 device_id = str(config.get("deviceId", ""))
                 device=resolved(device_id,"input")
-                if device:
+                slot=int(config.get("slot", 0))
+                selected=str((input_status_by_slot.get(slot) or {}).get("selected", ""))
+                if device and selected!=str(device["id"]):
                     try:
-                        self.native.select_audio_input(str(device["id"]), int(config.get("slot", 0)))
+                        self.native.select_audio_input(str(device["id"]), slot)
                     except (RuntimeError, ValueError):
                         pass
         for device in devices:
@@ -563,7 +580,8 @@ class StageMeshRuntime:
             reconnects=[str(config.get("deviceId","")) for config in output_configs+input_configs if str(config.get("deviceId",""))!=device_id and self.audio_identities.reconnect_match(str(config.get("deviceId","")),devices) is device]
             device["reconnectsDeviceIds"]=list(dict.fromkeys(reconnects));device["reconnectStatus"]="serial-match" if reconnects else ("eligible" if device.get("automaticReconnectEligible") else "explicit-recovery-required")
         with self._audio_scan_lock:
-            changes=[{"kind":"connected","deviceId":value} for value in sorted(current_ids-previous_ids)]+[{"kind":"disconnected","deviceId":value,"stoppedOutputSlots":stopped_outputs,"stoppedInputSlots":stopped_inputs} for value in sorted(disconnected)]+[{"kind":"identity-changed","deviceId":value,"previousPersistentId":prior_identity[value],"currentPersistentId":current_by_id[value]["persistentId"],"stoppedOutputSlots":stopped_outputs,"stoppedInputSlots":stopped_inputs} for value in sorted(identity_changed)]
+            def stop_evidence(device_id):return {"stoppedOutputSlots":stopped_outputs_by_device[device_id],"stoppedInputSlots":stopped_inputs_by_device[device_id],"failedOutputStopSlots":failed_outputs_by_device[device_id],"failedInputStopSlots":failed_inputs_by_device[device_id]}
+            changes=[{"kind":"connected","deviceId":value} for value in sorted(current_ids-previous_ids)]+[{"kind":"disconnected","deviceId":value,**stop_evidence(value)} for value in sorted(disconnected)]+[{"kind":"identity-changed","deviceId":value,"previousPersistentId":prior_identity[value],"currentPersistentId":current_by_id[value]["persistentId"],**stop_evidence(value)} for value in sorted(identity_changed)]
             if changes:
                 self._audio_hotplug_generation+=1
                 for change in changes:change.update({"generation":self._audio_hotplug_generation,"observedMonotonicNs":monotonic_ns()})
@@ -2224,6 +2242,10 @@ class StageMeshRuntime:
             self._midi_hotplug_generation = 0
         if not hasattr(self, "_midi_hotplug_changes"):
             self._midi_hotplug_changes = []
+        if not hasattr(self, "_midi_attachment_failures"):
+            self._midi_attachment_failures = {}
+        if not hasattr(self, "_midi_attachment_retry_after"):
+            self._midi_attachment_retry_after = {}
         with self._midi_scan_lock:
             if not self.native.available:
                 self._midi_devices = []
@@ -2232,13 +2254,21 @@ class StageMeshRuntime:
             bindings = (self.state.snapshot().get("midi") or {}).get("bindings") or {}
             previous_by_id = {str(item.get("id", "")): item for item in self._midi_devices}
             previous_ids = set(previous_by_id)
+            observed_at = monotonic()
             for device in devices:
                 device_id = str(device.get("id", ""))
                 device.update(describe_midi_device(device))
                 device["attached"] = bool(device.get("attached"))
+                device["attachmentAttempted"] = False
+                device["attachmentFailed"] = False
+                device["attachmentFailureCount"] = self._midi_attachment_failures.get(device_id, 0)
+                device["attachmentRetryAfterMs"] = max(0, round((self._midi_attachment_retry_after.get(device_id, 0.0) - observed_at) * 1000))
                 device["identityRecorded"] = self.midi_identities.expected(device_id) is not None
             current_by_id = {str(device.get("id", "")): device for device in devices}
             current_ids = set(current_by_id)
+            for stale_id in set(self._midi_attachment_failures) - current_ids:
+                self._midi_attachment_failures.pop(stale_id, None)
+                self._midi_attachment_retry_after.pop(stale_id, None)
             disconnected = previous_ids - current_ids
             prior_identity = {
                 device_id: (previous_by_id.get(device_id) or self.midi_identities.expected(device_id) or {}).get("persistentId")
@@ -2269,17 +2299,36 @@ class StageMeshRuntime:
                 current_id = str(candidate.get("id", ""))
                 claims.setdefault(current_id, []).append((str(desired_id), str(player_id)))
 
+            for unclaimed_id in current_ids - set(claims):
+                self._midi_attachment_failures.pop(unclaimed_id, None)
+                self._midi_attachment_retry_after.pop(unclaimed_id, None)
+                current_by_id[unclaimed_id]["attachmentFailureCount"] = 0
+                current_by_id[unclaimed_id]["attachmentRetryAfterMs"] = 0
+
             if rebind and self.replication.is_primary():
                 for current_id, desired in claims.items():
                     players = {player_id for _, player_id in desired}
                     if len(desired) != 1 or len(players) != 1:
                         continue
                     desired_id, player_id = desired[0]
+                    if self._midi_attachment_retry_after.get(current_id, 0.0) > observed_at:
+                        continue
+                    current_by_id[current_id]["attachmentAttempted"] = True
                     try:
                         self.native.attach_midi_input(current_id, player_id)
                         current_by_id[current_id]["attached"] = True
+                        self._midi_attachment_failures.pop(current_id, None)
+                        self._midi_attachment_retry_after.pop(current_id, None)
+                        current_by_id[current_id]["attachmentFailureCount"] = 0
+                        current_by_id[current_id]["attachmentRetryAfterMs"] = 0
                     except (RuntimeError, ValueError):
-                        pass
+                        current_by_id[current_id]["attachmentFailed"] = True
+                        failures = min(8, self._midi_attachment_failures.get(current_id, 0) + 1)
+                        retry_seconds = min(30, 2 ** failures)
+                        self._midi_attachment_failures[current_id] = failures
+                        self._midi_attachment_retry_after[current_id] = observed_at + retry_seconds
+                        current_by_id[current_id]["attachmentFailureCount"] = failures
+                        current_by_id[current_id]["attachmentRetryAfterMs"] = retry_seconds * 1000
 
             for device in devices:
                 device_id = str(device.get("id", ""))
@@ -2298,6 +2347,11 @@ class StageMeshRuntime:
                     device["reconnectStatus"] = "eligible" if self.midi_identities.permits_rebind(device_id, device) else "explicit-rebind-required"
                 else:
                     device["reconnectStatus"] = "unbound"
+                device["attachmentStatus"] = ("failed" if device["attachmentFailed"] else
+                                                "attached" if device["attached"] else
+                                                "ambiguous" if device["reconnectStatus"] == "ambiguous" else
+                                                "retry-wait" if device["attachmentRetryAfterMs"] > 0 else
+                                                "not-attached")
 
             changes = ([{"kind": "connected", "deviceId": value} for value in sorted(current_ids - previous_ids)]
                        + [{"kind": "disconnected", "deviceId": value, "detached": value in detached} for value in sorted(disconnected)]

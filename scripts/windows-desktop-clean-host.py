@@ -26,6 +26,13 @@ MAX_JSON_BYTES = 5 * 1024 * 1024
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 VERSION_PATTERN = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$")
+WINDOWS_DESKTOP_EXECUTABLE = "stagemesh-desktop.exe"
+STAGEMESH_PROCESS_NAMES = frozenset({
+    WINDOWS_DESKTOP_EXECUTABLE,
+    "stagemesh.exe",
+    "stagemesh-runtime.exe",
+    "stagemesh_engine.exe",
+})
 
 
 def _sha256_bytes(payload: bytes) -> str:
@@ -365,6 +372,32 @@ def _registry_children(winreg: Any, hive: Any, path: str, view: int) -> list[str
         return []
 
 
+def _installed_executable_paths(raw_locations: list[str], environ: dict[str, str]) -> list[Path]:
+    candidates = [
+        Path(location.strip().split(",", 1)[0].strip().strip('"'))
+        for location in raw_locations if location.strip()
+    ]
+    for variable in ("LOCALAPPDATA", "ProgramFiles", "ProgramFiles(x86)"):
+        root = environ.get(variable, "").strip()
+        if root:
+            candidates.append(Path(root) / "StageMesh" / WINDOWS_DESKTOP_EXECUTABLE)
+
+    installed: list[Path] = []
+    seen: set[Path] = set()
+    for candidate in candidates:
+        if candidate.is_dir():
+            candidate = candidate / WINDOWS_DESKTOP_EXECUTABLE
+        try:
+            resolved = candidate.resolve()
+        except OSError:
+            continue
+        if resolved in seen or not resolved.is_file():
+            continue
+        seen.add(resolved)
+        installed.append(resolved)
+    return installed
+
+
 def collect_windows_snapshot() -> dict[str, Any]:
     if sys.platform != "win32":
         raise RuntimeError("live clean-host collection must run on Windows")
@@ -396,26 +429,8 @@ def collect_windows_snapshot() -> dict[str, Any]:
                 })
                 raw_locations.extend([str(values.get("InstallLocation", "")), str(values.get("DisplayIcon", ""))])
 
-    candidates = [
-        Path(location.strip().split(",", 1)[0].strip().strip('"'))
-        for location in raw_locations if location.strip()
-    ]
-    candidates.extend([
-        Path(os.environ.get("LOCALAPPDATA", "")) / "StageMesh" / "StageMesh.exe",
-        Path(os.environ.get("ProgramFiles", "")) / "StageMesh" / "StageMesh.exe",
-    ])
     executables: list[dict[str, Any]] = []
-    seen: set[Path] = set()
-    for candidate in candidates:
-        if candidate.is_dir():
-            candidate = candidate / "StageMesh.exe"
-        try:
-            resolved = candidate.resolve()
-        except OSError:
-            continue
-        if resolved in seen or not resolved.is_file():
-            continue
-        seen.add(resolved)
+    for resolved in _installed_executable_paths(raw_locations, dict(os.environ)):
         executables.append({
             "pathHash": "sha256:" + _sha256_bytes(str(resolved).lower().encode("utf-8")),
             "bytes": resolved.stat().st_size,
@@ -436,7 +451,7 @@ def collect_windows_snapshot() -> dict[str, Any]:
     tasklist = subprocess.run(["tasklist", "/fo", "csv", "/nh"], capture_output=True, text=True, check=True)
     process_count = sum(
         1 for row in csv.reader(tasklist.stdout.splitlines())
-        if row and row[0].lower() in {"stagemesh.exe", "stagemesh-runtime.exe", "stagemesh_engine.exe"}
+        if row and row[0].lower() in STAGEMESH_PROCESS_NAMES
     )
     app_data = Path(os.environ.get("APPDATA", "")) / "org.stagemesh.desktop"
     build_text = str(current.get("CurrentBuildNumber", "0"))

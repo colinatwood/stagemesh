@@ -68,6 +68,7 @@
   let dawSessionState = null;
   let dawSelectedClipId = null;
   let launcherState = null;
+  let advisorState = null;
 
   function commandId() {
     if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
@@ -130,6 +131,13 @@
     q("#venue").textContent = state.system.venue;
     q("#manager").textContent = state.system.productionManager;
     q("#revision").textContent = `REV ${state.revision}`;
+    const advisorPlayer = q("#advisorPlayer");
+    if (advisorPlayer && document.activeElement !== advisorPlayer) {
+      const previous = advisorPlayer.value;
+      advisorPlayer.innerHTML = [`<option value="">Whole show</option>`, ...(state.players || []).map((player) => `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)} · ${escapeHtml(player.role)}</option>`)].join("");
+      const preferred = previous || selectedPlayer || "";
+      advisorPlayer.value = Array.from(advisorPlayer.options).some((option) => option.value === preferred) ? preferred : "";
+    }
     if (state.audio) {
       q("#limiterCeiling").value = state.audio.limiterCeilingDb;
       q("#limiterValue").textContent = `${Number(state.audio.limiterCeilingDb).toFixed(1)} dBFS`;
@@ -224,6 +232,38 @@
 
   function escapeHtml(value) {
     return String(value).replace(/[&<>"']/g, (ch) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
+  }
+
+  function renderAdvisor(report) {
+    advisorState = report;
+    const hardware = report.hardwareSummary || {};
+    q("#advisorHeadline").textContent = report.recommendations?.length
+      ? `${report.recommendations.length} recommendation${report.recommendations.length === 1 ? "" : "s"} · ${hardware.capacityPercent ?? "--"}% capacity`
+      : "No recommendation available";
+    q("#advisorStatus").textContent = `${report.summary} ${hardware.audioOutputs || 0} outputs · ${hardware.audioInputs || 0} inputs · ${hardware.midiDevices || 0} MIDI devices · ${report.engine}.`;
+    const allowedTargets = new Set(["#show-control", "#operations", "#stage-editor"]);
+    const items = Array.isArray(report.recommendations) ? report.recommendations : [];
+    q("#advisorResults").innerHTML = items.length ? items.map((item) => {
+      const target = allowedTargets.has(item.actionTarget) ? item.actionTarget : "#operations";
+      const evidence = Array.isArray(item.evidence) ? item.evidence : [];
+      return `<article class="advisorCard" data-priority="${escapeHtml(item.priority)}"><div class="advisorCardHead"><h3>${escapeHtml(item.title)}</h3><span class="advisorPriority">${escapeHtml(item.priority).toUpperCase()}</span></div><p>${escapeHtml(item.summary)}</p><details><summary>Why this recommendation</summary><p>${escapeHtml(item.why)}</p><ul>${evidence.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ul></details><a href="${target}">Review relevant controls →</a></article>`;
+    }).join("") : '<p class="advisorEmpty">No recommendation was generated for the current context.</p>';
+  }
+
+  async function runAdvisor() {
+    const button = q("#advisorRun");
+    button.disabled = true;
+    q("#advisorStatus").textContent = "Reviewing current hardware, capacity, performer role, and show state…";
+    try {
+      renderAdvisor(await api("/api/v1/advisor/recommendations", {method:"POST", body:JSON.stringify({
+        playerId:q("#advisorPlayer").value,
+        goal:q("#advisorGoal").value,
+        notes:q("#advisorNotes").value,
+      })}));
+    } catch (error) {
+      q("#advisorStatus").textContent = `Recommendations unavailable: ${error.message}`;
+      q("#advisorResults").replaceChildren();
+    } finally { button.disabled = false; }
   }
 
   async function refresh() {
@@ -770,7 +810,15 @@
     await command("/api/v1/technology", "PATCH", {ecosystemParticipants}, "technology");
   });
 
-  qa("[data-player]").forEach((node) => node.addEventListener("click", () => { selectedPlayer = node.dataset.player; renderMonitor(); renderNotation(); }));
+  qa("[data-player]").forEach((node) => node.addEventListener("click", () => {
+    selectedPlayer = node.dataset.player;
+    renderMonitor(); renderNotation();
+    if (q("#advisorPlayer")) q("#advisorPlayer").value = selectedPlayer;
+  }));
+  q("#advisorRun").addEventListener("click", runAdvisor);
+  q("#ai-advisor").addEventListener("toggle", (event) => {
+    if (event.target.open && !advisorState) runAdvisor();
+  });
 
   qa("[data-monitor]").forEach((input) => input.addEventListener("input", () => {
     const player = playerById(selectedPlayer);

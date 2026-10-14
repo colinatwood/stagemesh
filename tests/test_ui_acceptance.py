@@ -49,9 +49,20 @@ class UiAccessibilityContractTests(unittest.TestCase):
 
     def test_operator_feedback_is_a_polite_live_region(self):
         by_id = {attrs.get("id"): attrs for _, attrs in self.inventory.elements if attrs.get("id")}
-        for target in ("launcherStatus", "dawAutomationStatus", "dawProductionStatus", "recoveryStatus"):
+        for target in ("launcherStatus", "dawAutomationStatus", "dawProductionStatus", "recoveryStatus", "advisorStatus"):
             self.assertEqual(by_id[target].get("role"), "status", target)
             self.assertEqual(by_id[target].get("aria-live"), "polite", target)
+
+    def test_advisor_is_progressively_disclosed_and_advisory_only(self):
+        by_id = {attrs.get("id"): (tag, attrs) for tag, attrs in self.inventory.elements if attrs.get("id")}
+        self.assertEqual(by_id["ai-advisor"][0], "details")
+        for target in ("advisorPlayer", "advisorGoal", "advisorNotes", "advisorRun", "advisorResults"):
+            self.assertIn(target, by_id)
+        self.assertNotIn("open", by_id["ai-advisor"][1])
+        script = (ROOT / "frontend" / "app.js").read_text()
+        self.assertIn('api("/api/v1/advisor/recommendations"', script)
+        self.assertIn('new Set(["#show-control", "#operations", "#stage-editor"])', script)
+        self.assertIn("never change routing, arm physical outputs, or replace operator approval", self.html)
 
     def test_focus_is_visible_and_skip_link_only_appears_on_focus(self):
         self.assertIn(".skipLink:focus{transform:translateY(0)}", self.css)
@@ -66,6 +77,33 @@ class UiAccessibilityContractTests(unittest.TestCase):
         self.assertIn(".layout>*{min-width:0}", self.css)
         self.assertIn(".pair>*{min-width:0}", self.css)
         self.assertIn(".pair input,.pair select{max-width:100%;width:100%}", self.css)
+
+    def test_primary_workspace_matches_the_operator_console_contract(self):
+        by_id = {attrs.get("id"): (tag, attrs) for tag, attrs in self.inventory.elements if attrs.get("id")}
+        self.assertIn("stage-editor", by_id)
+        self.assertIn("templateCanvas", by_id)
+        self.assertIn("templateSelectionLabel", by_id)
+        self.assertIn("templateSelectionX", by_id)
+        self.assertIn("templateSelectionY", by_id)
+        palette = [attrs for tag, attrs in self.inventory.elements if tag == "button" and attrs.get("data-template-kind")]
+        self.assertEqual(
+            {item["data-template-kind"] for item in palette},
+            {"performer", "microphone", "monitor", "speaker", "light", "marker"},
+        )
+        self.assertIn(".editorGrid{display:grid", self.css)
+        self.assertIn(".templateInspector", self.css)
+        self.assertIn(".readinessGrid{grid-template-columns:repeat(4", self.css)
+
+    def test_object_palette_exposes_selection_and_filter_feedback(self):
+        by_id = {attrs.get("id"): attrs for _, attrs in self.inventory.elements if attrs.get("id")}
+        palette = [attrs for tag, attrs in self.inventory.elements if tag == "button" and attrs.get("data-template-kind")]
+        self.assertEqual([item.get("aria-pressed") for item in palette].count("true"), 1)
+        self.assertEqual([item.get("aria-pressed") for item in palette].count("false"), 5)
+        self.assertEqual(by_id["templateObjectSearchStatus"].get("role"), "status")
+        self.assertEqual(by_id["templateObjectSearchStatus"].get("aria-live"), "polite")
+        script = (ROOT / "frontend" / "stage-template.js").read_text()
+        self.assertIn('item.setAttribute("aria-pressed", String(active))', script)
+        self.assertIn('`${visible} matching object type', script)
 
 
 class ServedUiAcceptanceTests(unittest.TestCase):

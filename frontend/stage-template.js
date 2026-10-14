@@ -86,6 +86,18 @@
     }
   };
   const selected = () => objects.find((item) => item.id === selectedId);
+  const renderSelection = () => {
+    const item = selected();
+    const label = q("#templateSelectionLabel");
+    const meta = q("#templateSelectionMeta");
+    const x = q("#templateSelectionX");
+    const y = q("#templateSelectionY");
+    if (label) label.value = item?.label || "No selection";
+    if (meta) meta.textContent = item ? `${item.type} object · local draft` : "Choose an object on the canvas";
+    if (x) x.value = item ? `${Math.round(item.x)}%` : "—";
+    if (y) y.value = item ? `${Math.round(item.y)}%` : "—";
+  };
+  globalThis.StageMeshTemplateRenderSelection = renderSelection;
   const api = async (method, path, body) => {
     const response = await fetch(path, {
       method: method, headers: body ? {"Content-Type": "application/json"} : {},
@@ -171,6 +183,7 @@
     q("#templateLoadSaved").disabled = !q("#templateSaved").value;
     q("#templateDeleteServer").disabled = !serverTemplateId || q("#templateSaved").value !== serverTemplateId;
     renderStatus();
+    globalThis.StageMeshTemplateRenderSelection?.();
     const empty = q(".templateEmpty");
     if (empty) empty.hidden = objects.length > 0;
     objects.forEach((item) => {
@@ -186,6 +199,7 @@
           button.classList.toggle("selected", active); button.setAttribute("aria-pressed", String(active));
         });
         q("#templateDelete").disabled = false;
+        globalThis.StageMeshTemplateRenderSelection?.();
       };
       node.addEventListener("click", selectObject);
       node.addEventListener("keydown", (event) => {
@@ -207,6 +221,7 @@
           node.style.left = `${item.x}%`; node.style.top = `${item.y}%`;
           q("#templateHint").textContent = `Move not saved: ${error.message}. Previous position restored.`;
         }
+        globalThis.StageMeshTemplateRenderSelection?.();
       });
       node.innerHTML = `<strong>${esc(item.label)}</strong><small>${esc(item.type)}</small>`;
       node.addEventListener("pointerdown", (event) => {
@@ -226,6 +241,7 @@
         item.x = Math.max(4, Math.min(96, ((event.clientX - rect.left) / rect.width) * 100));
         item.y = Math.max(7, Math.min(93, ((event.clientY - rect.top) / rect.height) * 100));
         node.style.left = `${item.x}%`; node.style.top = `${item.y}%`;
+        globalThis.StageMeshTemplateRenderSelection?.();
       });
       node.addEventListener("pointerup", (event) => {
         if (drag?.id !== item.id || drag.pointerId !== event.pointerId) return;
@@ -239,12 +255,14 @@
           node.style.left = `${item.x}%`; node.style.top = `${item.y}%`;
           q("#templateHint").textContent = `Move not saved: ${error.message}. Previous position restored.`;
         }
+        globalThis.StageMeshTemplateRenderSelection?.();
       });
       const cancelMove = (event) => {
         if (drag?.id !== item.id || drag.pointerId !== event.pointerId) return;
         item.x = drag.x; item.y = drag.y; drag = null;
         node.style.left = `${item.x}%`; node.style.top = `${item.y}%`;
         q("#templateHint").textContent = "Move cancelled. Previous position preserved.";
+        globalThis.StageMeshTemplateRenderSelection?.();
       };
       node.addEventListener("pointercancel", cancelMove);
       node.addEventListener("lostpointercapture", cancelMove);
@@ -314,6 +332,32 @@
       replaceLocalDraft([...objects, item], item.id); render();
       q("#templateHint").textContent = `${label} added. Drag it to position it.`;
     } catch (error) { q("#templateHint").textContent = `Object not added: ${error.message}. Previous draft preserved.`; }
+  });
+  globalThis.document?.querySelectorAll("[data-template-kind]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const type = button.dataset.templateKind;
+      q("#templateObjectType").value = type;
+      q("#templateObjectLabel").value = button.querySelector("strong")?.textContent || "New object";
+      globalThis.document.querySelectorAll("[data-template-kind]").forEach((item) => {
+        const active = item === button;
+        item.classList.toggle("active", active);
+        item.setAttribute("aria-pressed", String(active));
+      });
+      q("#templateObjectLabel").focus();
+    });
+  });
+  q("#templateObjectSearch")?.addEventListener("input", (event) => {
+    const query = event.target.value.trim().toLowerCase();
+    const choices = Array.from(globalThis.document.querySelectorAll("[data-template-kind]"));
+    let visible = 0;
+    choices.forEach((button) => {
+      button.hidden = Boolean(query) && !button.textContent.toLowerCase().includes(query);
+      if (!button.hidden) visible += 1;
+    });
+    const status = q("#templateObjectSearchStatus");
+    if (status) status.textContent = query
+      ? `${visible} matching object type${visible === 1 ? "" : "s"}.`
+      : `${choices.length} object types available.`;
   });
   q("#templateDelete").addEventListener("click", () => {
     if (!selected()) return;

@@ -22,6 +22,7 @@ from adaptation import AdaptationRevisionConflict
 from http_credentials import credential_environment
 from http_authorization import authorization_policy, authorize_control_request, specialized_authorization_route, classify_control_action
 from http_deployment import validate_proxy_https_profile
+from recommendations import build_recommendations
 
 
 def environment_value(environ: Mapping[str, str], name: str) -> str:
@@ -56,6 +57,7 @@ _EXPENSIVE_OPERATION_EXACT = {
     ("POST", "/api/v1/compatibility/show-plan"): "planning",
     ("POST", "/api/v1/venue/plan"): "planning",
     ("POST", "/api/v1/technology/negotiate"): "planning",
+    ("POST", "/api/v1/advisor/recommendations"): "planning",
     ("GET", "/api/v1/technology/assessment"): "planning",
     ("POST", "/api/v1/interoperability/offer"): "planning",
     ("POST", "/api/v1/daw/media/ingest"): "storage",
@@ -976,6 +978,16 @@ class StageMeshHandler(BaseHTTPRequestHandler):
                 return
             if path == "/api/v1/hardware/audio-preflight":
                 self._json(200, RUNTIME.audio_hardware_preflight(body))
+                return
+            if path == "/api/v1/advisor/recommendations":
+                state = RUNTIME.state.snapshot()
+                self._json(200, build_recommendations(
+                    state,
+                    RUNTIME.audio_devices(),
+                    RUNTIME.midi_devices(),
+                    RUNTIME.adapters.plan(state["system"]["capacity"], state["system"]["mode"]),
+                    body,
+                ))
                 return
             if path == "/api/v1/templates":
                 self._json(201, RUNTIME.stage_template_create(body)); return

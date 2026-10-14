@@ -15,6 +15,7 @@ class ProductionPanelTests(unittest.TestCase):
         self.assertEqual(contract["openapi"], "3.1.0")
         self.assertEqual(set(contract["paths"]), {
             "/api/v1/witness/recover",
+            "/api/v1/advisor/recommendations",
             "/api/v1/audio/overload/plan",
             "/api/v1/audio/overload/prepare",
             "/api/v1/daw/production", "/api/v1/daw/playback",
