@@ -30,6 +30,24 @@
       </div>
     </section>
 
+    <details id="ai-advisor" class="panel advisorPanel">
+      <summary>
+        <span class="advisorIdentity"><i aria-hidden="true">✦</i><span><strong>AI setup advisor</strong><small>Hardware-aware guidance for this show</small></span></span>
+        <span class="advisorSummary"><b id="advisorHeadline">Review setup recommendations</b><span class="tag">ADVISORY ONLY</span></span>
+      </summary>
+      <div class="advisorBody">
+        <div class="advisorInputs">
+          <label>Performer<select id="advisorPlayer"><option value="">Whole show</option></select></label>
+          <label>Primary goal<select id="advisorGoal"><option value="balanced">Balanced setup</option><option value="clarity">Monitor clarity</option><option value="low-latency">Lowest latency</option><option value="reliability">Maximum reliability</option><option value="recording">Recording readiness</option><option value="mobility">Fast changeover</option></select></label>
+          <label class="advisorNotes">Performer input<textarea id="advisorNotes" maxlength="1000" rows="2" placeholder="Example: I need a clear vocal and less click in my monitor."></textarea></label>
+          <button id="advisorRun" class="primary" type="button">Generate recommendations</button>
+        </div>
+        <p id="advisorStatus" class="advisorStatus" role="status" aria-live="polite">Uses current StageMesh state and detected hardware. Performer input stays local and is not retained.</p>
+        <div id="advisorResults" class="advisorResults" aria-live="polite"></div>
+        <p class="guard">Recommendations explain their evidence. They never change routing, arm physical outputs, or replace operator approval.</p>
+      </div>
+    </details>
+
     <section id="stage-editor" class="panel templatePanel" aria-labelledby="templateTitle">
       <div class="workspaceBar">
         <div><span class="eyebrow">Design workspace</span><h1 id="templateTitle">Stage template editor</h1></div>

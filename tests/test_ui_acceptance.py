@@ -49,9 +49,20 @@ class UiAccessibilityContractTests(unittest.TestCase):
 
     def test_operator_feedback_is_a_polite_live_region(self):
         by_id = {attrs.get("id"): attrs for _, attrs in self.inventory.elements if attrs.get("id")}
-        for target in ("launcherStatus", "dawAutomationStatus", "dawProductionStatus", "recoveryStatus"):
+        for target in ("launcherStatus", "dawAutomationStatus", "dawProductionStatus", "recoveryStatus", "advisorStatus"):
             self.assertEqual(by_id[target].get("role"), "status", target)
             self.assertEqual(by_id[target].get("aria-live"), "polite", target)
+
+    def test_advisor_is_progressively_disclosed_and_advisory_only(self):
+        by_id = {attrs.get("id"): (tag, attrs) for tag, attrs in self.inventory.elements if attrs.get("id")}
+        self.assertEqual(by_id["ai-advisor"][0], "details")
+        for target in ("advisorPlayer", "advisorGoal", "advisorNotes", "advisorRun", "advisorResults"):
+            self.assertIn(target, by_id)
+        self.assertNotIn("open", by_id["ai-advisor"][1])
+        script = (ROOT / "frontend" / "app.js").read_text()
+        self.assertIn('api("/api/v1/advisor/recommendations"', script)
+        self.assertIn('new Set(["#show-control", "#operations", "#stage-editor"])', script)
+        self.assertIn("never change routing, arm physical outputs, or replace operator approval", self.html)
 
     def test_focus_is_visible_and_skip_link_only_appears_on_focus(self):
         self.assertIn(".skipLink:focus{transform:translateY(0)}", self.css)

@@ -14,6 +14,7 @@ class OperationCostLimiterTests(unittest.TestCase):
     def test_exact_expensive_route_classes_are_bounded(self):
         self.assertEqual(expensive_operation_class("POST", "/api/v1/checkpoint"), "maintenance")
         self.assertEqual(expensive_operation_class("POST", "/api/v1/audio/scan"), "discovery")
+        self.assertEqual(expensive_operation_class("POST", "/api/v1/advisor/recommendations"), "planning")
         self.assertEqual(expensive_operation_class("POST", "/api/v1/compatibility/show-plan"), "planning")
         self.assertEqual(expensive_operation_class("POST", "/api/v1/daw/render"), "storage")
         self.assertEqual(expensive_operation_class("POST", "/api/v1/community/proposals/p-1/email-voters"), "external")

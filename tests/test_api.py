@@ -24,6 +24,23 @@ def free_port():
 
 
 class ApiTests(unittest.TestCase):
+    def test_setup_advisor_uses_live_evidence_without_applying_changes(self):
+        status, _, before = self.request("GET", "/api/v1/state")
+        self.assertEqual(status, 200)
+        performer = before["players"][0]
+        status, _, report = self.request("POST", "/api/v1/advisor/recommendations", {
+            "playerId": performer["id"], "goal": "clarity", "notes": "Clear vocal monitor",
+        })
+        self.assertEqual(status, 200)
+        self.assertEqual(report["documentType"], "org.stagemesh.advisor-recommendations")
+        self.assertEqual(report["generatedFromRevision"], before["revision"])
+        self.assertFalse(report["automaticApply"])
+        self.assertFalse(report["physicalOutputsArmed"])
+        self.assertNotIn("Clear vocal monitor", repr(report))
+        self.assertTrue(report["recommendations"])
+        _, _, after = self.request("GET", "/api/v1/state")
+        self.assertEqual(after["revision"], before["revision"])
+
     def test_oversized_command_id_rejected_without_mutation(self):
         _, _, before = self.request('GET', '/api/v1/state')
         status, _, error = self.request('PATCH', '/api/v1/show', {'bpm': 137},

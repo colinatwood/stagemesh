@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 20305)
+Total output lines: 1021
+
 (() => {
   const q = (s) => document.querySelector(s);
   const qa = (s) => [...document.querySelectorAll(s)];
@@ -68,6 +71,7 @@
   let dawSessionState = null;
   let dawSelectedClipId = null;
   let launcherState = null;
+  let advisorState = null;
 
   function commandId() {
     if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
@@ -130,6 +134,13 @@
     q("#venue").textContent = state.system.venue;
     q("#manager").textContent = state.system.productionManager;
     q("#revision").textContent = `REV ${state.revision}`;
+    const advisorPlayer = q("#advisorPlayer");
+    if (advisorPlayer && document.activeElement !== advisorPlayer) {
+      const previous = advisorPlayer.value;
+      advisorPlayer.innerHTML = [`<option value="">Whole show</option>`, ...(state.players || []).map((player) => `<option value="${escapeHtml(player.id)}">${escapeHtml(player.name)} · ${escapeHtml(player.role)}</option>`)].join("");
+      const preferred = previous || selectedPlayer || "";
+      advisorPlayer.value = Array.from(advisorPlayer.options).some((option) => option.value === preferred) ? preferred : "";
+    }
     if (state.audio) {
       q("#limiterCeiling").value = state.audio.limiterCeilingDb;
       q("#limiterValue").textContent = `${Number(state.audio.limiterCeilingDb).toFixed(1)} dBFS`;
@@ -224,6 +235,38 @@
 
   function escapeHtml(value) {
     return String(value).replace(/[&<>"']/g, (ch) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
+  }
+
+  function renderAdvisor(report) {
+    advisorState = report;
+    const hardware = report.hardwareSummary || {};
+    q("#advisorHeadline").textContent = report.recommendations?.length
+      ? `${report.recommendations.length} recommendation${report.recommendations.length === 1 ? "" : "s"} · ${hardware.capacityPercent ?? "--"}% capacity`
+      : "No recommendation available";
+    q("#advisorStatus").textContent = `${report.summary} ${hardware.audioOutputs || 0} outputs · ${hardware.audioInputs || 0} inputs · ${hardware.midiDevices || 0} MIDI devices · ${report.engine}.`;
+    const allowedTargets = new Set(["#show-control", "#operations", "#stage-editor"]);
+    const items = Array.isArray(report.recommendations) ? report.recommendations : [];
+    q("#advisorResults").innerHTML = items.length ? items.map((item) => {
+      const target = allowedTargets.has(item.actionTarget) ? item.actionTarget : "#operations";
+      const evidence = Array.isArray(item.evidence) ? item.evidence : [];
+      return `<article class="advisorCard" data-priority="${escapeHtml(item.priority)}"><div class="advisorCardHead"><h3>${escapeHtml(item.title)}</h3><span class="advisorPriority">${escapeHtml(item.priority).toUpperCase()}</span></div><p>${escapeHtml(item.summary)}</p><details><summary>Why this recommendation</summary><p>${escapeHtml(item.why)}</p><ul>${evidence.map((entry) => `<li>${escapeHtml(entry)}</li>`).join("")}</ul></details><a href="${target}">Review relevant controls →</a></article>`;
+    }).join("") : '<p class="advisorEmpty">No recommendation was generated for the current context.</p>';
+  }
+
+  async function runAdvisor() {
+    const button = q("#advisorRun");
+    button.disabled = true;
+    q("#advisorStatus").textContent = "Reviewing current hardware, capacity, performer role, and show state…";
+    try {
+      renderAdvisor(await api("/api/v1/advisor/recommendations", {method:"POST", body:JSON.stringify({
+        playerId:q("#advisorPlayer").value,
+        goal:q("#advisorGoal").value,
+        notes:q("#advisorNotes").value,
+      })}));
+    } catch (error) {
+      q("#advisorStatus").textContent = `Recommendations unavailable: ${error.message}`;
+      q("#advisorResults").replaceChildren();
+    } finally { button.disabled = false; }
   }
 
   async function refresh() {
@@ -463,11 +506,7 @@
 
   function renderMidiMappings(status) {
     midiMappingState=status;const learning=status.learning;const panel=q(".midiLearnPanel");panel.classList.toggle("waiting",Boolean(learning));q("#midiLearnState").textContent=learning?"MOVE A CONTROL":"READY";q("#midiLearnHint").textContent=learning?`Waiting for a pad, knob, or slider for ${learning.target.name}…`:"Choose a target, click Learn, then move one knob, slider, or pad.";
-    const mappings=status.mappings||[];q("#midiMappings").innerHTML=mappings.length?mappings.map((mapping)=>{const source=mapping.source;const control=source.message==="cc"?`CC ${source.number}`:source.message==="note"?`Note ${source.number}`:source.message;const resource=mapping.target.resourceId?` · clip ${escapeHtml(mapping.target.resourceId)}`:"";return `<div class="midiDevice"><div class="midiDeviceHead"><div><strong>${escapeHtml(mapping.name)}</strong><div class="hint midiMapSource">${escapeHtml(source.deviceId)} · ch ${Number(source.channel)+1} · ${escapeHtml(control)}</div></div><span>${escapeHtml(mapping.behavior.toUpperCase())}</span></div><div class="hint">${mapping.quantize==="off"?"immediate":`${escapeHtml(mapping.quantize)} beat sync`}${mapping.keySync?` · master ${escapeHtml(mapping.scale)} key`:""}${resource}</div><button type="button" data-midi-map-delete="${escapeHtml(mapping.mappingId)}" aria-label="Remove mapping ${escapeHtml(mapping.name)}">Remove mapping</button></div>`;}).join(""):'<div class="hint">No learned controls yet.</div>';
-    qa("[data-midi-map-delete]").forEach((button)=>button.addEventListener("click",async()=>{await api(`/api/v1/midi/mappings/${encodeURIComponent(button.dataset.midiMapDelete)}/delete`,{method:"POST",body:"{}"});await refreshMidiMappings();}));
-  }
-
-  async function refreshMidiMappings(){try{if(!midiMappingTargets){midiMappingTargets=await api("/api/v1/midi/mapping-targets");q("#midiLearnTarget").innerHTML=(midiMappingTargets.targets||[]).map((target)=>`<option value="${escapeHtml(target.targetId)}">${escapeHtml(target.name)} · ${escapeHtml(target.suggestedControl)}</option>`).join("");}renderMidiMappings(await api("/api/v1/midi/mappings"));}catch(error){q("#midiLearnHint").textContent=error.message;}}
+    const mappings=status.mappings||[];q("#midiMappings").innerHTML=mappings.length?mappings.map((mapping)=>{const source=mapping.source;const control=source.message==="cc"?`CC ${source.number}`:source.message==="note"?`Note ${source.number}`:source.message;const resource=mapping.target.resourceId?` · clip ${escapeHtml(mapping.target.resourceId)}`:"";return `<div class="midiDevice"><div class="midiDeviceHead"><div><strong>${escapeHtml(mapping.name)}</strong><div class="hint midiMapSource">${escapeHtml(source.deviceId)} · ch ${Number(source.ch…305 tokens truncated…ent=error.message;}}
 
   async function refreshClockStatus() {
     try {
@@ -770,7 +809,15 @@
     await command("/api/v1/technology", "PATCH", {ecosystemParticipants}, "technology");
   });
 
-  qa("[data-player]").forEach((node) => node.addEventListener("click", () => { selectedPlayer = node.dataset.player; renderMonitor(); renderNotation(); }));
+  qa("[data-player]").forEach((node) => node.addEventListener("click", () => {
+    selectedPlayer = node.dataset.player;
+    renderMonitor(); renderNotation();
+    if (q("#advisorPlayer")) q("#advisorPlayer").value = selectedPlayer;
+  }));
+  q("#advisorRun").addEventListener("click", runAdvisor);
+  q("#ai-advisor").addEventListener("toggle", (event) => {
+    if (event.target.open && !advisorState) runAdvisor();
+  });
 
   qa("[data-monitor]").forEach((input) => input.addEventListener("input", () => {
     const player = playerById(selectedPlayer);
