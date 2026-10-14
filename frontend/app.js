@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 20305)
-Total output lines: 1021
-
 (() => {
   const q = (s) => document.querySelector(s);
   const qa = (s) => [...document.querySelectorAll(s)];
@@ -506,7 +503,11 @@ Total output lines: 1021
 
   function renderMidiMappings(status) {
     midiMappingState=status;const learning=status.learning;const panel=q(".midiLearnPanel");panel.classList.toggle("waiting",Boolean(learning));q("#midiLearnState").textContent=learning?"MOVE A CONTROL":"READY";q("#midiLearnHint").textContent=learning?`Waiting for a pad, knob, or slider for ${learning.target.name}…`:"Choose a target, click Learn, then move one knob, slider, or pad.";
-    const mappings=status.mappings||[];q("#midiMappings").innerHTML=mappings.length?mappings.map((mapping)=>{const source=mapping.source;const control=source.message==="cc"?`CC ${source.number}`:source.message==="note"?`Note ${source.number}`:source.message;const resource=mapping.target.resourceId?` · clip ${escapeHtml(mapping.target.resourceId)}`:"";return `<div class="midiDevice"><div class="midiDeviceHead"><div><strong>${escapeHtml(mapping.name)}</strong><div class="hint midiMapSource">${escapeHtml(source.deviceId)} · ch ${Number(source.ch…305 tokens truncated…ent=error.message;}}
+    const mappings=status.mappings||[];q("#midiMappings").innerHTML=mappings.length?mappings.map((mapping)=>{const source=mapping.source;const control=source.message==="cc"?`CC ${source.number}`:source.message==="note"?`Note ${source.number}`:source.message;const resource=mapping.target.resourceId?` · clip ${escapeHtml(mapping.target.resourceId)}`:"";return `<div class="midiDevice"><div class="midiDeviceHead"><div><strong>${escapeHtml(mapping.name)}</strong><div class="hint midiMapSource">${escapeHtml(source.deviceId)} · ch ${Number(source.channel)+1} · ${escapeHtml(control)}</div></div><span>${escapeHtml(mapping.behavior.toUpperCase())}</span></div><div class="hint">${mapping.quantize==="off"?"immediate":`${escapeHtml(mapping.quantize)} beat sync`}${mapping.keySync?` · master ${escapeHtml(mapping.scale)} key`:""}${resource}</div><button type="button" data-midi-map-delete="${escapeHtml(mapping.mappingId)}" aria-label="Remove mapping ${escapeHtml(mapping.name)}">Remove mapping</button></div>`;}).join(""):'<div class="hint">No learned controls yet.</div>';
+    qa("[data-midi-map-delete]").forEach((button)=>button.addEventListener("click",async()=>{await api(`/api/v1/midi/mappings/${encodeURIComponent(button.dataset.midiMapDelete)}/delete`,{method:"POST",body:"{}"});await refreshMidiMappings();}));
+  }
+
+  async function refreshMidiMappings(){try{if(!midiMappingTargets){midiMappingTargets=await api("/api/v1/midi/mapping-targets");q("#midiLearnTarget").innerHTML=(midiMappingTargets.targets||[]).map((target)=>`<option value="${escapeHtml(target.targetId)}">${escapeHtml(target.name)} · ${escapeHtml(target.suggestedControl)}</option>`).join("");}renderMidiMappings(await api("/api/v1/midi/mappings"));}catch(error){q("#midiLearnHint").textContent=error.message;}}
 
   async function refreshClockStatus() {
     try {

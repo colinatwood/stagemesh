@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 20995)
-Total output lines: 1693
-
 #!/usr/bin/env python3
 from __future__ import annotations
 
@@ -852,7 +849,92 @@ class StageMeshHandler(BaseHTTPRequestHandler):
             self._json(200, RUNTIME.audio_stream_status())
             return
         if path == "/api/v1/audio/outputs":
-       …995 tokens truncated…     try:
+            self._json(200, RUNTIME.audio_outputs_status())
+            return
+        audio_output_prefix = "/api/v1/audio/outputs/"
+        if path.startswith(audio_output_prefix):
+            try:
+                slot = int(path[len(audio_output_prefix):].strip("/"))
+                self._json(200, RUNTIME.audio_stream_status(slot))
+            except ValueError as exc:
+                self._json(400, {"error": str(exc)})
+            return
+        if path == "/api/v1/audio/input":
+            self._json(200, RUNTIME.audio_input_status())
+            return
+        if path == "/api/v1/audio/inputs":
+            self._json(200, RUNTIME.audio_inputs_status())
+            return
+        le_uwb_node_prefix = "/api/v1/le-uwb/nodes/"
+        if path.startswith(le_uwb_node_prefix):
+            try:
+                node_id = int(path[len(le_uwb_node_prefix):].strip("/"))
+                self._json(200, RUNTIME.le_uwb_node_status(node_id))
+            except ValueError as exc:
+                self._json(400, {"error": str(exc)})
+            except RuntimeError as exc:
+                self._json(503, {"error": str(exc)})
+            return
+        audio_input_prefix = "/api/v1/audio/inputs/"
+        if path.startswith(audio_input_prefix):
+            try:
+                slot = int(path[len(audio_input_prefix):].strip("/"))
+                self._json(200, RUNTIME.audio_input_status(slot))
+            except ValueError as exc:
+                self._json(400, {"error": str(exc)})
+            return
+        if path == "/api/v1/midi/devices":
+            self._json(200, RUNTIME.midi_devices())
+            return
+        if path == "/api/v1/midi/mappings":
+            self._json(200, RUNTIME.midi_mapping_status())
+            return
+        if path == "/api/v1/midi/mapping-targets":
+            self._json(200, RUNTIME.midi_mapping_targets())
+            return
+        if path == "/api/v1/clock":
+            self._json(200, RUNTIME.clock_status())
+            return
+        if path == "/api/v1/clock/transport-discipline":
+            self._json(200,RUNTIME.transport_discipline_status())
+            return
+        if path == "/api/v1/midi/clock":
+            self._json(200,RUNTIME.midi_clock_status())
+            return
+        if path == "/api/v1/lighting/network":
+            self._json(200, RUNTIME.lighting_network_status())
+            return
+        lighting_prefix = "/api/v1/lighting/universe/"
+        if path.startswith(lighting_prefix):
+            try:
+                universe = int(path[len(lighting_prefix):].strip("/"))
+                self._json(200, RUNTIME.lighting_universe_info(universe))
+            except ValueError as exc:
+                self._json(400, {"error": str(exc)})
+            except RuntimeError as exc:
+                self._json(503, {"error": str(exc)})
+            return
+        if path == "/api/v1/system/plan":
+            state = RUNTIME.state.snapshot()
+            self._json(200, RUNTIME.adapters.plan(state["system"]["capacity"], state["system"]["mode"]))
+            return
+        if path == "/api/v1/public-record/verify":
+            result = RUNTIME.repository.verify_ledger()
+            self._json(200 if result.get("ok") else 503, result)
+            return
+        prefix = "/api/v1/players/"
+        if path.startswith(prefix) and path.endswith("/notation.musicxml"):
+            player_id = path[len(prefix):-len("/notation.musicxml")].strip("/")
+            try:
+                xml = RUNTIME.state.notation_musicxml(player_id).encode("utf-8")
+            except KeyError:
+                self._json(404, {"error": f"unknown player: {player_id}"})
+                return
+            self._raw(200, xml, "application/vnd.recordare.musicxml+xml; charset=utf-8", {"Content-Disposition": f'attachment; filename="{player_id}.musicxml"'})
+            return
+        if path.startswith(prefix) and path.endswith("/notation"):
+            player_id = path[len(prefix):-len("/notation")].strip("/")
+            try:
                 part = RUNTIME.state.notation_snapshot(player_id)
             except KeyError:
                 self._json(404, {"error": f"unknown player: {player_id}"})
