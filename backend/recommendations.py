@@ -80,10 +80,22 @@ def build_recommendations(
     bindings = midi_inventory.get("bindings") or {}
     performer_inputs = [item for item in audio.get("inputs", []) if player and item.get("playerId") == player.get("id") and item.get("deviceId")]
     performer_midi = [device_id for device_id, assigned in bindings.items() if player and assigned == player.get("id")]
+    hotplug_changes = [item for item in (audio_inventory.get("hotplug") or {}).get("changes", []) if isinstance(item, dict)]
+    failed_output_stops = sum(len(item.get("failedOutputStopSlots") or []) for item in hotplug_changes)
+    failed_input_stops = sum(len(item.get("failedInputStopSlots") or []) for item in hotplug_changes)
     capacity = max(0.0, min(100.0, float(system.get("capacity", 0.0))))
     mode = str(system.get("mode", "safe"))
     role = str((player or {}).get("role", "show")).lower()
     recommendations: list[dict[str, Any]] = []
+
+    if failed_output_stops or failed_input_stops:
+        recommendations.append(_recommendation(
+            "verify-stream-stop", "Verify streams stopped after device loss",
+            "Keep output activation blocked and confirm the affected capture/playback paths are inactive before recovery.",
+            category="safety", priority="critical", confidence="high",
+            evidence=[f"{failed_output_stops} output stop command(s) failed", f"{failed_input_stops} input stop command(s) failed"],
+            why="StageMesh observed an unsafe endpoint change but could not confirm every requested stream stop.", target="#operations",
+        ))
 
     if not physical_outputs:
         recommendations.append(_recommendation(
@@ -200,6 +212,7 @@ def build_recommendations(
             "audioOutputs": len(physical_outputs),
             "audioInputs": len(physical_inputs),
             "midiDevices": len(connected_midi),
+            "failedStreamStops": failed_output_stops + failed_input_stops,
             "capacityPercent": round(capacity, 1),
             "mode": mode,
         },

@@ -100,6 +100,51 @@ class AudioHotplugTests(unittest.TestCase):
             runtime.native.deactivate_audio.assert_called_once_with(1);runtime.native.deactivate_audio_input.assert_called_once_with(2)
             change=runtime.audio_hotplug_status()["changes"][0];self.assertEqual(change["stoppedOutputSlots"],[1]);self.assertEqual(change["stoppedInputSlots"],[2])
 
+    def test_simultaneous_losses_attribute_stopped_slots_to_exact_endpoint(self):
+        with tempfile.TemporaryDirectory() as raw:
+            runtime=self.runtime(raw)
+            runtime._audio_devices=[
+                {"id":"endpoint-a","connected":True,"output":True,"input":True},
+                {"id":"endpoint-b","connected":True,"output":True,"input":True},
+            ]
+            runtime.native.scan_audio_devices.return_value=[]
+            runtime.native.audio_stream_status.side_effect=lambda slot: (
+                {"selected":"endpoint-a","execution":"wasapi","state":"2"} if slot==0 else
+                {"selected":"endpoint-b","execution":"coreaudio","state":"2"} if slot==1 else {}
+            )
+            runtime.native.audio_input_status.side_effect=lambda slot: (
+                {"selected":"endpoint-a","execution":"wasapi","state":"2"} if slot==2 else
+                {"selected":"endpoint-b","execution":"coreaudio","state":"2"} if slot==3 else {}
+            )
+
+            runtime._refresh_audio_devices(reselect=True)
+
+            changes={item["deviceId"]:item for item in runtime.audio_hotplug_status()["changes"]}
+            self.assertEqual(changes["endpoint-a"]["stoppedOutputSlots"],[0])
+            self.assertEqual(changes["endpoint-a"]["stoppedInputSlots"],[2])
+            self.assertEqual(changes["endpoint-b"]["stoppedOutputSlots"],[1])
+            self.assertEqual(changes["endpoint-b"]["stoppedInputSlots"],[3])
+            self.assertEqual(runtime.native.deactivate_audio.call_count,2)
+            self.assertEqual(runtime.native.deactivate_audio_input.call_count,2)
+
+    def test_stop_failures_are_scoped_and_visible_in_loss_evidence(self):
+        with tempfile.TemporaryDirectory() as raw:
+            runtime=self.runtime(raw)
+            runtime._audio_devices=[{"id":"endpoint-a","connected":True,"output":True,"input":True}]
+            runtime.native.scan_audio_devices.return_value=[]
+            runtime.native.audio_stream_status.side_effect=lambda slot:{"selected":"endpoint-a","execution":"wasapi","state":"2"} if slot==1 else {}
+            runtime.native.audio_input_status.side_effect=lambda slot:{"selected":"endpoint-a","execution":"wasapi","state":"2"} if slot==2 else {}
+            runtime.native.deactivate_audio.side_effect=RuntimeError("output stop failed")
+            runtime.native.deactivate_audio_input.side_effect=RuntimeError("input stop failed")
+
+            runtime._refresh_audio_devices(reselect=True)
+
+            change=runtime.audio_hotplug_status()["changes"][0]
+            self.assertEqual(change["stoppedOutputSlots"],[])
+            self.assertEqual(change["stoppedInputSlots"],[])
+            self.assertEqual(change["failedOutputStopSlots"],[1])
+            self.assertEqual(change["failedInputStopSlots"],[2])
+
 
 if __name__=="__main__":unittest.main()
 

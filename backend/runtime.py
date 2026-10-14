@@ -518,17 +518,24 @@ class StageMeshRuntime:
         prior_identity={device_id:(previous_by_id.get(device_id) or self.audio_identities.expected(device_id) or {}).get("persistentId") for device_id in current_ids}
         identity_changed={device_id for device_id in current_ids if prior_identity.get(device_id) and current_by_id[device_id].get("persistentId") and prior_identity[device_id]!=current_by_id[device_id].get("persistentId") and (device_id not in previous_by_id or previous_by_id[device_id].get("persistentId")!=current_by_id[device_id].get("persistentId"))}
         unsafe_ids=disconnected|identity_changed
-        stopped_outputs=[];stopped_inputs=[]
+        stopped_outputs_by_device={device_id:[] for device_id in unsafe_ids}
+        stopped_inputs_by_device={device_id:[] for device_id in unsafe_ids}
+        failed_outputs_by_device={device_id:[] for device_id in unsafe_ids}
+        failed_inputs_by_device={device_id:[] for device_id in unsafe_ids}
         for slot in range(4):
             try:
                 status=self.native.audio_stream_status(slot)
-                if status.get("selected") in unsafe_ids and _physical_audio_execution(status.get("execution")) and status.get("state")=="2":
-                    self.native.deactivate_audio(slot);stopped_outputs.append(slot)
+                selected=str(status.get("selected", ""))
+                if selected in unsafe_ids and _physical_audio_execution(status.get("execution")) and status.get("state")=="2":
+                    try:self.native.deactivate_audio(slot);stopped_outputs_by_device[selected].append(slot)
+                    except (RuntimeError,ValueError):failed_outputs_by_device[selected].append(slot)
             except (RuntimeError,ValueError):pass
             try:
                 status=self.native.audio_input_status(slot)
-                if status.get("selected") in unsafe_ids and _physical_audio_execution(status.get("execution")) and status.get("state")=="2":
-                    self.native.deactivate_audio_input(slot);stopped_inputs.append(slot)
+                selected=str(status.get("selected", ""))
+                if selected in unsafe_ids and _physical_audio_execution(status.get("execution")) and status.get("state")=="2":
+                    try:self.native.deactivate_audio_input(slot);stopped_inputs_by_device[selected].append(slot)
+                    except (RuntimeError,ValueError):failed_inputs_by_device[selected].append(slot)
             except (RuntimeError,ValueError):pass
         audio_state = self.state.snapshot().get("audio") or {}
         output_configs = self._audio_output_configs(audio_state)
@@ -563,7 +570,8 @@ class StageMeshRuntime:
             reconnects=[str(config.get("deviceId","")) for config in output_configs+input_configs if str(config.get("deviceId",""))!=device_id and self.audio_identities.reconnect_match(str(config.get("deviceId","")),devices) is device]
             device["reconnectsDeviceIds"]=list(dict.fromkeys(reconnects));device["reconnectStatus"]="serial-match" if reconnects else ("eligible" if device.get("automaticReconnectEligible") else "explicit-recovery-required")
         with self._audio_scan_lock:
-            changes=[{"kind":"connected","deviceId":value} for value in sorted(current_ids-previous_ids)]+[{"kind":"disconnected","deviceId":value,"stoppedOutputSlots":stopped_outputs,"stoppedInputSlots":stopped_inputs} for value in sorted(disconnected)]+[{"kind":"identity-changed","deviceId":value,"previousPersistentId":prior_identity[value],"currentPersistentId":current_by_id[value]["persistentId"],"stoppedOutputSlots":stopped_outputs,"stoppedInputSlots":stopped_inputs} for value in sorted(identity_changed)]
+            def stop_evidence(device_id):return {"stoppedOutputSlots":stopped_outputs_by_device[device_id],"stoppedInputSlots":stopped_inputs_by_device[device_id],"failedOutputStopSlots":failed_outputs_by_device[device_id],"failedInputStopSlots":failed_inputs_by_device[device_id]}
+            changes=[{"kind":"connected","deviceId":value} for value in sorted(current_ids-previous_ids)]+[{"kind":"disconnected","deviceId":value,**stop_evidence(value)} for value in sorted(disconnected)]+[{"kind":"identity-changed","deviceId":value,"previousPersistentId":prior_identity[value],"currentPersistentId":current_by_id[value]["persistentId"],**stop_evidence(value)} for value in sorted(identity_changed)]
             if changes:
                 self._audio_hotplug_generation+=1
                 for change in changes:change.update({"generation":self._audio_hotplug_generation,"observedMonotonicNs":monotonic_ns()})

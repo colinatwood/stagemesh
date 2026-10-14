@@ -56,6 +56,17 @@ class RecommendationTests(unittest.TestCase):
         self.assertEqual(protection["priority"], "critical")
         self.assertIn("Suspend AI analysis", protection["summary"])
 
+    def test_unconfirmed_hotplug_stop_becomes_a_critical_safety_recommendation(self):
+        self.audio["hotplug"] = {"changes": [{
+            "kind": "disconnected", "deviceId": "interface",
+            "failedOutputStopSlots": [0, 1], "failedInputStopSlots": [2],
+        }]}
+        report = self.build()
+        recommendation = next(item for item in report["recommendations"] if item["id"] == "verify-stream-stop")
+        self.assertEqual(recommendation["priority"], "critical")
+        self.assertEqual(report["hardwareSummary"]["failedStreamStops"], 3)
+        self.assertFalse(recommendation["automaticApply"])
+
     def test_request_validation_rejects_unknown_context(self):
         with self.assertRaisesRegex(ValueError, "must be an object"):
             build_recommendations(self.state, self.audio, self.midi, self.adapters, [])
