@@ -338,15 +338,26 @@
       const type = button.dataset.templateKind;
       q("#templateObjectType").value = type;
       q("#templateObjectLabel").value = button.querySelector("strong")?.textContent || "New object";
-      globalThis.document.querySelectorAll("[data-template-kind]").forEach((item) => item.classList.toggle("active", item === button));
+      globalThis.document.querySelectorAll("[data-template-kind]").forEach((item) => {
+        const active = item === button;
+        item.classList.toggle("active", active);
+        item.setAttribute("aria-pressed", String(active));
+      });
       q("#templateObjectLabel").focus();
     });
   });
   q("#templateObjectSearch")?.addEventListener("input", (event) => {
     const query = event.target.value.trim().toLowerCase();
-    globalThis.document.querySelectorAll("[data-template-kind]").forEach((button) => {
+    const choices = Array.from(globalThis.document.querySelectorAll("[data-template-kind]"));
+    let visible = 0;
+    choices.forEach((button) => {
       button.hidden = Boolean(query) && !button.textContent.toLowerCase().includes(query);
+      if (!button.hidden) visible += 1;
     });
+    const status = q("#templateObjectSearchStatus");
+    if (status) status.textContent = query
+      ? `${visible} matching object type${visible === 1 ? "" : "s"}.`
+      : `${choices.length} object types available.`;
   });
   q("#templateDelete").addEventListener("click", () => {
     if (!selected()) return;

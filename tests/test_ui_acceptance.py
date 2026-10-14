@@ -83,6 +83,17 @@ class UiAccessibilityContractTests(unittest.TestCase):
         self.assertIn(".templateInspector", self.css)
         self.assertIn(".readinessGrid{grid-template-columns:repeat(4", self.css)
 
+    def test_object_palette_exposes_selection_and_filter_feedback(self):
+        by_id = {attrs.get("id"): attrs for _, attrs in self.inventory.elements if attrs.get("id")}
+        palette = [attrs for tag, attrs in self.inventory.elements if tag == "button" and attrs.get("data-template-kind")]
+        self.assertEqual([item.get("aria-pressed") for item in palette].count("true"), 1)
+        self.assertEqual([item.get("aria-pressed") for item in palette].count("false"), 5)
+        self.assertEqual(by_id["templateObjectSearchStatus"].get("role"), "status")
+        self.assertEqual(by_id["templateObjectSearchStatus"].get("aria-live"), "polite")
+        script = (ROOT / "frontend" / "stage-template.js").read_text()
+        self.assertIn('item.setAttribute("aria-pressed", String(active))', script)
+        self.assertIn('`${visible} matching object type', script)
+
 
 class ServedUiAcceptanceTests(unittest.TestCase):
     @classmethod
