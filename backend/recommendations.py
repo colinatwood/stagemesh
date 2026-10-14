@@ -89,6 +89,7 @@ def build_recommendations(
         item.get("kind") in {"disconnected", "identity-changed"} and item.get("detached") is False
         for item in midi_hotplug_changes
     )
+    failed_midi_attachments = [item for item in midi_devices if item.get("attachmentFailed")]
     capacity = max(0.0, min(100.0, float(system.get("capacity", 0.0))))
     mode = str(system.get("mode", "safe"))
     role = str((player or {}).get("role", "show")).lower()
@@ -110,6 +111,15 @@ def build_recommendations(
             category="safety", priority="critical", confidence="high",
             evidence=[f"{failed_midi_detaches} controller detach command(s) were not confirmed", "Automatic output activation remains disabled"],
             why="An input whose identity changed or disappeared must not continue controlling the show through a stale attachment.", target="#operations",
+        ))
+
+    if failed_midi_attachments:
+        recommendations.append(_recommendation(
+            "retry-controller-attachment", "Review failed controller attachments",
+            "Keep controller-driven actions inactive, then reconnect or explicitly rebind the intended inputs.",
+            category="control", priority="high", confidence="high",
+            evidence=[f"{len(failed_midi_attachments)} desired MIDI attachment attempt(s) failed", f"{len(attached_midi)} MIDI input(s) remain attached"],
+            why="A native attachment attempt failed, so a saved binding does not prove that performer control is live.", target="#operations",
         ))
 
     if not physical_outputs:
@@ -139,6 +149,7 @@ def build_recommendations(
 
     if player:
         display_name = str(player.get("name", player_id))
+        failed_player_attachments = [item for item in failed_midi_attachments if str(item.get("playerId", "")) == str(player.get("id", ""))]
         if not performer_inputs and (goal == "recording" or any(word in notes for word in ("record", "mic", "vocal", "input"))):
             recommendations.append(_recommendation(
                 "assign-performer-input", f"Assign an input to {display_name}",
@@ -155,7 +166,7 @@ def build_recommendations(
                 evidence=[f"{len(connected_midi)} MIDI device(s) detected", f"No desired MIDI binding exists for {display_name}"],
                 why="A role-aware binding reduces manual setup without coupling the show role to a transient device ID.", target="#operations",
             ))
-        elif performer_midi and not any(str(item.get("playerId", "")) == str(player.get("id", "")) and item.get("attached") for item in attached_midi):
+        elif performer_midi and not failed_player_attachments and not any(str(item.get("playerId", "")) == str(player.get("id", "")) and item.get("attached") for item in attached_midi):
             recommendations.append(_recommendation(
                 "restore-performer-controller", f"Restore {display_name}'s controller attachment",
                 "Review the desired binding and reconnect or explicitly rebind the intended controller.",
@@ -237,6 +248,7 @@ def build_recommendations(
             "midiDevices": len(connected_midi),
             "attachedMidiInputs": len(attached_midi),
             "failedMidiDetaches": failed_midi_detaches,
+            "failedMidiAttachments": len(failed_midi_attachments),
             "failedStreamStops": failed_output_stops + failed_input_stops,
             "capacityPercent": round(capacity, 1),
             "mode": mode,

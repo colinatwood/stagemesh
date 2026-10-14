@@ -2244,6 +2244,8 @@ class StageMeshRuntime:
                 device_id = str(device.get("id", ""))
                 device.update(describe_midi_device(device))
                 device["attached"] = bool(device.get("attached"))
+                device["attachmentAttempted"] = False
+                device["attachmentFailed"] = False
                 device["identityRecorded"] = self.midi_identities.expected(device_id) is not None
             current_by_id = {str(device.get("id", "")): device for device in devices}
             current_ids = set(current_by_id)
@@ -2283,11 +2285,12 @@ class StageMeshRuntime:
                     if len(desired) != 1 or len(players) != 1:
                         continue
                     desired_id, player_id = desired[0]
+                    current_by_id[current_id]["attachmentAttempted"] = True
                     try:
                         self.native.attach_midi_input(current_id, player_id)
                         current_by_id[current_id]["attached"] = True
                     except (RuntimeError, ValueError):
-                        pass
+                        current_by_id[current_id]["attachmentFailed"] = True
 
             for device in devices:
                 device_id = str(device.get("id", ""))
@@ -2306,6 +2309,10 @@ class StageMeshRuntime:
                     device["reconnectStatus"] = "eligible" if self.midi_identities.permits_rebind(device_id, device) else "explicit-rebind-required"
                 else:
                     device["reconnectStatus"] = "unbound"
+                device["attachmentStatus"] = ("failed" if device["attachmentFailed"] else
+                                                "attached" if device["attached"] else
+                                                "ambiguous" if device["reconnectStatus"] == "ambiguous" else
+                                                "not-attached")
 
             changes = ([{"kind": "connected", "deviceId": value} for value in sorted(current_ids - previous_ids)]
                        + [{"kind": "disconnected", "deviceId": value, "detached": value in detached} for value in sorted(disconnected)]

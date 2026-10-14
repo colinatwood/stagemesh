@@ -45,8 +45,23 @@ class MidiHotplugTests(unittest.TestCase):
                 {"id":"win-b","backend":"windows-midi","connected":True,"input":True},
             ]
             with patch("runtime.describe_midi_device",return_value=self.identity()):
-                runtime._refresh_midi_devices(rebind=True)
+                devices=runtime._refresh_midi_devices(rebind=True)
             runtime.native.attach_midi_input.assert_not_called()
+            self.assertTrue(all(not item["attachmentAttempted"] for item in devices))
+
+    def test_failed_attachment_is_distinct_from_intentionally_unattached(self):
+        with tempfile.TemporaryDirectory() as raw:
+            runtime=self.runtime(raw)
+            runtime.native.scan_midi_devices.return_value=[{"id":"win-old","backend":"windows-midi","connected":True,"input":True}]
+            runtime.native.attach_midi_input.side_effect=RuntimeError("native attach failed")
+            with patch("runtime.describe_midi_device",return_value=self.identity()):
+                devices=runtime._refresh_midi_devices(rebind=True)
+            self.assertTrue(devices[0]["desired"])
+            self.assertTrue(devices[0]["attachmentAttempted"])
+            self.assertTrue(devices[0]["attachmentFailed"])
+            self.assertEqual(devices[0]["attachmentStatus"],"failed")
+            self.assertFalse(devices[0]["attached"])
+            self.assertNotIn("native attach failed",repr(devices[0]))
 
     def test_same_native_id_identity_change_detaches_and_preserves_pin(self):
         with tempfile.TemporaryDirectory() as raw:

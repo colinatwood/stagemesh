@@ -86,6 +86,17 @@ class RecommendationTests(unittest.TestCase):
         self.assertEqual(recommendation["priority"], "high")
         self.assertEqual(report["hardwareSummary"]["attachedMidiInputs"], 0)
 
+    def test_native_controller_attachment_failure_is_not_treated_as_live(self):
+        self.midi = {
+            "devices": [{"id": "pads", "connected": True, "attached": False, "attachmentFailed": True, "playerId": "drums"}],
+            "bindings": {"pads": "drums"},
+        }
+        report = self.build({"playerId": "drums", "goal": "balanced"})
+        recommendation = next(item for item in report["recommendations"] if item["id"] == "retry-controller-attachment")
+        self.assertEqual(recommendation["priority"], "high")
+        self.assertEqual(report["hardwareSummary"]["failedMidiAttachments"], 1)
+        self.assertFalse(any(item["id"] == "restore-performer-controller" for item in report["recommendations"]))
+
     def test_request_validation_rejects_unknown_context(self):
         with self.assertRaisesRegex(ValueError, "must be an object"):
             build_recommendations(self.state, self.audio, self.midi, self.adapters, [])
