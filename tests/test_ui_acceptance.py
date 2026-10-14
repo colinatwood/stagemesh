@@ -67,6 +67,22 @@ class UiAccessibilityContractTests(unittest.TestCase):
         self.assertIn(".pair>*{min-width:0}", self.css)
         self.assertIn(".pair input,.pair select{max-width:100%;width:100%}", self.css)
 
+    def test_primary_workspace_matches_the_operator_console_contract(self):
+        by_id = {attrs.get("id"): (tag, attrs) for tag, attrs in self.inventory.elements if attrs.get("id")}
+        self.assertIn("stage-editor", by_id)
+        self.assertIn("templateCanvas", by_id)
+        self.assertIn("templateSelectionLabel", by_id)
+        self.assertIn("templateSelectionX", by_id)
+        self.assertIn("templateSelectionY", by_id)
+        palette = [attrs for tag, attrs in self.inventory.elements if tag == "button" and attrs.get("data-template-kind")]
+        self.assertEqual(
+            {item["data-template-kind"] for item in palette},
+            {"performer", "microphone", "monitor", "speaker", "light", "marker"},
+        )
+        self.assertIn(".editorGrid{display:grid", self.css)
+        self.assertIn(".templateInspector", self.css)
+        self.assertIn(".readinessGrid{grid-template-columns:repeat(4", self.css)
+
 
 class ServedUiAcceptanceTests(unittest.TestCase):
     @classmethod
