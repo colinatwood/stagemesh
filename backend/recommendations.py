@@ -77,12 +77,18 @@ def build_recommendations(
     physical_outputs = [item for item in audio_devices if item.get("output") and str(item.get("backend", "")) not in {"null", "bridge-only"}]
     physical_inputs = [item for item in audio_devices if item.get("input") and str(item.get("backend", "")) not in {"null", "bridge-only"}]
     connected_midi = [item for item in midi_devices if item.get("attached") or item.get("connected", True)]
+    attached_midi = [item for item in midi_devices if item.get("attached")]
     bindings = midi_inventory.get("bindings") or {}
     performer_inputs = [item for item in audio.get("inputs", []) if player and item.get("playerId") == player.get("id") and item.get("deviceId")]
     performer_midi = [device_id for device_id, assigned in bindings.items() if player and assigned == player.get("id")]
     hotplug_changes = [item for item in (audio_inventory.get("hotplug") or {}).get("changes", []) if isinstance(item, dict)]
+    midi_hotplug_changes = [item for item in (midi_inventory.get("hotplug") or {}).get("changes", []) if isinstance(item, dict)]
     failed_output_stops = sum(len(item.get("failedOutputStopSlots") or []) for item in hotplug_changes)
     failed_input_stops = sum(len(item.get("failedInputStopSlots") or []) for item in hotplug_changes)
+    failed_midi_detaches = sum(
+        item.get("kind") in {"disconnected", "identity-changed"} and item.get("detached") is False
+        for item in midi_hotplug_changes
+    )
     capacity = max(0.0, min(100.0, float(system.get("capacity", 0.0))))
     mode = str(system.get("mode", "safe"))
     role = str((player or {}).get("role", "show")).lower()
@@ -95,6 +101,15 @@ def build_recommendations(
             category="safety", priority="critical", confidence="high",
             evidence=[f"{failed_output_stops} output stop command(s) failed", f"{failed_input_stops} input stop command(s) failed"],
             why="StageMesh observed an unsafe endpoint change but could not confirm every requested stream stop.", target="#operations",
+        ))
+
+    if failed_midi_detaches:
+        recommendations.append(_recommendation(
+            "verify-controller-detach", "Verify stale controller inputs are detached",
+            "Suspend affected MIDI mappings until the old input attachment is confirmed inactive.",
+            category="safety", priority="critical", confidence="high",
+            evidence=[f"{failed_midi_detaches} controller detach command(s) were not confirmed", "Automatic output activation remains disabled"],
+            why="An input whose identity changed or disappeared must not continue controlling the show through a stale attachment.", target="#operations",
         ))
 
     if not physical_outputs:
@@ -139,6 +154,14 @@ def build_recommendations(
                 category="control", priority="medium", confidence="medium",
                 evidence=[f"{len(connected_midi)} MIDI device(s) detected", f"No desired MIDI binding exists for {display_name}"],
                 why="A role-aware binding reduces manual setup without coupling the show role to a transient device ID.", target="#operations",
+            ))
+        elif performer_midi and not any(str(item.get("playerId", "")) == str(player.get("id", "")) and item.get("attached") for item in attached_midi):
+            recommendations.append(_recommendation(
+                "restore-performer-controller", f"Restore {display_name}'s controller attachment",
+                "Review the desired binding and reconnect or explicitly rebind the intended controller.",
+                category="control", priority="high", confidence="high",
+                evidence=[f"{len(performer_midi)} desired MIDI binding(s)", f"{len(attached_midi)} attached MIDI input(s) across the show"],
+                why="A saved performer binding exists, but no attached input currently confirms that performer assignment.", target="#operations",
             ))
 
         monitor = player.get("monitor") or {}
@@ -212,6 +235,8 @@ def build_recommendations(
             "audioOutputs": len(physical_outputs),
             "audioInputs": len(physical_inputs),
             "midiDevices": len(connected_midi),
+            "attachedMidiInputs": len(attached_midi),
+            "failedMidiDetaches": failed_midi_detaches,
             "failedStreamStops": failed_output_stops + failed_input_stops,
             "capacityPercent": round(capacity, 1),
             "mode": mode,

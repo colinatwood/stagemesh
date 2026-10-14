@@ -67,6 +67,25 @@ class RecommendationTests(unittest.TestCase):
         self.assertEqual(report["hardwareSummary"]["failedStreamStops"], 3)
         self.assertFalse(recommendation["automaticApply"])
 
+    def test_unconfirmed_midi_detach_blocks_stale_controller_input(self):
+        self.midi["hotplug"] = {"changes": [{
+            "kind": "identity-changed", "deviceId": "pads", "detached": False,
+        }]}
+        report = self.build()
+        recommendation = next(item for item in report["recommendations"] if item["id"] == "verify-controller-detach")
+        self.assertEqual(recommendation["priority"], "critical")
+        self.assertEqual(report["hardwareSummary"]["failedMidiDetaches"], 1)
+
+    def test_desired_but_unattached_performer_controller_is_recoverable(self):
+        self.midi = {
+            "devices": [{"id": "pads", "connected": True, "attached": False, "playerId": "drums"}],
+            "bindings": {"pads": "drums"},
+        }
+        report = self.build({"playerId": "drums", "goal": "balanced"})
+        recommendation = next(item for item in report["recommendations"] if item["id"] == "restore-performer-controller")
+        self.assertEqual(recommendation["priority"], "high")
+        self.assertEqual(report["hardwareSummary"]["attachedMidiInputs"], 0)
+
     def test_request_validation_rejects_unknown_context(self):
         with self.assertRaisesRegex(ValueError, "must be an object"):
             build_recommendations(self.state, self.audio, self.midi, self.adapters, [])
