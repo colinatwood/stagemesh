@@ -40,6 +40,40 @@ class AudioHotplugTests(unittest.TestCase):
             runtime.native.select_audio_device.assert_called_once_with("alsa-new",0);runtime.native.activate_audio.assert_not_called()
             status=runtime.audio_hotplug_status();self.assertEqual(status["generation"],1);self.assertEqual(status["changes"][0]["kind"],"connected");self.assertFalse(status["automaticActivation"])
 
+    def test_steady_scan_does_not_reissue_same_endpoint_selection(self):
+        with tempfile.TemporaryDirectory() as raw:
+            runtime=self.runtime(raw)
+            runtime.native.scan_audio_devices.return_value=[{"id":"alsa-old","backend":"alsa","address":"hw:2,0","connected":True,"output":True}]
+            runtime.native.audio_stream_status.side_effect=lambda slot:{"selected":"alsa-old","execution":"none","state":"0"} if slot==0 else {}
+            identity={"persistentId":"audio-serial","identityStrength":"hardware-serial","automaticReconnectEligible":True,"identityScope":"test"}
+            with patch("runtime.describe_audio_device",return_value=identity):
+                runtime._refresh_audio_devices(reselect=True)
+            runtime.native.select_audio_device.assert_not_called()
+            runtime.native.activate_audio.assert_not_called()
+
+    def test_unknown_native_selection_is_reconciled_without_activation(self):
+        with tempfile.TemporaryDirectory() as raw:
+            runtime=self.runtime(raw)
+            runtime.native.scan_audio_devices.return_value=[{"id":"alsa-old","backend":"alsa","address":"hw:2,0","connected":True,"output":True}]
+            runtime.native.audio_stream_status.side_effect=RuntimeError("status unavailable")
+            identity={"persistentId":"audio-serial","identityStrength":"hardware-serial","automaticReconnectEligible":True,"identityScope":"test"}
+            with patch("runtime.describe_audio_device",return_value=identity):
+                runtime._refresh_audio_devices(reselect=True)
+            runtime.native.select_audio_device.assert_called_once_with("alsa-old",0)
+            runtime.native.activate_audio.assert_not_called()
+
+    def test_steady_input_scan_does_not_reissue_same_endpoint_selection(self):
+        with tempfile.TemporaryDirectory() as raw:
+            runtime=self.runtime(raw)
+            runtime.state.snapshot.return_value={"audio":{"sampleRate":192000,"bufferFrames":256,"outputs":[],"inputs":[{"slot":0,"deviceId":"alsa-old","playerId":"player-a"}]}}
+            runtime.native.scan_audio_devices.return_value=[{"id":"alsa-old","backend":"alsa","address":"hw:2,0","connected":True,"input":True,"output":False}]
+            runtime.native.audio_input_status.side_effect=lambda slot:{"selected":"alsa-old","execution":"none","state":"0"} if slot==0 else {}
+            identity={"persistentId":"audio-serial","identityStrength":"hardware-serial","automaticReconnectEligible":True,"identityScope":"test"}
+            with patch("runtime.describe_audio_device",return_value=identity):
+                runtime._refresh_audio_devices(reselect=True)
+            runtime.native.select_audio_input.assert_not_called()
+            runtime.native.activate_audio_input.assert_not_called()
+
     def test_repeated_scans_cannot_adopt_replacement_at_same_id(self):
         with tempfile.TemporaryDirectory() as raw:
             runtime=self.runtime(raw)

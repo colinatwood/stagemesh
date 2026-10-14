@@ -524,9 +524,12 @@ class StageMeshRuntime:
         stopped_inputs_by_device={device_id:[] for device_id in unsafe_ids}
         failed_outputs_by_device={device_id:[] for device_id in unsafe_ids}
         failed_inputs_by_device={device_id:[] for device_id in unsafe_ids}
+        output_status_by_slot={}
+        input_status_by_slot={}
         for slot in range(4):
             try:
                 status=self.native.audio_stream_status(slot)
+                output_status_by_slot[slot]=status
                 selected=str(status.get("selected", ""))
                 if selected in unsafe_ids and _physical_audio_execution(status.get("execution")) and status.get("state")=="2":
                     try:self.native.deactivate_audio(slot);stopped_outputs_by_device[selected].append(slot)
@@ -534,6 +537,7 @@ class StageMeshRuntime:
             except (RuntimeError,ValueError):pass
             try:
                 status=self.native.audio_input_status(slot)
+                input_status_by_slot[slot]=status
                 selected=str(status.get("selected", ""))
                 if selected in unsafe_ids and _physical_audio_execution(status.get("execution")) and status.get("state")=="2":
                     try:self.native.deactivate_audio_input(slot);stopped_inputs_by_device[selected].append(slot)
@@ -548,17 +552,21 @@ class StageMeshRuntime:
             for config in output_configs:
                 device_id = str(config.get("deviceId", ""))
                 device=resolved(device_id,"output")
-                if device:
+                slot=int(config.get("slot", 0))
+                selected=str((output_status_by_slot.get(slot) or {}).get("selected", ""))
+                if device and selected!=str(device["id"]):
                     try:
-                        self.native.select_audio_device(str(device["id"]), int(config.get("slot", 0)))
+                        self.native.select_audio_device(str(device["id"]), slot)
                     except (RuntimeError, ValueError):
                         pass
             for config in input_configs:
                 device_id = str(config.get("deviceId", ""))
                 device=resolved(device_id,"input")
-                if device:
+                slot=int(config.get("slot", 0))
+                selected=str((input_status_by_slot.get(slot) or {}).get("selected", ""))
+                if device and selected!=str(device["id"]):
                     try:
-                        self.native.select_audio_input(str(device["id"]), int(config.get("slot", 0)))
+                        self.native.select_audio_input(str(device["id"]), slot)
                     except (RuntimeError, ValueError):
                         pass
         for device in devices:
