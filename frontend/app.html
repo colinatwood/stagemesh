@@ -129,6 +129,11 @@
         <label class="rangeLine"><span>Available capacity <strong id="capacityValue">78%</strong></span><input id="capacity" type="range" min="0" max="100" value="78"></label>
         <label>Protection mode <select id="systemMode"><option value="full">Full</option><option value="reduced">Reduced</option><option value="safe">Safe Show</option><option value="audio">Audio Only</option></select></label>
         <div id="protectionSummary" class="status"></div><p id="runtimePlan" class="hint">Loading adapter plan…</p>
+        <div class="subPanel" aria-label="Audio input connection">
+          <strong>Input connection</strong>
+          <p id="audioReconnectStatus" class="hint" role="status" aria-live="polite">Checking selected input…</p>
+          <button id="recoverAudioInput" type="button" disabled>Connect input</button>
+        </div>
         <details class="midiBox" open>
           <summary>DAW arrangement</summary>
           <p id="dawStatus" class="hint">Loading portable session…</p>
@@ -177,7 +182,6 @@
             <div class="pair"><label>FOH graph output<input id="audioInputRouteOutput" type="number" min="0" max="15" value="0"></label><label>FOH route gain<input id="audioInputRouteGain" type="number" min="0" max="4" step="0.05" value="0"></label></div>
             <div class="pair"><button id="saveAudioInputRoute" type="button">Save input route</button><button id="activateAudioInput" type="button">Activate selected input</button></div>
             <button id="deactivateAudioInput" type="button">Deactivate input</button>
-            <button id="recoverAudioInput" type="button">Rescan and recover input</button>
           </div>
           <p class="guard">Output and input selection are persistent desired state. Physical streams are separate explicit actions. A nonzero persisted input route requires a second acknowledgement before capture starts.</p>
         </details>
@@ -270,6 +274,7 @@
       </section>
     </section>
   </main>
+  <script src="/input-recovery.js"></script>
   <script src="/app.js"></script>
   <script src="/arrangement.js"></script>
   <script src="/markers.js"></script>

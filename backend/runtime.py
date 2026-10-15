@@ -2037,7 +2037,12 @@ class StageMeshRuntime:
     def recover_audio_input(self, data: dict[str, Any], slot: int = 0) -> dict[str, Any]:
         if data.get("acknowledgeRecovery") is not True:
             raise ValueError("audio input recovery requires acknowledgeRecovery=true")
-        if self.audio_input_status(slot).get("active"):
+        status = self.audio_input_status(slot)
+        if "expectedDeviceId" in data and data["expectedDeviceId"] != status.get("desiredDeviceId"):
+            raise ValueError("selected audio input changed; refresh before reconnecting")
+        if "expectedRoute" in data and data["expectedRoute"] != (status.get("route") or {}):
+            raise ValueError("audio input route changed; review it before reconnecting")
+        if status.get("active"):
             raise ValueError("audio input is already active")
         return {**self.activate_audio_input(data, slot), "recoveryAttempted": True}
 
