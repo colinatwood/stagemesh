@@ -21,6 +21,16 @@ void require(bool value, const char* message) {
     if (!value) throw std::runtime_error(message);
 }
 
+void exercise_audio_snapshot(DeviceMonitor& monitor) {
+    const auto audio = monitor.audio_snapshot();
+    require(audio.midi_endpoint_count == 0 && !audio.native_midi_enumeration_available &&
+            !audio.midi_notifications_registered, "audio snapshot makes MIDI enumeration claims");
+    require(audio.devices.size() == audio.device_count, "audio snapshot count mismatch");
+    for (const auto& record : audio.devices)
+        require(record.kind == DeviceKind::Audio && record.native_hash.rfind("sha256:", 0) == 0 &&
+                record.persistent_hash.rfind("sha256:", 0) == 0, "audio snapshot has non-audio or unhashed record");
+}
+
 void exercise_resolution_contract() {
     require(sha256_hex("abc") == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", "SHA-256 self-test failed");
     DeviceRecord strong{DeviceKind::Audio,"sha256:native-a","sha256:persistent-a",IdentityStrength::OsStableEndpoint,true,false,true};
@@ -122,12 +132,14 @@ MacEventEvidence exercise_macos_events(DeviceMonitor& monitor) {
     if (MIDIObjectSetIntegerProperty(source, kMIDIPropertyUniqueID, requested_uid) != noErr) throw std::runtime_error("set CoreMIDI unique ID failed");
     evidence.coremidi_notification = wait_revision(monitor, revision);
     auto midi_present = monitor.snapshot();
+    exercise_audio_snapshot(monitor); // A live MIDI fixture must not enter audio inventory.
     const DeviceRecord* midi_record_ptr = find_new_record(midi_present, DeviceKind::Midi, midi_before);
     require(midi_record_ptr != nullptr, "CoreMIDI fixture did not expose a stable hashed identity");
     const DeviceRecord midi_record = *midi_record_ptr;
     auto midi_selection = pin_device(midi_record, true, false);
     revision = monitor.revision();
     MIDIEndpointDispose(source); source = 0;
+    exercise_audio_snapshot(monitor); // Refresh independently while MIDI topology changes.
     require(wait_revision(monitor, revision), "CoreMIDI removal notification was not observed");
     require(resolve_device(midi_selection, monitor.snapshot().devices).status == ResolutionStatus::Detached, "CoreMIDI removal did not detach selection");
     revision = monitor.revision();
@@ -186,16 +198,27 @@ int main() {
         bool rejected = false;
         try { monitor.snapshot(); } catch (const std::logic_error&) { rejected = true; }
         require(rejected, "inactive snapshot accepted");
+        rejected = false;
+        try { monitor.audio_snapshot(); } catch (const std::logic_error&) { rejected = true; }
+        require(rejected, "inactive audio snapshot accepted");
         DeviceSnapshot snapshot{};
         auto begin = std::chrono::steady_clock::now();
         for (unsigned cycle = 0; cycle < 25; ++cycle) {
             monitor.start(); monitor.start();
             snapshot = monitor.snapshot();
+            exercise_audio_snapshot(monitor);
             std::this_thread::sleep_for(std::chrono::milliseconds(2));
             monitor.stop(); monitor.stop();
         }
         monitor.start();
         snapshot = monitor.snapshot();
+        bool audio_wrong_thread_rejected = false;
+        std::thread audio_reader([&] {
+            try { monitor.audio_snapshot(); }
+            catch (const std::logic_error&) { audio_wrong_thread_rejected = true; }
+        });
+        audio_reader.join();
+        require(audio_wrong_thread_rejected, "cross-thread audio snapshot accepted");
         auto counts = identity_counts(snapshot);
         if (!snapshot.native_midi_enumeration_available || !snapshot.midi_notifications_registered) {
             const auto* allow_unavailable = std::getenv("STAGEMESH_ALLOW_UNAVAILABLE_NATIVE_MIDI");

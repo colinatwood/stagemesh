@@ -363,7 +363,7 @@ AudioHostCapabilities probe_audio_endpoint(const DeviceSelection& selection, Aud
     else directional.require_input = true;
     DeviceMonitor monitor; monitor.start();
     const auto revision = monitor.revision();
-    if (resolve_device(directional, monitor.snapshot().devices).status != ResolutionStatus::Attached) return absent;
+    if (resolve_device(directional, monitor.audio_snapshot().devices).status != ResolutionStatus::Attached) return absent;
     auto result = probe_native_audio_endpoint(direction, &directional);
 #ifdef _WIN32
     if (result.endpoint_identity_hash != directional.native_hash) return absent;
@@ -371,7 +371,7 @@ AudioHostCapabilities probe_audio_endpoint(const DeviceSelection& selection, Aud
     if (result.endpoint_identity_hash != directional.persistent_hash) return absent;
 #endif
     if (!result.endpoint_present ||
-        resolve_device(directional, monitor.snapshot().devices).status != ResolutionStatus::Attached ||
+        resolve_device(directional, monitor.audio_snapshot().devices).status != ResolutionStatus::Attached ||
         monitor.revision() != revision) return absent;
     return result;
 }

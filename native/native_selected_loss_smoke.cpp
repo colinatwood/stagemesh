@@ -60,7 +60,7 @@ DeviceRecord await_record(DeviceMonitor& monitor, AudioDeviceID device, AudioDir
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(3);
     while (std::chrono::steady_clock::now() < deadline) {
         CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.02, true);
-        for (const auto& record : monitor.snapshot().devices) {
+        for (const auto& record : monitor.audio_snapshot().devices) {
             if (record.kind == DeviceKind::Audio && record.native_hash == sha256_token("coreaudio-native:" + std::to_string(device)) &&
                 (direction == AudioDirection::Playback ? record.output : record.input)) {
                 // Allow creation notifications to finish before arming. This is
@@ -93,7 +93,7 @@ std::uint64_t exercise(AudioDirection direction) {
     require(probe_default_audio_endpoint(direction).endpoint_identity_hash != capabilities.endpoint_identity_hash,
             "selected aggregate fixture unexpectedly became default");
     DeviceExecutionFence fence(selection);
-    require(fence.arm_initial(monitor.snapshot().devices), "selected fixture initial arm failed");
+    require(fence.arm_initial(monitor.audio_snapshot().devices), "selected fixture initial arm failed");
     AudioRequest request;
     request.direction = direction;
     request.sample_rate_hz = capabilities.native_sample_rate_hz;
@@ -107,7 +107,7 @@ std::uint64_t exercise(AudioDirection direction) {
     collect(*stream, fence);
     // Inject downgraded metadata into a copy of real inventory. This is not an
     // OS/physical identity downgrade; native I/O and its stop/restart are real.
-    auto weak_inventory = monitor.snapshot().devices;
+    auto weak_inventory = monitor.audio_snapshot().devices;
     bool injected = false;
     for (auto& candidate : weak_inventory) if (candidate.native_hash == record.native_hash) {
         candidate.identity_strength = IdentityStrength::InstallationSnapshot;
@@ -122,7 +122,7 @@ std::uint64_t exercise(AudioDirection direction) {
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
     require(stream->stats().callbacks == downgrade_count, "callbacks continued after downgrade stop");
     require(!fence.explicit_rearm(weak_inventory), "weak metadata explicitly rearmed");
-    auto strong_inventory = monitor.snapshot().devices;
+    auto strong_inventory = monitor.audio_snapshot().devices;
     require(!fence.reconcile(strong_inventory).execution_allowed, "restored assurance silently rearmed");
     require(!stream->prepare(request, fence), "restored assurance bypassed explicit rearm");
     require(fence.explicit_rearm(strong_inventory), "restored assurance could not rearm");
@@ -133,7 +133,7 @@ std::uint64_t exercise(AudioDirection direction) {
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(3);
     while (fence.observation().resolution != ResolutionStatus::Detached && std::chrono::steady_clock::now() < deadline) {
         CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, true);
-        fence.reconcile(monitor.snapshot().devices);
+        fence.reconcile(monitor.audio_snapshot().devices);
     }
     require(fence.observation().resolution == ResolutionStatus::Detached, "removed selected device still resolved");
     require(!probe_audio_endpoint(fence.selection(), direction).endpoint_present,
@@ -144,11 +144,11 @@ std::uint64_t exercise(AudioDirection direction) {
     auto stopped_count = stream->stats().callbacks;
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
     require(stream->stats().callbacks == stopped_count, "callbacks continued after selected device loss");
-    require(!fence.explicit_rearm(monitor.snapshot().devices), "absent selected device rearmed");
+    require(!fence.explicit_rearm(monitor.audio_snapshot().devices), "absent selected device rearmed");
     std::cerr << "selected-loss " << audio_direction_name(direction) << ": recreating endpoint\n";
     aggregate.create();
     await_record(monitor, aggregate.device, direction);
-    auto restored = monitor.snapshot();
+    auto restored = monitor.audio_snapshot();
     auto recovered = fence.reconcile(restored.devices);
     require(!recovered.execution_allowed && recovered.explicit_rearm_required, "recreated endpoint silently rearmed");
     require(!stream->prepare(request, fence), "disarmed recovered endpoint prepared");

@@ -168,6 +168,13 @@ All four software workflows group only revisions of the same pull request for ca
 
 The GitHub repository is the durable project backup. A checkpoint is not considered safely preserved until its source changes and this continuity record (when the handoff changes) are committed to GitHub. Chat transcripts are working context, not project storage.
 
+## Audio snapshot isolation checkpoint — 2026-10-15
+
+- Branch `automation/audio-only-monitor` starts from `aa784c9239bf5bf7f8f01ace1cb8b5c1bf62dcf3`. It is independent of input recovery UX PR #167, whose exact head `d7e7bfa6bac60238f74b444afb75ef9729e1185c` passed all 14 checks, including Windows/macOS/Linux desktop packages and release-candidate binding.
+- Add `DeviceMonitor::audio_snapshot()` and use it for audio discovery, preflight, native capture/playback owners and audio smoke exercises. It retains the existing audio enumeration, identity and control-thread rules, while avoiding unrelated MIDI enumeration races. Combined snapshots and MIDI callers retain existing behavior. See [audio-snapshot-isolation.md](docs/audio-snapshot-isolation.md).
+- Validation: all 869 Python tests ran successfully with 24 expected skips, including 68 audio tests. Native service/lifecycle C++17 syntax checks pass with warnings treated as errors; Windows/macOS native CI must compile and run the new monitor/lifecycle path. Physical audio/MIDI churn and installed-app recovery remain unqualified. No workbook gate is closed.
+- Next action: review the separate PR's exact-head native/package checks, merge when authorized, then qualify a candidate incorporating both this change and the recovery UX. Do not reuse the old helper run as evidence for new source.
+
 
 ## Release readiness update — 2026-10-07
 

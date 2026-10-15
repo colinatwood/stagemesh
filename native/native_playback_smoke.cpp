@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
         if (capabilities.endpoint_present) {
             const char* allowed = std::getenv("STAGEMESH_ALLOW_SILENT_ENDPOINT_TEST");
             if (!allowed || std::string(allowed) != "1") throw std::runtime_error("silent endpoint test requires explicit environment opt-in");
-            DeviceMonitor monitor; monitor.start(); auto snapshot = monitor.snapshot();
+            DeviceMonitor monitor; monitor.start(); auto snapshot = monitor.audio_snapshot();
             DeviceRecord selected; unsigned matches = 0;
             for (const auto& record : snapshot.devices) {
 #ifdef _WIN32
@@ -128,7 +128,7 @@ int main(int argc, char** argv) {
             require(context.calls.load() == count, "callback accessed context after native stop");
             stopped = true;
             require(!endpoint.start(fence) && !endpoint.prepare(request, fence), "implicit recovery accepted");
-            require(fence.explicit_rearm(monitor.snapshot().devices), "explicit rearm failed");
+            require(fence.explicit_rearm(monitor.audio_snapshot().devices), "explicit rearm failed");
             require(endpoint.prepare(request, fence) && endpoint.start(fence), "native rearm/start failed");
             collect(endpoint, fence); restarted = true;
 #ifdef __APPLE__
@@ -150,8 +150,8 @@ int main(int argc, char** argv) {
                 for (int i = 0; i < 20; ++i) CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.01, false);
                 const auto revoked_generation = fence.observation().generation;
                 require(fence.observation().execution_allowed, "topology test unexpectedly disarmed control fence");
-                require(!fence.arm_initial(monitor.snapshot().devices), "initial arm reused after native invalidation");
-                require(fence.explicit_rearm(monitor.snapshot().devices), "explicit native-event recovery rejected");
+                require(!fence.arm_initial(monitor.audio_snapshot().devices), "initial arm reused after native invalidation");
+                require(fence.explicit_rearm(monitor.audio_snapshot().devices), "explicit native-event recovery rejected");
                 require(fence.observation().generation > revoked_generation, "native recovery reused revoked generation");
                 require(endpoint.prepare(request, fence) && endpoint.start(fence), "single explicit rearm did not restart native endpoint");
                 collect(endpoint, fence);

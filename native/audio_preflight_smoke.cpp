@@ -105,7 +105,7 @@ int main() {
             require(!probe_audio_endpoint(missing, direction).endpoint_present, "missing pin fell back to default endpoint");
         unsigned pinned_default_probes = 0;
         DeviceMonitor monitor; monitor.start();
-        auto snapshot = monitor.snapshot();
+        auto snapshot = monitor.audio_snapshot();
         for (auto direction : {AudioDirection::Playback, AudioDirection::Capture}) {
             const auto& defaults = direction == AudioDirection::Playback ? playback : capture;
             if (!defaults.endpoint_present) continue;

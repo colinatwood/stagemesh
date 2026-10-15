@@ -17,7 +17,7 @@ bool NativeCaptureService::activate(const AudioRequest& request, DeviceSelection
     if (selection.kind != DeviceKind::Audio || !selection.require_input) return false;
 
     auto candidate = std::make_unique<DeviceExecutionFence>(std::move(selection));
-    const auto snapshot = monitor_.snapshot();
+    const auto snapshot = monitor_.audio_snapshot();
     if (!candidate->arm_initial(snapshot.devices)) return false;
 
     auto candidate_stream = std::make_unique<NativeCaptureStream>(receive_, context_);
@@ -42,7 +42,7 @@ bool NativeCaptureService::activate(const AudioRequest& request, DeviceSelection
 
 bool NativeCaptureService::activate_endpoint(const AudioRequest& request, const std::string& token) {
     deactivate();
-    const auto snapshot = monitor_.snapshot();
+    const auto snapshot = monitor_.audio_snapshot();
     DeviceSelection selection;
     unsigned matches = 0;
     for (const auto& record : snapshot.devices) {
@@ -59,7 +59,7 @@ bool NativeCaptureService::activate_endpoint(const AudioRequest& request, const 
 void NativeCaptureService::service(std::uint32_t wait_ms) {
     if (!active_) return;
     try {
-    const auto observation = fence_->reconcile(monitor_.snapshot().devices);
+    const auto observation = fence_->reconcile(monitor_.audio_snapshot().devices);
     last_fence_ = observation;
     if (!observation.execution_allowed) {
         deactivate();

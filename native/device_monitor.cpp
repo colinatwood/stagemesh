@@ -344,6 +344,12 @@ void DeviceMonitor::stop() {
 }
 std::uint64_t DeviceMonitor::revision() const { return topology_revision.load(std::memory_order_relaxed); }
 DeviceSnapshot DeviceMonitor::snapshot() const {
+    return snapshot_impl(true);
+}
+DeviceSnapshot DeviceMonitor::audio_snapshot() const {
+    return snapshot_impl(false);
+}
+DeviceSnapshot DeviceMonitor::snapshot_impl(bool include_midi) const {
     impl_->check_thread();
     if (!impl_->active) throw std::logic_error("snapshot requires an active monitor");
     DeviceSnapshot result{};
@@ -365,6 +371,7 @@ DeviceSnapshot DeviceMonitor::snapshot() const {
     };
     result.default_input_present = has_default(eCapture);
     result.default_output_present = has_default(eRender);
+    if (!include_midi) return result;
     result.native_midi_enumeration_available = true;
     result.midi_notifications_registered = impl_->midi_notification != nullptr;
     const auto revision_before = topology_revision.load(std::memory_order_relaxed);
@@ -397,6 +404,7 @@ DeviceSnapshot DeviceMonitor::snapshot() const {
     };
     result.default_input_present = has_default(1);
     result.default_output_present = has_default(2);
+    if (!include_midi) return result;
 
     const auto sources = MIDIGetNumberOfSources();
     const auto destinations = MIDIGetNumberOfDestinations();
