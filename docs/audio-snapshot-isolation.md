@@ -22,7 +22,13 @@ audio topology events, or automatically restart streams.
 
 Lifecycle tests check audio-only records/counts, hashed identities, inactive and
 wrong-thread refusal, and audio snapshots while the macOS virtual MIDI fixture
-exists and is removed. Windows/macOS native CI is required because this platform
+exists and is removed. `audio_service_snapshot_tests` links the production
+capture/playback controllers and real execution-fence/identity code against
+deterministic monitor and stream doubles. A permanently failing combined MIDI
+snapshot must not interrupt activation or servicing. Audio enumeration failure,
+selected-device loss and identity ambiguity must still stop/refuse execution;
+device return alone must not restart it. These tests open no physical endpoint.
+Windows/macOS native CI is required because this platform
 monitor implementation is not compiled on Linux. Physical MIDI/audio churn,
 latency, audible quality, and application recovery remain separate qualification
 tasks. The earlier private helper's successful three-cycle BOOM run is evidence

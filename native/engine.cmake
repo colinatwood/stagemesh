@@ -79,6 +79,17 @@ if(STAGEMESH_BUILD_TESTS)
     add_executable(stagemesh_current_abi_smoke ../tests/core_api_510_smoke.c)
     target_include_directories(stagemesh_current_abi_smoke PRIVATE ${PROJECT_SOURCE_DIR}/include)
     add_test(NAME stagemesh_current_abi_smoke COMMAND stagemesh_current_abi_smoke)
+    # Standalone service controllers with deterministic monitor/stream doubles;
+    # do not link stagemesh_devices (which provides the actual OS adapters).
+    add_executable(audio_service_snapshot_tests tests/audio_service_snapshot_tests.cpp
+        native_capture_service.cpp native_playback_service.cpp
+        device_identity.cpp device_execution_fence.cpp)
+    target_include_directories(audio_service_snapshot_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    target_link_libraries(audio_service_snapshot_tests PRIVATE Threads::Threads)
+    target_compile_features(audio_service_snapshot_tests PRIVATE cxx_std_17)
+    add_test(NAME audio_service_snapshot COMMAND audio_service_snapshot_tests)
+    set_tests_properties(audio_service_snapshot PROPERTIES TIMEOUT 10)
 endif()
 
 add_executable(capture_service_owner_tests tests/capture_service_owner_tests.cpp)
