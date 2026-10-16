@@ -939,7 +939,7 @@
     } catch (error) { q("#audioInputStatus").textContent = error.message; }
   });
   const inputRecovery = globalThis.StageMeshInputRecovery.create({
-    status:q("#audioReconnectStatus"), button:q("#recoverAudioInput"), request:api,
+    status:q("#audioReconnectStatus"), button:q("#recoverAudioInput"), metrics:q("#audioRecoveryMetrics"), request:api,
     getPolicy:() => q("#allowInputRateConversion").checked ? {sampleRate:"bounded-sinc"} : {},
     confirmRoute:message => globalThis.confirm(message),
     onRecovered:async () => { await refreshAudioDevices(); await refreshAudioInput(); }

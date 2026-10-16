@@ -203,6 +203,7 @@ def qualify(chromium: str, screenshot_dir: Path | None = None) -> dict[str, Any]
                         for _, source in scripts:
                             page.add_script_tag(content=source)
                         page.wait_for_timeout(1800)
+                        page.locator("#audioRecoveryMetrics").evaluate("element => { element.parentElement.open = true; }")
 
                         title = page.title()
                         overflow_px = int(

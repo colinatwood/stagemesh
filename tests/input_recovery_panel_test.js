@@ -10,7 +10,7 @@ function harness() {
   const status = {}, button = {disabled:true, addEventListener(){}};
   const controller = create({status,button,getPolicy:()=>({}),confirmRoute:()=>confirm,onRecovered:async()=>{},
     request:async(path, options) => {
-      if (!options) { if (hold) return hold; return next; }
+      if (options?.method !== 'POST') { if (hold) return hold; return next; }
       writes.push({path, body:JSON.parse(options.body)});
       if (failure) throw new Error(failure);
       return {active:true};
