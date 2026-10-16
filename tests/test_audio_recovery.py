@@ -27,3 +27,15 @@ class AudioRecoveryTests(unittest.TestCase):
             runtime.recover_audio_input({"acknowledgePhysicalInput":True})
         result=runtime.recover_audio_input({"acknowledgeRecovery":True,"acknowledgePhysicalInput":True},1)
         self.assertTrue(result["recoveryAttempted"]);runtime.activate_audio_input.assert_called_once()
+
+    def test_stale_input_or_route_cannot_recover_a_different_selection(self):
+        runtime = self.runtime()
+        runtime.audio_input_status = Mock(return_value={"active":False, "desiredDeviceId":"boom", "route":{"gain":0}})
+        runtime.activate_audio_input = Mock(return_value={"active":True})
+        for body, message in (({"expectedDeviceId":"other"}, "selected audio input changed"),
+                              ({"expectedDeviceId":"boom", "expectedRoute":{"gain":1}}, "route changed")):
+            with self.assertRaisesRegex(ValueError, message):
+                runtime.recover_audio_input({"acknowledgeRecovery":True, **body})
+        runtime.activate_audio_input.assert_not_called()
+        runtime.recover_audio_input({"acknowledgeRecovery":True, "expectedDeviceId":"boom", "expectedRoute":{"gain":0}})
+        runtime.activate_audio_input.assert_called_once()

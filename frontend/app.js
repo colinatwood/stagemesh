@@ -917,13 +917,11 @@
       await refreshAudioInput();
     } catch (error) { q("#audioInputStatus").textContent = error.message; }
   });
-  q("#recoverAudioInput").addEventListener("click", async () => {
-    try {
-      const gain=Number(snapshot?.audio?.inputRoute?.gain||0);
-      const conversionPolicy=q("#allowInputRateConversion").checked?{sampleRate:"bounded-sinc"}:{};
-      await api("/api/v1/audio/input/recover",{method:"POST",body:JSON.stringify({acknowledgeRecovery:true,acknowledgePhysicalInput:true,acknowledgeSignalRoute:gain>0,channels:2,conversionPolicy})});
-      await refreshAudioDevices(true); await refreshAudioInput();
-    } catch(error){q("#audioInputStatus").textContent=error.message;}
+  const inputRecovery = globalThis.StageMeshInputRecovery.create({
+    status:q("#audioReconnectStatus"), button:q("#recoverAudioInput"), request:api,
+    getPolicy:() => q("#allowInputRateConversion").checked ? {sampleRate:"bounded-sinc"} : {},
+    confirmRoute:message => globalThis.confirm(message),
+    onRecovered:async () => { await refreshAudioDevices(); await refreshAudioInput(); }
   });
   q("#saveLightingNetwork").addEventListener("click", async () => {
     const protocol = q("#lightingProtocol").value || "artnet";
@@ -1002,6 +1000,8 @@
   }
 
   desktopReady.then(() => {
+    inputRecovery.poll();
+    setInterval(() => inputRecovery.poll(), 2000);
     refresh().then(() => { refreshPlan(); refreshNative(); refreshNodeStatus(); refreshClockStatus(); refreshTechnologyOpenness(); refreshCommunityGovernance(); refreshCompatibility(); refreshVenueAdaptations(); refreshVenueReconciliation(false); refreshAudioDevices(); refreshAudioStream(); refreshAudioInput(); refreshLightingNetwork(); refreshMidiDevices(); refreshMidiMappings(); refreshProfile(); refreshDaw(); refreshLauncher(); });
     connectEvents();
     setInterval(refreshClockStatus, 1000);
