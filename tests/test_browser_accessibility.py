@@ -1,6 +1,8 @@
 import importlib.util
 from pathlib import Path
 import unittest
+import tempfile
+from unittest.mock import patch
 
 ROOT=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location("browser_qualification",ROOT/"scripts/stagemesh-browser-qualification.py")
@@ -35,5 +37,45 @@ class BrowserAccessibilityTests(unittest.TestCase):
         self.assertFalse(result["passed"])
         self.assertIn("namedInteractiveControls",result["failures"])
         self.assertIn("noIgnoredFocusableNodes",result["failures"])
+
+class BrowserProductionAssetsTests(unittest.TestCase):
+    def test_workspace_and_all_declared_dependencies_are_loaded_in_order(self):
+        html, scripts = module._production_assets()
+        self.assertIn('id="audioReconnectStatus"', html)
+        self.assertIn('id="templateCanvas"', html)
+        self.assertNotIn("<script", html)
+        self.assertNotIn('href="/styles.css"', html)
+        names = [name for name, _ in scripts]
+        self.assertLess(names.index("input-recovery.js"), names.index("app.js"))
+        self.assertIn("stage-template.js", names)
+        self.assertTrue(all(source for _, source in scripts))
+
+    def test_added_script_is_discovered_without_a_second_asset_list(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            frontend = Path(temporary)
+            (frontend / "index.html").write_text("public download page")
+            (frontend / "app.html").write_text(
+                '<main>Operator workspace</main><script defer src="/new-module.js"></script>'
+                "<script src='/app.js'></script>"
+            )
+            (frontend / "new-module.js").write_text("dependency")
+            (frontend / "app.js").write_text("application")
+            with patch.object(module, "FRONTEND", frontend):
+                html, scripts = module._production_assets()
+            self.assertEqual(html, "<main>Operator workspace</main>")
+            self.assertEqual(scripts, [("new-module.js", "dependency"), ("app.js", "application")])
+
+    def test_missing_or_nonlocal_dependency_refuses_partial_execution(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            frontend = Path(temporary)
+            with patch.object(module, "FRONTEND", frontend):
+                for source in ("https://example.invalid/app.js", "/../outside.js"):
+                    (frontend / "app.html").write_text(f'<script src="{source}"></script>')
+                    with self.assertRaises(ValueError):
+                        module._production_assets()
+                (frontend / "app.html").write_text('<script src="/missing.js"></script>')
+                with self.assertRaises(FileNotFoundError):
+                    module._production_assets()
+
 
 if __name__=="__main__":unittest.main()

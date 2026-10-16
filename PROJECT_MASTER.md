@@ -7,7 +7,15 @@
 - Repository: `colinatwood/stagemesh`
 - Canonical branch: `main`
 - Current milestone: **Attested desktop release candidates and external qualification execution**
-- Current source baseline: `aa784c9239bf5bf7f8f01ace1cb8b5c1bf62dcf3` (PR #166).
+- Current source baseline: `2200603615f74525326b306fce0ca8051bf5dbe8` (PRs #167 and #168 merged).
+
+## Recovery integration handoff — 2026-10-16 UTC
+
+- PR #167 merged at `26cb69fe17567263a8403e66eda9108898f7228e`; PR #168 merged at `2200603615f74525326b306fce0ca8051bf5dbe8`. The selected-input connection card and audio-only monitor path are now together on `main`. Device return never starts capture without the operator's explicit action.
+- Exact PR #167 head `d7e7bfa6bac60238f74b444afb75ef9729e1185c` passed Desktop run `38791007007`, CI `38791007052`, Platform Modules `38791007051` and Native Device Lifecycle `38791007157`. Exact PR #168 head `94ce1d2e787cbb7e33d060c21539ba057554895b` passed Desktop `38802040799`, CI `38802040894`, Platform Modules `38802040913` and Native Device Lifecycle `38802040647`. These runs qualified each PR independently; the combined installed candidate still needs its own evidence.
+- Local integration validation: 871 Python tests ran successfully with 24 environment skips. The production capture/playback controllers and identity/fence implementation also passed the standalone C++17 service snapshot isolation exercise with `-Wall -Wextra -Werror`; no physical endpoint was opened. CMake and Chromium are absent in this environment, so no local complete native build or rendered-browser result is claimed.
+- Follow-up repairs the rendered-browser qualification helper to use `frontend/app.html` rather than the public download page, and to load every script in workspace declaration order, including `input-recovery.js` before `app.js`. Asset-loading regression coverage verifies the real workspace, newly added dependencies, and refusal of missing/nonlocal scripts. The updated full suite ran 874 tests successfully with 24 environment skips; whitespace and JavaScript syntax checks pass. Rendered execution remains pending on a Chromium-equipped host.
+- Next: use an exact-source desktop candidate containing both merged PRs and perform [the installed-app BOOM recovery exercise](docs/capture-recovery-app-qualification.md). Record discovery wait time separately from time after the Reconnect click, verify three physical cycles, and keep outputs disarmed. Earlier helper evidence cannot qualify this app UI. No external backlog row is closed by these merges or software checks.
 
 ## Capture recovery checkpoint — 2026-10-15
 

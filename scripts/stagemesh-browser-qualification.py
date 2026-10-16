@@ -23,20 +23,39 @@ import threading
 import urllib.error
 import urllib.request
 from http.server import ThreadingHTTPServer
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 FRONTEND = ROOT / "frontend"
-SCRIPTS = ["app.js", "arrangement.js", "markers.js", "automation.js", "production.js", "recovery.js"]
 VIEWPORTS = [(1440, 900), (1024, 768), (768, 1024), (390, 844)]
 
 
-def _production_html() -> str:
-    html = (FRONTEND / "index.html").read_text(encoding="utf-8")
+class _ScriptInventory(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.sources: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "script":
+            source = dict(attrs).get("src") or ""
+            if not re.fullmatch(r"/[A-Za-z0-9_-]+\.js", source):
+                raise ValueError(f"expected a local frontend script, got {source!r}")
+            self.sources.append(source[1:])
+
+
+def _production_assets() -> tuple[str, list[tuple[str, str]]]:
+    # index.html is the public download page; app.html is the desktop workspace.
+    # Derive script order from the workspace so newly declared dependencies run.
+    html = (FRONTEND / "app.html").read_text(encoding="utf-8")
+    inventory = _ScriptInventory()
+    inventory.feed(html)
+    scripts = [(name, (FRONTEND / name).read_text(encoding="utf-8")) for name in inventory.sources]
     html = html.replace('<link rel="stylesheet" href="/styles.css">', "")
-    return re.sub(r'\s*<script src="/[^"]+"></script>', "", html)
+    html = re.sub(r'\s*<script\b[^>]*>\s*</script\s*>', "", html, flags=re.IGNORECASE)
+    return html, scripts
 
 
 def _bridge_fetch(local_base: str, payload: dict[str, Any]) -> dict[str, Any]:
@@ -137,9 +156,8 @@ def qualify(chromium: str, screenshot_dir: Path | None = None) -> dict[str, Any]
         thread.start()
         local_base = f"http://127.0.0.1:{server.server_port}"
         try:
-            html = _production_html()
+            html, scripts = _production_assets()
             css = (FRONTEND / "styles.css").read_text(encoding="utf-8")
-            scripts = [(name, (FRONTEND / name).read_text(encoding="utf-8")) for name in SCRIPTS]
             results: list[dict[str, Any]] = []
             accessibility_reference: dict[str, Any] | None = None
             with sync_playwright() as playwright:
