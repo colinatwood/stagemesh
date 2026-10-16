@@ -7,7 +7,14 @@
 - Repository: `colinatwood/stagemesh`
 - Canonical branch: `main`
 - Current milestone: **Attested desktop release candidates and external qualification execution**
-- Current source baseline: `70055edabfc6e0ad9dc791ac419ba37a1acf2292` (PR #172 merged).
+- Current source baseline: `7a2c809cb53fcdfa9e4c7793820689896db59226` (PR #173 merged).
+
+## Installed executable reference follow-up — 2026-10-16 UTC
+
+- PR #173 merged at `7a2c809cb53fcdfa9e4c7793820689896db59226` after exact head `7ce991d5b65454c8399b30ea6994a4c9d158d069` passed CI `38953948044`, Desktop `38953948077`, Platform Modules `38953948037` and Native Device Lifecycle `38953948097`.
+- Add `scripts/desktop-executable-binding.py` to record one Windows post-bundle build-output reference per MSI/NSIS installer and compare a selected executable without launching it. Windows CI builds once with `--no-bundle`, bundles each format separately and records its executable immediately, before the next format can patch it. References bind installer path/hash/size, declared source SHA and online/offline channel; they and the packaged comparison tool enter the existing manifest/checksum/attestation inventory.
+- Comparison re-verifies the download, requires the explicit expected source/channel and selected installer, and rejects absent/tampered/mixed references, redirected or changing files and a selected executable inside the download. Matching bytes establish `installedExecutableMatchesCandidateReference`, not installer payload extraction, installed-location proof, publisher authentication or source attestation. Those boundaries and the keyboard agent's `installedSourceVerified:false` remain unchanged. See [the command and evidence limits](docs/desktop-release-readiness.md#download-integrity-verification).
+- Local validation: 85 desktop tests passed, including 13 new reference/comparison regressions; complete Python discovery ran 889 tests successfully with 24 environment skips. Compilation and whitespace checks pass. Windows filesystem regressions and the revised MSI/NSIS build sequence require exact-head CI; no installed-PC match or new qualification pass is claimed. The authoritative backlog remains 24 Done and 25 open. Next: inspect the new Windows candidate references, verify candidate provenance separately, and compare the selected installed binary before attempting any source-bound app exercise.
 
 ## Keyboard dispatch diagnostics — 2026-10-16 UTC
 

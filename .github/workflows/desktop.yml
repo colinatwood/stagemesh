@@ -14,6 +14,7 @@ on:
       - "requirements-desktop.txt"
       - "scripts/build-desktop-runtime.py"
       - "scripts/desktop-artifact-manifest.py"
+      - "scripts/desktop-executable-binding.py"
       - "scripts/desktop-dependency-inventory.py"
       - "scripts/desktop-release-readiness.py"
       - "scripts/desktop-windows-channel.py"
@@ -28,6 +29,7 @@ on:
       - "scripts/desktop-runtime-smoke.py"
       - "docs/desktop-release-readiness.md"
       - "tests/test_desktop_artifact_manifest.py"
+      - "tests/test_desktop_executable_binding.py"
       - "tests/test_desktop_dependency_inventory.py"
       - "tests/test_desktop_release_readiness.py"
       - "tests/test_desktop_windows_channel.py"
@@ -57,6 +59,7 @@ on:
       - "requirements-desktop.txt"
       - "scripts/build-desktop-runtime.py"
       - "scripts/desktop-artifact-manifest.py"
+      - "scripts/desktop-executable-binding.py"
       - "scripts/desktop-dependency-inventory.py"
       - "scripts/desktop-release-readiness.py"
       - "scripts/desktop-windows-channel.py"
@@ -71,6 +74,7 @@ on:
       - "scripts/desktop-runtime-smoke.py"
       - "docs/desktop-release-readiness.md"
       - "tests/test_desktop_artifact_manifest.py"
+      - "tests/test_desktop_executable_binding.py"
       - "tests/test_desktop_dependency_inventory.py"
       - "tests/test_desktop_release_readiness.py"
       - "tests/test_desktop_windows_channel.py"
@@ -155,6 +159,10 @@ jobs:
             python scripts/verify-desktop-version.py --tag "v$(python -c 'import json; print(json.load(open("desktop/package.json"))["version"])')"
           fi
 
+      - name: Test executable comparison on Windows filesystems
+        if: runner.os == 'Windows'
+        run: python -m unittest tests.test_desktop_executable_binding -v
+
       - name: Resolve Rust host target
         shell: bash
         run: |
@@ -203,8 +211,40 @@ jobs:
           --channel "${{ matrix.distribution_channel }}"
 
       - name: Build and package desktop application
+        if: runner.os != 'Windows'
         working-directory: desktop
         run: npm run tauri build
+
+      - name: Build Windows executable before per-installer bundling
+        if: runner.os == 'Windows'
+        working-directory: desktop
+        run: npm run tauri build -- --no-bundle
+
+      # Tauri patches the executable in place for each installer format. Record
+      # each post-bundle variant before the next format can change those bytes.
+      - name: Bundle Windows MSI and record executable reference
+        if: runner.os == 'Windows'
+        working-directory: desktop
+        shell: bash
+        run: |
+          npm run tauri bundle -- --bundles msi
+          python ../scripts/desktop-executable-binding.py record \
+            --directory src-tauri/target/release/bundle \
+            --executable src-tauri/target/release/stagemesh-desktop.exe \
+            --format msi --commit "$GITHUB_SHA" \
+            --distribution-channel "${{ matrix.distribution_channel }}"
+
+      - name: Bundle Windows NSIS and record executable reference
+        if: runner.os == 'Windows'
+        working-directory: desktop
+        shell: bash
+        run: |
+          npm run tauri bundle -- --bundles nsis
+          python ../scripts/desktop-executable-binding.py record \
+            --directory src-tauri/target/release/bundle \
+            --executable src-tauri/target/release/stagemesh-desktop.exe \
+            --format nsis --commit "$GITHUB_SHA" \
+            --distribution-channel "${{ matrix.distribution_channel }}"
 
       - name: Record platform signing readiness
         shell: bash
@@ -269,6 +309,13 @@ jobs:
         run: >-
           cp scripts/windows-desktop-clean-host.py
           desktop/src-tauri/target/release/bundle/windows-clean-host.py
+
+      - name: Include Windows executable comparison tool
+        if: runner.os == 'Windows'
+        shell: bash
+        run: >-
+          cp scripts/desktop-executable-binding.py
+          desktop/src-tauri/target/release/bundle/verify-installed-executable.py
 
       - name: Include macOS/Linux clean-host evidence collector
         if: runner.os != 'Windows'
