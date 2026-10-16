@@ -211,6 +211,9 @@ def qualify(chromium: str, screenshot_dir: Path | None = None) -> dict[str, Any]
                         launcher_visible = page.locator("#launcherPlay").is_visible() and page.locator("#launcherStop").is_visible()
                         player_count = page.locator("[data-player]").count()
                         launcher_status = page.locator("#launcherStatus").inner_text()
+                        navigation_count = page.locator("nav.productNav").count()
+                        prototype_count = page.locator(".mockupAppBar, .mockupStatus, .mockupGrid").count()
+                        engine_readiness = page.locator("#nativeReadinessTitle").inner_text()
                         if title != "StageMesh":
                             errors.append(f"unexpected title: {title!r}")
                         if overflow_px > 0:
@@ -221,6 +224,10 @@ def qualify(chromium: str, screenshot_dir: Path | None = None) -> dict[str, Any]
                             errors.append(f"expected at least four player nodes, got {player_count}")
                         if "Loading native sampler" in launcher_status:
                             errors.append("launcher did not finish initial render")
+                        if navigation_count != 1 or prototype_count:
+                            errors.append("workspace contains duplicate or prototype navigation/readiness UI")
+                        if engine_readiness == "Checking Native Engine":
+                            errors.append("native engine readiness did not finish initial check")
 
                         if width == 1440:
                             page.keyboard.press("Tab")
@@ -258,6 +265,9 @@ def qualify(chromium: str, screenshot_dir: Path | None = None) -> dict[str, Any]
                                 "horizontalOverflowPx": overflow_px,
                                 "launcherVisible": launcher_visible,
                                 "playerCount": player_count,
+                                "primaryNavigationCount": navigation_count,
+                                "prototypeNodeCount": prototype_count,
+                                "nativeEngineReadiness": engine_readiness,
                                 "errors": errors,
                             }
                         )

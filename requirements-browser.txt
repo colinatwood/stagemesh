@@ -1,0 +1,2 @@
+# Rendered UI qualification tooling only; not an application runtime dependency.
+playwright==1.56.0

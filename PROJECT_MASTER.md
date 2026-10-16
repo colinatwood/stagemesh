@@ -9,6 +9,13 @@
 - Current milestone: **Attested desktop release candidates and external qualification execution**
 - Current source baseline: `2200603615f74525326b306fce0ca8051bf5dbe8` (PRs #167 and #168 merged).
 
+## Operator readiness UX follow-up — 2026-10-16 UTC
+
+- Stop loading the obsolete prototype overlay, which duplicated navigation/readiness UI and inserted fixed macOS/design-validation claims. Replace static software/platform success badges with an exact-build release-check reminder and a live native-engine connection card. Engine availability is not physical-output or hardware qualification evidence.
+- The read-only native check refreshes every five seconds, allows one outstanding request and aborts after four seconds. Unavailable/malformed/failed checks remove the green connection state; repeated unchanged status does not rewrite the polite live region. No stream/routing action is added.
+- The full Python suite ran 875 tests successfully with 24 environment skips, including the Node workflow for state transitions, HTTP failure, structured unavailable responses, timeout recovery, overlapping requests and repeated announcements. Chromium headless passes all four desktop/tablet/phone reference viewports with zero overflow, one production navigation bar and zero prototype nodes; the accessibility tree has zero unnamed interactive or ignored-focusable controls. These software results do not close UX-035 or physical qualification gates.
+- Add a Browser Reference CI workflow with pinned tooling and screenshot/JSON artifacts, and extend the rendered checks to detect prototype UI and unfinished readiness. See [operator readiness observations](docs/operator-readiness-ui.md). Continue the exact-source [installed-app BOOM recovery exercise](docs/capture-recovery-app-qualification.md) when the target host is available.
+
 ## Recovery integration handoff — 2026-10-16 UTC
 
 - PR #167 merged at `26cb69fe17567263a8403e66eda9108898f7228e`; PR #168 merged at `2200603615f74525326b306fce0ca8051bf5dbe8`. The selected-input connection card and audio-only monitor path are now together on `main`. Device return never starts capture without the operator's explicit action.
