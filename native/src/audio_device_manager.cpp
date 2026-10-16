@@ -159,7 +159,7 @@ void AudioDeviceManager::scan_platform() noexcept {
     try {
         DeviceMonitor monitor;
         monitor.start();
-        const auto snapshot = monitor.snapshot();
+        const auto snapshot = monitor.audio_snapshot();
         monitor.stop();
         const std::string_view backend =
 #if defined(_WIN32)

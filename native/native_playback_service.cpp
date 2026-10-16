@@ -21,7 +21,7 @@ bool NativePlaybackService::activate(const AudioRequest& request, DeviceSelectio
     if (selection.kind != DeviceKind::Audio || !selection.require_output) return false;
 
     auto candidate = std::make_unique<DeviceExecutionFence>(std::move(selection));
-    const auto snapshot = monitor_.snapshot();
+    const auto snapshot = monitor_.audio_snapshot();
     if (!candidate->arm_initial(snapshot.devices)) return false;
 
     auto candidate_stream = std::make_unique<NativePlaybackStream>(render_, context_);
@@ -47,7 +47,7 @@ bool NativePlaybackService::activate(const AudioRequest& request, DeviceSelectio
 bool NativePlaybackService::activate_endpoint(const AudioRequest& request, const std::string& token) {
     require_owner();
     deactivate();
-    const auto snapshot = monitor_.snapshot();
+    const auto snapshot = monitor_.audio_snapshot();
     DeviceSelection selection;
     unsigned matches = 0;
     for (const auto& record : snapshot.devices) {
@@ -65,7 +65,7 @@ void NativePlaybackService::service(std::uint32_t wait_ms) {
     require_owner();
     if (!active_) return;
     try {
-        const auto observation = fence_->reconcile(monitor_.snapshot().devices);
+        const auto observation = fence_->reconcile(monitor_.audio_snapshot().devices);
         last_fence_ = observation;
         if (!observation.execution_allowed) {
             deactivate();

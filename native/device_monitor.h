@@ -30,8 +30,12 @@ public:
     void start();
     void stop();
     DeviceSnapshot snapshot() const;
+    // Audio owners must not depend on MIDI enumeration succeeding during PnP
+    // churn. Same audio records/identity checks; no MIDI enumeration or claims.
+    DeviceSnapshot audio_snapshot() const;
     std::uint64_t revision() const;
 private:
+    DeviceSnapshot snapshot_impl(bool include_midi) const;
     struct Impl;
     std::unique_ptr<Impl> impl_;
 };
