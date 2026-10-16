@@ -520,14 +520,35 @@
     }
   }
 
-  async function refreshNative() {
-    try {
-      const response = await fetch("/api/v1/native", {headers: {"Accept": "application/json"}});
-      const native = await response.json();
-      q("#nativeStatus").textContent = native.available ? "NATIVE LIVE" : "NATIVE FALLBACK";
-    } catch (error) {
-      q("#nativeStatus").textContent = "NATIVE --";
+  let nativeStatusPending = false;
+  function renderNativeReadiness(available) {
+    const live = available === true;
+    const known = typeof available === "boolean";
+    const values = {
+      "#nativeStatus": live ? "NATIVE LIVE" : known ? "NATIVE FALLBACK" : "NATIVE --",
+      "#nativeReadinessIcon": live ? "✓" : "!",
+      "#nativeReadinessTitle": live ? "Native Engine Connected" : known ? "Native Engine Unavailable" : "Native Engine Status Unavailable",
+      "#nativeReadinessDetail": live ? "Engine connection only · hardware tests still required" : known ? "Engine connection unavailable · hardware status unverified" : "Status check failed · retrying"
+    };
+    q("#nativeReadiness").classList.toggle("ready", live);
+    q("#nativeReadiness").classList.toggle("pending", !live);
+    for (const [selector, text] of Object.entries(values)) {
+      const element = q(selector);
+      if (element.textContent !== text) element.textContent = text;
     }
+  }
+
+  async function refreshNative() {
+    if (nativeStatusPending) return;
+    nativeStatusPending = true;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    try {
+      const native = await api("/api/v1/native", {signal:controller.signal});
+      renderNativeReadiness(native?.available);
+    } catch (error) {
+      renderNativeReadiness(error.status === 503 && error.data?.available === false ? false : null);
+    } finally { clearTimeout(timeout); nativeStatusPending = false; }
   }
 
   async function refreshNodeStatus() {
@@ -1005,6 +1026,7 @@
     refresh().then(() => { refreshPlan(); refreshNative(); refreshNodeStatus(); refreshClockStatus(); refreshTechnologyOpenness(); refreshCommunityGovernance(); refreshCompatibility(); refreshVenueAdaptations(); refreshVenueReconciliation(false); refreshAudioDevices(); refreshAudioStream(); refreshAudioInput(); refreshLightingNetwork(); refreshMidiDevices(); refreshMidiMappings(); refreshProfile(); refreshDaw(); refreshLauncher(); });
     connectEvents();
     setInterval(refreshClockStatus, 1000);
+    setInterval(refreshNative, 5000);
     setInterval(refreshNodeStatus, 2000);
     setInterval(refreshTechnologyOpenness, 5000);
     setInterval(refreshCommunityGovernance, 5000);

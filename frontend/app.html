@@ -23,8 +23,8 @@
     <section class="panel readinessPanel" aria-labelledby="readinessTitle">
       <h1 id="readinessTitle" class="visuallyHidden">Readiness overview</h1>
       <div class="readinessGrid">
-        <article class="readinessCard ready"><i aria-hidden="true">✓</i><span><strong>Software Validated</strong><small>Core application tests passed</small></span><b aria-hidden="true">›</b></article>
-        <article class="readinessCard ready"><i aria-hidden="true">✓</i><span><strong>macOS Runtime Validated</strong><small>macOS 14 · Arm64</small></span><b aria-hidden="true">›</b></article>
+        <article class="readinessCard pending"><i aria-hidden="true">!</i><span><strong>Release Checks Required</strong><small>Review evidence for this exact build</small></span><b aria-hidden="true">›</b></article>
+        <article id="nativeReadiness" class="readinessCard pending" role="status" aria-live="polite"><i id="nativeReadinessIcon" aria-hidden="true">…</i><span><strong id="nativeReadinessTitle">Checking Native Engine</strong><small id="nativeReadinessDetail">Hardware qualification remains separate</small></span><b aria-hidden="true">›</b></article>
         <article class="readinessCard pending"><i aria-hidden="true">!</i><span><strong>Physical Loopback Required</strong><small>Connect audio interface for end-to-end test</small></span><b aria-hidden="true">›</b></article>
         <article class="readinessCard pending"><i aria-hidden="true">!</i><span><strong>Assistive Tech Review Required</strong><small>Validate status announcements and operator flow</small></span><b aria-hidden="true">›</b></article>
       </div>
@@ -282,6 +282,5 @@
   <script src="/production.js"></script>
   <script src="/recovery.js"></script>
   <script src="/stage-template.js"></script>
-  <script src="/mockup-console.js"></script>
 </body>
 </html>

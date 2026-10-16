@@ -49,7 +49,7 @@ class UiAccessibilityContractTests(unittest.TestCase):
 
     def test_operator_feedback_is_a_polite_live_region(self):
         by_id = {attrs.get("id"): attrs for _, attrs in self.inventory.elements if attrs.get("id")}
-        for target in ("launcherStatus", "dawAutomationStatus", "dawProductionStatus", "recoveryStatus", "advisorStatus", "audioReconnectStatus"):
+        for target in ("launcherStatus", "dawAutomationStatus", "dawProductionStatus", "recoveryStatus", "advisorStatus", "audioReconnectStatus", "nativeReadiness"):
             self.assertEqual(by_id[target].get("role"), "status", target)
             self.assertEqual(by_id[target].get("aria-live"), "polite", target)
 

@@ -7,7 +7,16 @@
 - Repository: `colinatwood/stagemesh`
 - Canonical branch: `main`
 - Current milestone: **Attested desktop release candidates and external qualification execution**
-- Current source baseline: `2200603615f74525326b306fce0ca8051bf5dbe8` (PRs #167 and #168 merged).
+- Current source baseline: `02590739388a3ed6eb46a45830a0e36f1a3e00d5` (PR #169 merged).
+
+## Operator readiness UX follow-up — 2026-10-16 UTC
+
+- PR #169 merged at `02590739388a3ed6eb46a45830a0e36f1a3e00d5` after exact head `ca3a8bec6befa09e1c51da77e71f4a133588f55c` passed CI `38837920053`, Desktop `38837920062` (all four packages and release index), Platform Modules `38837920158` and Native Device Lifecycle `38837920261`. The next work is published in PR #170 on `automation/live-readiness-ux`.
+- Stop loading the obsolete prototype overlay, which duplicated navigation/readiness UI and inserted fixed macOS/design-validation claims. Replace static software/platform success badges with an exact-build release-check reminder and a live native-engine connection card. Engine availability is not physical-output or hardware qualification evidence.
+- The read-only native check refreshes every five seconds, allows one outstanding request and aborts after four seconds. Unavailable/malformed/failed checks remove the green connection state; repeated unchanged status does not rewrite the polite live region. No stream/routing action is added.
+- The full Python suite ran 875 tests successfully with 24 environment skips, including the Node workflow for state transitions, HTTP failure, structured unavailable responses, timeout recovery, overlapping requests and repeated announcements. Chromium headless passes all four desktop/tablet/phone reference viewports with zero overflow, one production navigation bar and zero prototype nodes; the accessibility tree has zero unnamed interactive or ignored-focusable controls. These software results do not close UX-035 or physical qualification gates.
+- Add a Browser Reference CI workflow with pinned tooling and screenshot/JSON artifacts, and extend the rendered checks to detect prototype UI and unfinished readiness. See [operator readiness observations](docs/operator-readiness-ui.md). Continue the exact-source [installed-app BOOM recovery exercise](docs/capture-recovery-app-qualification.md) when the target host is available.
+- Browser Reference run `38838993848` passed on initial PR #170 head `c57a2dbe3fe7dc3d21bead45a447c91cf26b381b`; CI, Platform Modules and Native Device Lifecycle also passed that head. Desktop packaging remains pending at this handoff. A subsequent documentation-only baseline update requires CI on its new head before any merge.
 
 ## Recovery integration handoff — 2026-10-16 UTC
 
