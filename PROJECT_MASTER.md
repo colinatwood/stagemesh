@@ -7,12 +7,19 @@
 - Repository: `colinatwood/stagemesh`
 - Canonical branch: `main`
 - Current milestone: **Attested desktop release candidates and external qualification execution**
-- Current source baseline: `c093e1f99c6e667784748c444198270fd43d78e0` (PR #170 merged).
+- Current source baseline: `1f11b32041db3e54d85fb8352ca09af94ef7da23` (PR #171 merged).
+
+## Windows safe-suite checkpoint — 2026-10-16 UTC
+
+- PR #171 merged at `1f11b32041db3e54d85fb8352ca09af94ef7da23` after exact head `991da0adfb71494e8716069cc4d1421338c4b9f9` passed CI `38906720590`, Desktop `38906720479`, Platform Modules `38906720597`, Native Device Lifecycle `38906720552` and Browser Reference `38906720493`.
+- Private Windows hardware-control run [38945585363](https://github.com/colinatwood/stagemesh-hardware-control/actions/runs/38945585363) passed the bounded `safe-suite` against that clean source, using control commit `73e783106d153d255a8e2e9a68874e6fa2596bc9`. All 21 CTests passed; separate lifecycle, discarded-buffer capture, intentionally silent playback and synthetic MIDI exercises also passed. Capture and playback each reported 16 callbacks and 30,720 frames at 192 kHz, two float32 channels and a configured period of 1,920 frames. Synthetic MIDI observed four injected events with zero queue drops. Physical outputs remained disarmed.
+- Independently downloaded artifact `12065941873` and verified ZIP SHA-256 `c4789fed539bfe038e85fa48998fc3d390963852bcdc8f7918efa68e7310ac37`, all 23 manifest member hashes/sizes, and each helper report's source/transcript binding. The wrappers do not attest binary origin, owner review or hardware qualification. See [the scoped result and evidence boundary](docs/windows-safe-suite-2026-10-16.md).
+- No backlog row becomes Done: 24 Done and 25 open remain. Next is the exact-source [installed-app BOOM recovery exercise](docs/capture-recovery-app-qualification.md), including three physical unplug/explicit-rearm/fresh-callback cycles. This helper run does not qualify that UI, a named endpoint, physical hotplug, audible/recording quality, latency or release readiness.
 
 ## Input recovery observations — 2026-10-16
 
 - PR #170 merged at `c093e1f99c6e667784748c444198270fd43d78e0` after exact head `2339d5061c4cff5e8d3a46444e489be3883b65f6` passed CI `38839718407`, Desktop `38839718434`, Platform Modules `38839718403`, Native Device Lifecycle `38839718471` and Browser Reference `38839718454`.
-- Next branch `automation/input-recovery-observations` adds a collapsed, read-only Connection details panel to the selected-input card. It shows UI-observed missing-to-return time, connect-response duration, configured audio settings, reported counters and callback deltas between fresh active samples. Unknown values remain unreported; pre-rearm counters, inactive samples, identity changes, resets and failed observations cannot establish a fresh callback increase.
+- PR #171 (`automation/input-recovery-observations`) adds a collapsed, read-only Connection details panel to the selected-input card. It shows UI-observed missing-to-return time, connect-response duration, configured audio settings, reported counters and callback deltas between fresh active samples. Unknown values remain unreported; pre-rearm counters, inactive samples, identity changes, resets and failed observations cannot establish a fresh callback increase.
 - Read-only status requests now abort after six seconds, discard stale readings and disable reconnect until a fresh response succeeds. Activation requests retain their existing explicit authority/identity/route checks and are not automatically retried or cancelled. Primary status text is rewritten only when it changes; frequently changing counters remain outside the polite live region.
 - Validation: the full Python suite ran 876 tests successfully with 24 environment skips, including Node scenarios for timing, stale data, counter reset/change, rearm, route-confirmation wait and read timeout. Chromium headless passes all four reference viewports with Connection details expanded, zero horizontal overflow and passing accessibility-tree checks. The [installed-app BOOM exercise](docs/capture-recovery-app-qualification.md) now uses the visible observations. These UI timings are not cable-to-ready, first-callback or audio latency measurements, and no external qualification row is closed.
 
