@@ -15,6 +15,10 @@ artifact manifest and installer SHA-256, host/driver versions, and install resul
 Verify the bundle with `scripts/verify-desktop-download.py` before installation.
 Keep private device identifiers and host details in the private evidence store.
 Earlier private helper run `38789578317` is baseline helper evidence only.
+The private keyboard smoke's `requestedStageMeshSha` is also request metadata
+only: `installedSourceVerified` remains false. Its installed executable hashes
+and synthetic focus observations cannot replace candidate/installer binding or
+qualify this physical recovery exercise.
 
 Open the installed app and select BOOM as input slot 0 under Audio devices.
 Keep input route gain at zero and all physical playback/lighting outputs disarmed.
