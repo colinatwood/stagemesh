@@ -7,7 +7,15 @@
 - Repository: `colinatwood/stagemesh`
 - Canonical branch: `main`
 - Current milestone: **Attested desktop release candidates and external qualification execution**
-- Current source baseline: `1f11b32041db3e54d85fb8352ca09af94ef7da23` (PR #171 merged).
+- Current source baseline: `70055edabfc6e0ad9dc791ac419ba37a1acf2292` (PR #172 merged).
+
+## Guarded installed-app keyboard evidence — 2026-10-16 UTC
+
+- PR #172 merged the Windows safe-suite record at `70055edabfc6e0ad9dc791ac419ba37a1acf2292`. Its Desktop run `38946806967` subsequently passed all four packages and the cross-platform release-candidate index; the earlier offline WebView2 download delay resolved. CI `38946806834`, Platform Modules `38946806800` and Native Device Lifecycle `38946806761` also passed its exact head `a1d495d1c9246efc0f925617abf7e2105b7082b0`.
+- Private hardware-control [PR #6](https://github.com/colinatwood/stagemesh-hardware-control/pull/6) merged at `539133c657fdf0395f691ef18e14bfa1710c499f`. The installed keyboard smoke now checks foreground-window ownership and UI Automation ancestry before and after each key, sends only Tab/Shift-Tab, rejects invalid targets and one trapped runtime ID even if its label changes, and preserves partial failure evidence without recording other applications' control names. Foreground checks and global synthetic input are separate OS calls, so this does not make key delivery atomic.
+- The report records installed executable hashes before/after execution. `requestedStageMeshSha` is request metadata only; this operation neither builds that source nor binds the installed binary to its installer. `installedSourceVerified` and `screenReaderQualified` stay false. The exact private PR head `39cc504276dbd7f3ab0ee5b05a0b22ae92d935d1` passed validation run `38952277748`: 26 Python regressions plus native checks, keyboard ownership/navigation/provenance regressions under both Windows PowerShell 5.1 and PowerShell 7, and the Windows native observer build.
+- The fresh private [keyboard observation 38952517849](https://github.com/colinatwood/stagemesh-hardware-control/actions/runs/38952517849), requested against StageMesh `70055edabfc6e0ad9dc791ac419ba37a1acf2292`, **failed** the foreground/focus ownership guard and stopped. Its report contains zero accepted focus observations, matching executable hashes and no installed-source verification. Zero accepted observations does not establish that zero keys were dispatched: a first post-key ownership failure also produces no accepted observation. This is not a keyboard, assistive-technology or installed-app recovery pass.
+- Artifact `12068594372` ZIP SHA-256 `6a459992eed4887f0837fa90036ed9d50e83a37f8887238c18ec33c0866b8da8` was independently downloaded and verified; all seven manifest members match their sizes and hashes. Raw host and UI metadata remain private. No backlog row changes: 24 Done and 25 open. Next: make the signed-in, unlocked PC available with StageMesh retaining focus for another bounded observation; separately bind an exact desktop candidate and perform [three physical BOOM recovery cycles](docs/capture-recovery-app-qualification.md). Do not bypass the ownership guard or treat the requested SHA as proof of the installed version.
 
 ## Windows safe-suite checkpoint — 2026-10-16 UTC
 
