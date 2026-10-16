@@ -128,11 +128,14 @@ class DesktopExecutableBindingTests(unittest.TestCase):
         self.seal()
         self.assertFalse(binding.check(self.bundle, inside, "msi/StageMesh.msi", SHA, "offline")["passed"])
         self.selected.unlink()
+        self.build.write_bytes(b"msi executable")
         try:
             self.selected.symlink_to(self.build)
         except OSError:
             self.skipTest("symlink creation not permitted")
-        self.assertFalse(self.check()["passed"])
+        report = self.check()
+        self.assertFalse(report["passed"])
+        self.assertIn("symlinks", " ".join(report["blockers"]))
 
     def test_record_rejects_duplicate_ambiguous_or_empty_inputs(self):
         with self.assertRaises(FileExistsError):

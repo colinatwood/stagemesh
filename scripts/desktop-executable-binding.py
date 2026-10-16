@@ -51,12 +51,17 @@ def snapshot(path: Path, *, contents: bool = False):
     with path.open("rb") as source:
         if _identity(before) != _identity(os.fstat(source.fileno())):
             raise ValueError("file identity changed before reading")
-        for block in iter(lambda: source.read(1024 * 1024), b""):
+        remaining = before.st_size
+        while remaining:
+            block = source.read(min(1024 * 1024, remaining))
+            if not block:
+                raise ValueError("file changed while being read")
             digest.update(block)
             if contents:
                 chunks.append(block)
-                if sum(map(len, chunks)) > MAX_JSON:
-                    raise ValueError("JSON metadata grew beyond the size limit")
+            remaining -= len(block)
+        if source.read(1):
+            raise ValueError("file changed while being read")
         after = os.fstat(source.fileno())
     if _identity(before) != _identity(after) or _identity(before) != _identity(path.stat()):
         raise ValueError("file changed while being read")
