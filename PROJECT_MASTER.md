@@ -9,6 +9,12 @@
 - Current milestone: **Attested desktop release candidates and external qualification execution**
 - Current source baseline: `70055edabfc6e0ad9dc791ac419ba37a1acf2292` (PR #172 merged).
 
+## Keyboard dispatch diagnostics — 2026-10-16 UTC
+
+- Private hardware-control [PR #7](https://github.com/colinatwood/stagemesh-hardware-control/pull/7) merged at `6b103c88f3a8e049674c98a4b6758d27b6f610f1`. Its exact head `0624fc9aaa33585aedc38558fe9fdcf3708c3126` passed validation run `38953341088`: Python/native tests, the Windows observer build and injected keyboard regressions under Windows PowerShell 5.1 and PowerShell 7. Schema 3 records phase, key index, dispatch attempts/completions, accepted observations, bounded failure code and the last ownership booleans. A throwing dispatch remains an uncertain attempt; a failed focus read cannot reuse stale ownership. No foreign window title, control name or PID is added.
+- Fresh private [observation 38953645176](https://github.com/colinatwood/stagemesh-hardware-control/actions/runs/38953645176), requested against StageMesh `70055edabfc6e0ad9dc791ac419ba37a1acf2292`, failed at `before-key`, key index 1, with `foreground-not-owned`. Both dispatch counters and accepted observations were zero: this attempt stopped before invoking any synthetic key callback. The preceding schema-2 run's dispatch history remains unknown; the new result cannot retroactively establish it. Installed executable hashes match, but installed-source and screen-reader verification remain false.
+- Independently verified artifact `12069243922`, ZIP SHA-256 `95588c0300245347daf2096e3491b143fad342deec0d6d6337ff59587de92eb4`, and all seven manifest member sizes/hashes. Keep the ownership guard intact. Another keyboard observation requires StageMesh retaining the foreground on the signed-in, unlocked PC. Next independent software work is binding the installed executable to a verified desktop candidate; three physical BOOM recovery cycles remain separate. No qualification row closes: 24 Done, 25 open.
+
 ## Guarded installed-app keyboard evidence — 2026-10-16 UTC
 
 - PR #172 merged the Windows safe-suite record at `70055edabfc6e0ad9dc791ac419ba37a1acf2292`. Its Desktop run `38946806967` subsequently passed all four packages and the cross-platform release-candidate index; the earlier offline WebView2 download delay resolved. CI `38946806834`, Platform Modules `38946806800` and Native Device Lifecycle `38946806761` also passed its exact head `a1d495d1c9246efc0f925617abf7e2105b7082b0`.
