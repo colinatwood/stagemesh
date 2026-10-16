@@ -7,7 +7,14 @@
 - Repository: `colinatwood/stagemesh`
 - Canonical branch: `main`
 - Current milestone: **Attested desktop release candidates and external qualification execution**
-- Current source baseline: `02590739388a3ed6eb46a45830a0e36f1a3e00d5` (PR #169 merged).
+- Current source baseline: `c093e1f99c6e667784748c444198270fd43d78e0` (PR #170 merged).
+
+## Input recovery observations — 2026-10-16
+
+- PR #170 merged at `c093e1f99c6e667784748c444198270fd43d78e0` after exact head `2339d5061c4cff5e8d3a46444e489be3883b65f6` passed CI `38839718407`, Desktop `38839718434`, Platform Modules `38839718403`, Native Device Lifecycle `38839718471` and Browser Reference `38839718454`.
+- Next branch `automation/input-recovery-observations` adds a collapsed, read-only Connection details panel to the selected-input card. It shows UI-observed missing-to-return time, connect-response duration, configured audio settings, reported counters and callback deltas between fresh active samples. Unknown values remain unreported; pre-rearm counters, inactive samples, identity changes, resets and failed observations cannot establish a fresh callback increase.
+- Read-only status requests now abort after six seconds, discard stale readings and disable reconnect until a fresh response succeeds. Activation requests retain their existing explicit authority/identity/route checks and are not automatically retried or cancelled. Primary status text is rewritten only when it changes; frequently changing counters remain outside the polite live region.
+- Validation: the full Python suite ran 876 tests successfully with 24 environment skips, including Node scenarios for timing, stale data, counter reset/change, rearm, route-confirmation wait and read timeout. Chromium headless passes all four reference viewports with Connection details expanded, zero horizontal overflow and passing accessibility-tree checks. The [installed-app BOOM exercise](docs/capture-recovery-app-qualification.md) now uses the visible observations. These UI timings are not cable-to-ready, first-callback or audio latency measurements, and no external qualification row is closed.
 
 ## Operator readiness UX follow-up — 2026-10-16 UTC
 
