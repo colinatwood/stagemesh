@@ -146,6 +146,13 @@ the manifest and signing report are complete. It fails closed for missing,
 changed, unexpected, unsafe, or inconsistently described files and for a
 signing report bound to a different manifest.
 
+The verifier reads each metadata sidecar (`desktop-artifacts.json`, `SHA256SUMS`
+and `signing-verification.json`) within a 5 MiB limit. JSON must be UTF-8 with
+unique fields at every depth and finite numbers; schema versions must be integer
+`1`. Invalid channel/status types, excessive JSON nesting and malformed metadata
+produce a failed JSON report and nonzero exit. These checks preserve the existing
+integrity-only boundary.
+
 Run it from an extracted artifact with Python 3 and no third-party packages:
 
 ```sh
@@ -261,3 +268,4 @@ entry. It is deliberately excluded from `desktop-artifacts.json` and
 `SHA256SUMS` to avoid a self-referential checksum cycle. CI must not regenerate
 the artifact manifest after verification; the report's `artifactManifest`
 SHA-256 binds it to the immutable manifest it actually checked.
+

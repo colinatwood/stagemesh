@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 from pathlib import Path, PurePosixPath
 import re
 import sys
@@ -23,6 +24,7 @@ SIDECAR_NAMES = frozenset({MANIFEST_NAME, CHECKSUM_NAME, SIGNING_VERIFICATION_NA
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 CHECKSUM_PATTERN = re.compile(r"^([0-9a-f]{64})  (.+)$")
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
+MAX_METADATA_BYTES = 5 * 1024 * 1024
 
 
 def _sha256(path: Path) -> str:
@@ -44,20 +46,58 @@ def _safe_relative_path(value: object) -> str:
     return value
 
 
-def _load_object(path: Path, label: str) -> dict[str, Any]:
+def _read_metadata(path: Path, label: str) -> str:
     try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
+        with path.open("rb") as source:
+            data = source.read(MAX_METADATA_BYTES + 1)
     except OSError as exc:
-        raise ValueError(f"{label} could not be read: {exc.strerror or exc}") from exc
+        raise ValueError(f"{label} could not be read") from exc
+    if len(data) > MAX_METADATA_BYTES:
+        raise ValueError(f"{label} exceeds the metadata size limit")
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ValueError(f"{label} is not valid UTF-8") from exc
+
+
+def _unique_object(pairs):
+    value = {}
+    for key, item in pairs:
+        if key in value:
+            raise ValueError("duplicate JSON fields are not permitted")
+        value[key] = item
+    return value
+
+
+def _reject_constant(value):
+    raise ValueError("non-finite JSON numbers are not permitted")
+
+
+def _finite_float(value):
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError("non-finite JSON numbers are not permitted")
+    return number
+
+
+def _load_object(path: Path, label: str) -> dict[str, Any]:
+    content = _read_metadata(path, label)
+    try:
+        payload = json.loads(content, object_pairs_hook=_unique_object,
+                             parse_constant=_reject_constant, parse_float=_finite_float)
     except json.JSONDecodeError as exc:
         raise ValueError(f"{label} is not valid JSON: {exc.msg}") from exc
+    except RecursionError as exc:
+        raise ValueError(f"{label} JSON nesting exceeds the parser limit") from exc
+    except ValueError as exc:
+        raise ValueError(f"{label}: {exc}") from exc
     if not isinstance(payload, dict):
         raise ValueError(f"{label} must be a JSON object")
     return payload
 
 
 def _manifest_entries(manifest: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    if manifest.get("schemaVersion") != 1:
+    if type(manifest.get("schemaVersion")) is not int or manifest["schemaVersion"] != 1:
         raise ValueError("artifact manifest schemaVersion must be 1")
     if manifest.get("product") != "StageMesh":
         raise ValueError("artifact manifest product must be StageMesh")
@@ -66,7 +106,7 @@ def _manifest_entries(manifest: dict[str, Any]) -> dict[str, dict[str, Any]]:
             raise ValueError(f"artifact manifest {field} must be a non-empty string")
     channel = manifest.get("distributionChannel")
     expected_channels = {"online", "offline"} if manifest["platform"] == "Windows" else {"standard"}
-    if channel not in expected_channels:
+    if not isinstance(channel, str) or channel not in expected_channels:
         expected = "online or offline" if manifest["platform"] == "Windows" else "standard"
         raise ValueError(
             f"artifact manifest distributionChannel must be {expected} for {manifest['platform']}"
@@ -112,10 +152,7 @@ def _manifest_entries(manifest: dict[str, Any]) -> dict[str, dict[str, Any]]:
 
 
 def _checksum_entries(path: Path) -> dict[str, str]:
-    try:
-        content = path.read_text(encoding="utf-8")
-    except OSError as exc:
-        raise ValueError(f"checksum file could not be read: {exc.strerror or exc}") from exc
+    content = _read_metadata(path, "checksum file")
     if not content:
         raise ValueError("checksum file must not be empty")
     entries: dict[str, str] = {}
@@ -216,10 +253,11 @@ def evaluate(directory: Path) -> dict[str, Any]:
     if root.is_dir() and signing_path.exists():
         try:
             signing = _load_object(signing_path, "signing verification report")
-            if signing.get("schemaVersion") != 1 or signing.get("product") != "StageMesh":
+            if (type(signing.get("schemaVersion")) is not int or signing["schemaVersion"] != 1
+                    or signing.get("product") != "StageMesh"):
                 raise ValueError("signing verification report identity is invalid")
             raw_signing_status = signing.get("status")
-            if raw_signing_status not in {"failed", "not-configured", "verified"}:
+            if not isinstance(raw_signing_status, str) or raw_signing_status not in {"failed", "not-configured", "verified"}:
                 raise ValueError("signing verification report status is invalid")
             signing_status = raw_signing_status
             binding = signing.get("artifactManifest")
@@ -269,3 +307,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+

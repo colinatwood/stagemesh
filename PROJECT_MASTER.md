@@ -7,7 +7,14 @@
 - Repository: `colinatwood/stagemesh`
 - Canonical branch: `main`
 - Current milestone: **Attested desktop release candidates and external qualification execution**
-- Current source baseline: `7a2c809cb53fcdfa9e4c7793820689896db59226` (PR #173 merged).
+- Current source baseline: `a3ba519f9de0d0d447705f0f48f98168e34e09b2` (PR #174 merged).
+
+## Download metadata validation checkpoint — 2026-10-17 UTC
+
+- PR #174 merged at the baseline above after exact head `c54f00bc6d7054fad6bb31e954f6671246f0768f` passed CI `38974466672`, Desktop `38974466575`, Platform Modules `38974466578` and Native Device Lifecycle `38974466534`. Main subsequently passed CI `39036315976` and Desktop `39036315974`. No open PR remained when this increment started.
+- Branch `automation/download-metadata-validation` advances PKG-033/034's software evidence tooling: the offline download verifier rejects duplicate JSON fields, non-finite numbers, coercive schema versions and malformed channel/status types. Each metadata sidecar has a bounded 5 MiB UTF-8 read. Invalid encoding, excessive nesting and oversized metadata return a failed JSON report without a traceback or local input path. Both Windows package jobs run the new CLI regressions before building.
+- Validation: all 40 focused manifest/download/executable-comparison/release-index tests passed locally, including six new test methods with malformed-input subcases. Python compilation passed. This workspace contains the focused source/test subset; no complete local suite, native build or real artifact re-verification is claimed. Exact-head CI and desktop package verification remain the next action before merge. The inventory remains 24 Done and 25 open; no external gate closes.
+- After CI, independently verify candidate provenance and compare the actual installed Windows executable with the matching installer-specific reference. Another keyboard observation requires foreground ownership; installed-app BOOM recovery requires three physical unplug/explicit-rearm/fresh-callback cycles. Signing credentials, distinct-version upgrade, clean hosts, assistive-technology review, quality measurements and owner/legal decisions remain external blockers.
 
 ## Installed executable reference follow-up — 2026-10-16 UTC
 
@@ -253,3 +260,4 @@ The application is suitable for controlled developer testing with unsigned CI ca
 - Exact signed-artifact re-verification and a versioned public release.
 
 The 451 MB combined offline Windows NSIS/MSI archive remains a distribution tradeoff. PR #120 now produces separate smaller online and self-contained offline channels and binds each to its own manifest and evidence track. Hosted CI remains software evidence and does not close physical, clean-host, accessibility, legal, signing, deployed-service, or audible-quality gates.
+
