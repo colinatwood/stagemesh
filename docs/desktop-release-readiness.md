@@ -96,6 +96,50 @@ python scripts/desktop-release-index.py \
 
 ## Download integrity verification
 
+Windows candidates additionally contain `executable-bindings/msi.json` and
+`executable-bindings/nsis.json`, plus `verify-installed-executable.py`. CI builds
+the executable once, bundles MSI and NSIS separately, and records each executable
+immediately after that format finishes. The [Tauri CLI](https://v2.tauri.app/reference/cli/)
+can patch bundle-type information
+into the executable, so a single hash taken after both formats is insufficient.
+Each reference binds the installer path, size and SHA-256 to that format's
+post-bundle build-output executable, declared source SHA and online/offline
+channel. Both references and the comparison tool are included in the normal
+artifact manifest, checksum inventory and CI attestations.
+
+After verifying the downloaded bundle, compare a selected installed executable
+without launching it, modifying the installation, opening devices or sending
+keys. Use the exact installer path from `desktop-artifacts.json`, expected source
+SHA and distribution channel:
+
+```powershell
+python verify-installed-executable.py check `
+  --directory . `
+  --installer "msi/StageMesh_0.1.0_x64_en-US.msi" `
+  --executable "$env:LOCALAPPDATA\Programs\StageMesh\stagemesh-desktop.exe" `
+  --commit <40-character-source-commit> --distribution-channel offline
+```
+
+Select the executable's actual location; the example does not attest that path
+is an installed application. The checker re-verifies the entire download and
+requires the selected installer and reference to match its manifest. It rejects
+mixed sources/channels, modified or missing references, ambiguous recording
+inputs, empty or changing files, symlinks/reparse points and a selected executable
+inside the download bundle. Older candidates without these references cannot
+establish a match. The report contains hashes and file names, not the local
+installation path. Run the repository's copy when independently trusted tooling
+is required; the checker never loads code from the supplied download directory.
+
+`installedExecutableMatchesCandidateReference:true` means only matching bytes
+against this installer-specific **build-output reference**. It does not prove the
+installer's extracted payload, installed location, sidecars/resources, publisher
+identity or source provenance. `installerPayloadExtracted`,
+`installedLocationVerified`, `publisherAuthenticated`, `sourceProvenanceVerified`,
+clean-host and physical qualification remain false. Independently verify the
+candidate's provenance/signatures and retain actual installation evidence before
+making stronger claims. This comparison does not change the keyboard agent's
+`installedSourceVerified:false` boundary.
+
 Each platform bundle includes `verify-download.py`, and the script itself is
 listed in `desktop-artifacts.json` and `SHA256SUMS`. CI runs the verifier after
 the manifest and signing report are complete. It fails closed for missing,
