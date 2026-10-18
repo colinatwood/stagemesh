@@ -27,7 +27,7 @@ function setup({raw=null,serverId='server-old'}={}) {
   const name={value:'Original',addEventListener:(kind,callback)=>{assert.equal(kind,'change');handler=callback;}};
   const hint={},status={},deleteServer={disabled:true};
   const controls={'#templateName':name,'#templateHint':hint,'#templateStatus':status,'#templateDeleteServer':deleteServer};
-  const context={objects:original,selectedId:'old',drag:null,serverTemplateId:serverId,serverRevision:2,serverDirty:false,storageKey:'draft',
+  const context={objects:original,selectedId:'old',drag:null,placement:null,serverTemplateId:serverId,serverRevision:2,serverDirty:false,storageKey:'draft',
     q:selector=>{assert.ok(controls[selector],selector);return controls[selector];},
     localStorage:{getItem:()=>disk,setItem:(key,value)=>{assert.equal(key,'draft');if(failWrite)throw Error('disk full');disk=value;writes++;}},
     render:()=>renders++,api:async()=>{reads++;return incoming;}};

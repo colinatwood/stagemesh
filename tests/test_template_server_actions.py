@@ -26,7 +26,7 @@ const actionEnd=source.indexOf('  const renderStatus =',actionStart);
 const code=source.slice(helperStart,helperEnd)+source.slice(actionStart,actionEnd)+'\nthis.saveServer=saveServer;';
 const original=[{id:'lead',type:'performer',label:'Lead',x:50,y:40}];
 const name={value:'  Renamed tour  '},hint={};let disk,apiCalls=0,renders=0,refreshes=0,failWrite=false;
-const context={objects:original,selectedId:'lead',drag:null,serverTemplateId:'server-old',serverRevision:2,serverDirty:false,storageKey:'draft',
+const context={objects:original,selectedId:'lead',drag:null,placement:null,serverTemplateId:'server-old',serverRevision:2,serverDirty:false,storageKey:'draft',
   q:selector=>selector==='#templateName'?name:hint,
   localStorage:{setItem:(key,value)=>{assert.equal(key,'draft');if(failWrite)throw Error('disk full');disk=JSON.parse(value);}},
   api:async(method,path,body)=>{apiCalls++;assert.equal(method,'PATCH');assert.equal(path,'/api/v1/templates/server-old');
@@ -58,7 +58,7 @@ const start=source.indexOf('  const deleteServer =');
 const end=source.indexOf('  const renderStatus =',start);
 const code=source.slice(helperStart,helperEnd)+source.slice(start,end)+'\nthis.deleteServer=deleteServer;';
 const select={value:'server-old'},hint={};let apiCalls=0,refreshes=0,renders=0,failDelete=false;
-const context={objects:[],selectedId:null,drag:null,storageKey:'draft',serverTemplateId:'server-old',serverRevision:4,serverDirty:true,
+const context={objects:[],selectedId:null,drag:null,placement:null,storageKey:'draft',serverTemplateId:'server-old',serverRevision:4,serverDirty:true,
   localStorage:{setItem:()=>{}},
   q:selector=>selector==='#templateSaved'?select:hint,
   api:async(method,path,body)=>{apiCalls++;assert.equal(method,'DELETE');
@@ -92,7 +92,7 @@ const original=[{id:'lead',type:'performer',label:'Lead',x:50,y:40}];
 const name={value:'Tour'},hint={},saved={value:'server-old'},deleteButton={disabled:false};
 let release,apiCalls=0,writes=0,renders=0;
 const response=new Promise(resolve=>release=resolve);
-const context={objects:original,selectedId:'lead',drag:null,serverTemplateId:'server-old',serverRevision:2,serverDirty:true,storageKey:'draft',
+const context={objects:original,selectedId:'lead',drag:null,placement:null,serverTemplateId:'server-old',serverRevision:2,serverDirty:true,storageKey:'draft',
   q:selector=>selector==='#templateName'?name:selector==='#templateSaved'?saved:selector==='#templateDeleteServer'?deleteButton:hint,
   localStorage:{setItem:()=>writes++},
   api:async()=>{apiCalls++;return response;},refreshSaved:async()=>[],render:()=>renders++};

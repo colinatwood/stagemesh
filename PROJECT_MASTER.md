@@ -9,6 +9,13 @@
 - Current milestone: **Attested desktop release candidates and external qualification execution**
 - Current source baseline: `392ac5d0baa2d40fdf2c9d61af0cb283c0a30e06` (PR #176 merged).
 
+## Stage Editor placement follow-up — 2026-10-18
+
+- Branch `feature/stage-editor-placement` starts at `94749cf07bc8f3d70060e9889db33e52ff4754f2` (PR #177 merged). The owner requested object/layout context options, placement, movement and orientation, a final left click to save, and left-click reopening of an existing object. See [the interaction and evidence](docs/stage-editor-placement.md).
+- Placement previews remain separate from the saved draft until the final click or Save placement. Escape cancels, interrupted drags restore their start, and failed writes preserve the prior draft. Concurrent replacement/server/export actions refuse an open preview. Optional orientation survives frontend import/export and backend persistence with strict finite/range validation.
+- Validation: 900 Python tests completed successfully with 24 environment skips, including real Chromium interaction coverage; the existing four-viewport browser/accessibility reference passed with zero horizontal overflow. Package/platform CI must pass on the final PR commit before merge. The authoritative inventory remains 24 Done / 25 open; no physical or accessibility acceptance row closes.
+- The owner explicitly authorized installing the selected PR #175 online MSI and reported installation complete. Read-only comparison run `39135956305` attempt 2 still reports a candidate-integrity pass and an executable mismatch. Its receipt archive `12152210945` was independently verified at SHA-256 `203d7db9bbb6405c7cfce10ed0cdddbbe4e02986083aac9b471db8dbecfca8ca`. Installer completion has not established the required byte match. Next: inspect the local installed executable and MSI installation log/status before choosing repair handling, then repeat comparison after a concrete state change. The three installed-app BOOM cycles remain pending.
+
 ## Unattended Windows testing — 2026-10-18
 
 - PR #176 and private hardware-control PR #8 merged after their current-head checks passed. The actual private-PC comparison now completes using the Windows Python compatibility fix; its result is a verified candidate-integrity pass and an installed-executable **mismatch**, not a fresh installed match. See [the run identities, evidence and next steps](docs/windows-unattended-tests-2026-10-18.md).

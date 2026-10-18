@@ -21,7 +21,7 @@ const code=source.slice(helperStart,helperEnd)+source.slice(exportStart,exportEn
   '\nthis.beginAction=beginAsyncAction;this.endAction=endAsyncAction;';
 const original=[{id:'lead',type:'performer',label:'Lead',x:50,y:40}];
 const name={value:'Committed'},hint={},status={};let handler,writes=0,disk,clicks=0,failWrite=false,blobParts,revoke;
-const context={objects:original,selectedId:'lead',drag:null,serverTemplateId:'server-old',serverRevision:2,serverDirty:false,storageKey:'draft',
+const context={objects:original,selectedId:'lead',drag:null,placement:null,serverTemplateId:'server-old',serverRevision:2,serverDirty:false,storageKey:'draft',
   q:selector=>selector==='#templateName'?name:selector==='#templateHint'?hint:selector==='#templateStatus'?status:
     {addEventListener:(type,callback)=>handler=callback},
   localStorage:{setItem:(key,value)=>{if(failWrite)throw Error('disk full');writes++;disk=value;}},

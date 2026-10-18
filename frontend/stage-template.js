@@ -7,6 +7,7 @@
   let objects = [];
   let selectedId = null;
   let drag = null;
+  let placement = null;
   let serverTemplateId = null;
   let serverRevision = null;
   let serverDirty = false;
@@ -39,6 +40,7 @@
       const x = item.x === undefined && allowObjectDefaults ? 50 : item.x;
       const y = item.y === undefined && allowObjectDefaults ? 50 : item.y;
       if (![x, y].every((value) => typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 100)) fail("coordinates must be finite numbers between 0 and 100");
+      if (item.rotation !== undefined && (typeof item.rotation !== "number" || !Number.isFinite(item.rotation) || item.rotation < 0 || item.rotation >= 360)) fail("orientation must be a finite number from 0 up to 360 degrees");
       return {...item, id, type, x, y};
     });
     return {version: 1, name: parsed.name === undefined ? fallbackName : parsed.name, objects: normalized};
@@ -47,6 +49,7 @@
   let pendingAction = null;
   const assertEditorAvailable = (action) => {
     if (drag) throw new Error(`finish or cancel the active object move before ${action}`);
+    if (placement?.isEditing()) throw new Error(`save or cancel the active placement before ${action}`);
     if (pendingAction) throw new Error(`wait for ${pendingAction.action} to finish before ${action}`);
   };
   const beginAsyncAction = (action) => {
@@ -85,7 +88,7 @@
       q("#templateHint").textContent = `Local draft rejected: ${error.message}. Stored data was preserved for recovery.`;
     }
   };
-  const selected = () => objects.find((item) => item.id === selectedId);
+  const selected = () => (placement?.view() || objects).find((item) => item.id === selectedId);
   const renderSelection = () => {
     const item = selected();
     const label = q("#templateSelectionLabel");
@@ -175,7 +178,8 @@
   };
   const renderStatus = () => {
     const stateLabel = serverTemplateId ? "SERVER r" + serverRevision + (serverDirty ? " · UNSAVED" : "") : "LOCAL DRAFT";
-    q("#templateStatus").textContent = objects.length + " OBJECT" + (objects.length === 1 ? "" : "S") + " · " + stateLabel;
+    q("#templateStatus").textContent = objects.length + " OBJECT" + (objects.length === 1 ? "" : "S") + " · " + stateLabel
+      + (placement?.isEditing() ? " · EDITING PLACEMENT" : "");
   };
   const render = () => {
     canvas.querySelectorAll(".templateObject").forEach((node) => node.remove());
@@ -185,12 +189,14 @@
     renderStatus();
     globalThis.StageMeshTemplateRenderSelection?.();
     const empty = q(".templateEmpty");
-    if (empty) empty.hidden = objects.length > 0;
-    objects.forEach((item) => {
+    const visibleObjects = placement?.view() || objects;
+    if (empty) empty.hidden = visibleObjects.length > 0;
+    visibleObjects.forEach((item) => {
       const node = document.createElement("button");
       node.type = "button"; node.className = `templateObject template-${item.type}${item.id === selectedId ? " selected" : ""}`;
       node.dataset.id = item.id; node.style.left = `${item.x}%`; node.style.top = `${item.y}%`;
-      node.setAttribute("aria-label", `${item.label}, ${item.type}. Use arrow keys to move; Shift moves ten percent.`);
+      node.style.transform = `translate(-50%, -50%) rotate(${item.rotation || 0}deg)`;
+      node.setAttribute("aria-label", `${item.label}, ${item.type}. ${placement ? "Click to edit position and orientation; click the stage to save; Escape cancels." : "Use arrow keys to move; Shift moves ten percent."}`);
       node.setAttribute("aria-pressed", String(item.id === selectedId));
       const selectObject = () => {
         selectedId = item.id;
@@ -201,12 +207,14 @@
         q("#templateDelete").disabled = false;
         globalThis.StageMeshTemplateRenderSelection?.();
       };
-      node.addEventListener("click", selectObject);
+      node.addEventListener("click", () => { selectObject(); placement?.editObject(item.id, node); });
+      placement?.contextOptions(node, () => placement.editObject(item.id, node));
       node.addEventListener("keydown", (event) => {
         const direction = {ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1]}[event.key];
         if (!direction || event.ctrlKey || event.altKey || event.metaKey || event.isComposing) return;
         event.preventDefault();
         if (drag || pendingAction) return;
+        if (placement?.isEditing()) { placement.moveKey(event); return; }
         selectObject();
         const step = event.shiftKey ? 10 : 1;
         const previous = {x: item.x, y: item.y};
@@ -225,6 +233,7 @@
       });
       node.innerHTML = `<strong>${esc(item.label)}</strong><small>${esc(item.type)}</small>`;
       node.addEventListener("pointerdown", (event) => {
+        if (placement) return;
         if (drag || pendingAction || (event.button !== undefined && event.button !== 0)) {
           if (pendingAction) q("#templateHint").textContent = `Move not started: wait for ${pendingAction.action} to finish.`;
           return;
@@ -284,12 +293,21 @@
       const card = document.createElement("article"); card.className = "templatePreset"; card.draggable = true;
       card.innerHTML = `<div><strong>${esc(preset.name)}</strong><span>${esc(preset.description)}</span><small>${preset.objects.length} starter objects · open JSON</small></div><button type="button">Apply</button>`;
       card.querySelector("button").addEventListener("click", () => applyPreset(key));
+      placement?.contextOptions(card, () => placement.begin(makeObjects(preset), card, {replace: true, title: `${preset.name} options`}));
       card.addEventListener("dragstart", (event) => { event.dataTransfer.setData("application/x-stagemesh-template", key); event.dataTransfer.effectAllowed = "copy"; });
       host.appendChild(card);
     });
   };
+  placement = globalThis.StageMeshPlacement?.create({
+    canvas, getObjects: () => objects, getSelection: () => selectedId,
+    select: id => { selectedId = id; }, assertAvailable: assertEditorAvailable,
+    render, commit: (items, id) => {
+      const document = validateTemplateDocument({version: 1, name: q("#templateName").value, objects: items});
+      replaceLocalDraft(document.objects, id);
+    }, hint: message => { q("#templateHint").textContent = message; }
+  });
   q("#templateName").addEventListener("change", () => {
-    if (drag) {
+    if (drag || placement?.isEditing()) {
       q("#templateName").value = persistedName;
       q("#templateHint").textContent = "Name not saved while an object is moving. Finish or cancel the move, then rename.";
       return;
@@ -327,6 +345,7 @@
     const type = q("#templateObjectType").value;
     const label = q("#templateObjectLabel").value.trim() || "New object";
     const item = {id: `${type}-${Date.now()}-${Math.random().toString(16).slice(2)}`, type, label, x: 50, y: 50};
+    if (placement) { placement.begin([item], q("#templateAdd")); return; }
     try {
       assertEditorAvailable("adding an object");
       replaceLocalDraft([...objects, item], item.id); render();
@@ -334,6 +353,10 @@
     } catch (error) { q("#templateHint").textContent = `Object not added: ${error.message}. Previous draft preserved.`; }
   });
   globalThis.document?.querySelectorAll("[data-template-kind]").forEach((button) => {
+    placement?.contextOptions(button, () => placement.begin([{
+      id: `${button.dataset.templateKind}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      type: button.dataset.templateKind, label: button.querySelector("strong")?.textContent || "New object", x: 50, y: 50
+    }], button));
     button.addEventListener("click", () => {
       const type = button.dataset.templateKind;
       q("#templateObjectType").value = type;

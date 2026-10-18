@@ -93,6 +93,30 @@ class StageTemplateStoreTests(unittest.TestCase):
         self.assertEqual(created["objects"][0]["y"], 50.0)
         self.assertTrue(created["objects"][0]["id"])
 
+    def test_orientation_survives_server_update_and_restart(self):
+        document = self.document()
+        document["objects"][0]["rotation"] = 270
+        created = self.store.create(document)
+        self.assertEqual(created["objects"][0]["rotation"], 270)
+        updated = self.store.update(created["templateId"], 1, created)
+        self.assertEqual(StageTemplateStore(self.path).get(created["templateId"]), updated)
+
+    def test_invalid_orientation_refuses_mutation_and_fences_corrupt_store(self):
+        for value in (True, "90", None, -1, 360, float("nan"), float("inf")):
+            with self.subTest(value=value):
+                document = self.document()
+                document["objects"][0]["rotation"] = value
+                with self.assertRaises(ValueError):
+                    self.store.create(document)
+        created = self.store.create(self.document())
+        saved = json.loads(self.path.read_text())
+        saved[created["templateId"]]["objects"][0]["rotation"] = "90"
+        self.path.write_text(json.dumps(saved))
+        before = self.path.read_bytes()
+        with self.assertRaises(StageTemplateStoreCorrupt):
+            StageTemplateStore(self.path)
+        self.assertEqual(self.path.read_bytes(), before)
+
     def test_strict_validation_rejects_update_before_mutating_memory_or_disk(self):
         created = self.store.create(self.document())
         before = self.path.read_bytes()

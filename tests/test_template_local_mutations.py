@@ -39,7 +39,7 @@ const controls={
   '#templateDelete':{addEventListener:(kind,callback)=>handlers.delete=callback},
   '#templateReset':{addEventListener:(kind,callback)=>handlers.reset=callback}
 };
-const context={objects:original,selectedId:'old',drag:null,serverTemplateId:'server-old',serverDirty:false,storageKey:'draft',
+const context={objects:original,selectedId:'old',drag:null,placement:null,serverTemplateId:'server-old',serverDirty:false,storageKey:'draft',
   presets:{club:{name:'Club',objects:[["performer","Lead",50,40]]}},q:selector=>controls[selector],
   localStorage:{setItem:(key,value)=>{assert.equal(key,'draft');if(failWrite)throw Error('disk full');disk=JSON.parse(value);}},
   render:()=>renders++};
@@ -83,7 +83,7 @@ const code=source.slice(helperStart,helperEnd)+source.slice(loadStart,loadEnd)+'
 const original=[{id:'old',type:'marker',label:'Existing',x:10,y:20}];
 let incoming={version:1,templateId:'server-new',revision:3,name:'Server draft',objects:[{id:'new',type:'performer',label:'Lead',x:50,y:40}]};
 const name={value:'Original'},hint={},deleteServer={disabled:true};let failWrite=true,disk,renders=0;
-const context={objects:original,selectedId:'old',drag:null,serverTemplateId:'server-old',serverRevision:2,serverDirty:false,storageKey:'draft',
+const context={objects:original,selectedId:'old',drag:null,placement:null,serverTemplateId:'server-old',serverRevision:2,serverDirty:false,storageKey:'draft',
   q:selector=>selector==='#templateName'?name:selector==='#templateHint'?hint:deleteServer,
   localStorage:{setItem:(key,value)=>{assert.equal(key,'draft');if(failWrite)throw Error('disk full');disk=JSON.parse(value);}},
   api:async()=>incoming,render:()=>renders++};

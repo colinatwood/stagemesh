@@ -7,6 +7,7 @@ on:
       - "backend/**"
       - "scripts/stagemesh-browser-qualification.py"
       - "requirements-browser.txt"
+      - "tests/test_stage_placement_browser.py"
       - ".github/workflows/browser-reference.yml"
   push:
     branches: [main]
@@ -15,6 +16,7 @@ on:
       - "backend/**"
       - "scripts/stagemesh-browser-qualification.py"
       - "requirements-browser.txt"
+      - "tests/test_stage_placement_browser.py"
       - ".github/workflows/browser-reference.yml"
   workflow_dispatch:
 
@@ -44,6 +46,8 @@ jobs:
         run: |
           stagemesh_chromium="$(python -c 'from playwright.sync_api import sync_playwright; p = sync_playwright().start(); print(p.chromium.executable_path); p.stop()')"
           python scripts/stagemesh-browser-qualification.py --chromium "$stagemesh_chromium" --screenshots browser-reference --output browser-reference/report.json
+      - name: Exercise stage placement in Chromium
+        run: python -m unittest discover -s tests -p 'test_stage_placement_browser.py'
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:

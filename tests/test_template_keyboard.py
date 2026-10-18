@@ -40,7 +40,7 @@ let saved=0, focused=0, capture, failSave=false;
 const item={id:'lead',label:'Vocal',type:'performer',x:50,y:50};
 const node={dataset:{id:'lead'},style:{},classList:{toggle:()=>{}},setAttribute:(key,value)=>attributes[key]=value,
   addEventListener:(type,callback)=>handlers[type]=callback,focus:()=>focused++,setPointerCapture:id=>capture=id};
-const context={item,node,selectedId:null,drag:null,pendingAction:null,esc:value=>value,
+const context={item,node,selectedId:null,drag:null,placement:null,pendingAction:null,esc:value=>value,
   canvas:{querySelectorAll:()=>[node],getBoundingClientRect:()=>({left:0,top:0,width:100,height:100})},
   q:selector=>selector==='#templateDelete'?del:hint,save:()=>{if(failSave)throw Error('disk full');saved++;},render:()=>{throw Error('must not replace captured/focused node');}};
 vm.runInNewContext(source.slice(start,end),context);

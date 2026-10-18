@@ -103,6 +103,12 @@ class StageTemplateStore:
                     or not isinstance(y, (int, float))
                     or not math.isfinite(y)
                     or not 0 <= y <= 100
+                    or ("rotation" in item and (
+                        isinstance(item["rotation"], bool)
+                        or not isinstance(item["rotation"], (int, float))
+                        or not math.isfinite(item["rotation"])
+                        or not 0 <= item["rotation"] < 360
+                    ))
                 ):
                     raise StageTemplateStoreCorrupt(
                         "stage template store is unreadable or malformed"
@@ -161,7 +167,13 @@ class StageTemplateStore:
                 object_type = "marker"
             elif not isinstance(object_type, str) or len(object_type) > 32:
                 raise ValueError("object type must contain 1..32 characters")
-            normalized.append({"id": object_id, "type": object_type, "label": label, "x": x, "y": y})
+            record = {"id": object_id, "type": object_type, "label": label, "x": x, "y": y}
+            if "rotation" in item:
+                rotation = item["rotation"]
+                if isinstance(rotation, bool) or not isinstance(rotation, (int, float)) or not math.isfinite(rotation) or not 0 <= rotation < 360:
+                    raise ValueError("object orientation must be a finite number in 0..<360")
+                record["rotation"] = float(rotation)
+            normalized.append(record)
         return {"version": 1, "name": name, "objects": normalized}
 
     def list(self):
