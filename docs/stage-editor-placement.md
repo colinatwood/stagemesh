@@ -25,9 +25,11 @@ placement saves do not create a server revision; use **Save template** afterward
 Orientation is preserved in JSON interchange and server persistence. Existing
 version-1 objects without orientation retain their original appearance.
 
-Validation: 900 Python tests completed with 24 environment skips; this includes
-the controller transactions and a real Chromium placement/reopen/rotation/drag/
-cancel/storage-refusal exercise. The existing rendered-browser reference passed
+Validation: 899 general-suite tests completed with 24 environment skips, plus
+the separate real Chromium placement/reopen/rotation/drag/cancel/storage-refusal
+exercise. Browser Reference CI requires that exercise; it is outside general
+discovery so the release suite retains its strict no-unexpected-skip rule.
+The existing rendered-browser reference passed
 at all four viewports with zero horizontal overflow and passing accessibility
 tree checks. These software checks do not qualify installed Windows behavior,
 assistive technology or physical hardware.

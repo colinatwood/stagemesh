@@ -85,3 +85,7 @@ class StagePlacementBrowserTests(unittest.TestCase):
             server.shutdown()
             server.server_close()
             thread.join(timeout=5)
+
+
+if __name__ == "__main__":
+    unittest.main()
