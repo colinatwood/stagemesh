@@ -12,13 +12,24 @@
     <header class="appBar">
       <a class="brand" href="#main-content" aria-label="StageMesh home"><span class="brandMark" aria-hidden="true">▲</span><span><strong>StageMesh</strong><small>Live Stage Production Platform</small></span></a>
       <nav class="productNav" aria-label="Primary navigation">
-        <a class="active" href="#stage-editor">▦ <span>Stage Editor</span></a>
+        <a href="#setup">⚙ <span>Setup</span></a>
+        <a href="#stage-editor">▦ <span>Stage Editor</span></a>
         <a href="#show-control">⌗ <span>Show Control</span></a>
+        <a href="#studio">♫ <span>Studio</span></a>
         <a href="#operations">◉ <span>Devices</span></a>
         <a href="#activity-panel">▤ <span>Reports</span></a>
       </nav>
-      <div class="appIdentity"><span class="connectionDot" aria-hidden="true"></span><span>JD</span></div>
+      <div class="appIdentity">Workspace</div>
     </header>
+
+    <div id="workspaceStatus" class="workspaceStatus" role="status" aria-live="polite">Review your connections in Setup before testing.</div>
+    <section id="setup" class="panel setupWizard" aria-labelledby="setupTitle" hidden>
+      <header class="setupHeading"><div><span class="eyebrow">Connection setup</span><h1 id="setupTitle">Set up your connections</h1></div><span id="setupProgress" class="tag">Step 1 of 6</span></header>
+      <ol id="setupSteps" class="setupSteps" aria-label="Setup progress"></ol>
+      <div id="setupContent" class="setupContent"></div>
+      <p id="setupStatus" role="status" aria-live="polite">Choose devices here; start streams separately in Devices when you are ready.</p>
+      <footer class="setupActions"><button id="setupBack" type="button">Back</button><button id="setupSkip" type="button">Skip for now</button><button id="setupNext" class="primary" type="button">Start setup</button></footer>
+    </section>
 
     <section class="panel readinessPanel" aria-labelledby="readinessTitle">
       <h1 id="readinessTitle" class="visuallyHidden">Readiness overview</h1>
@@ -284,5 +295,7 @@
   <script src="/recovery.js"></script>
   <script src="/stage-placement.js"></script>
   <script src="/stage-template.js"></script>
+  <script src="/workspace.js"></script>
+  <script src="/setup-wizard.js"></script>
 </body>
 </html>

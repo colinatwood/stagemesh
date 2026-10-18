@@ -20,7 +20,8 @@ assert.ok(registration, 'launcher keyboard callback must be registered');
 let handler;
 const calls = [];
 const document = {activeElement: null, addEventListener: (type, callback) => {assert.equal(type, 'keydown'); handler = callback;}};
-vm.runInNewContext(registration, {document, launcherState: {pads: [{shortcut:'1', resourceId:'pad-1'}]},
+const router={isShowControl:()=>true};
+vm.runInNewContext(registration, {document, StageMeshWorkspace:router, launcherState: {pads: [{shortcut:'1', resourceId:'pad-1'}]},
   launcherAction: (...args) => {calls.push(args); return Promise.resolve();}, q: () => ({})});
 function run(extra={}, focused=null) {
   calls.length = 0;
@@ -45,6 +46,8 @@ for (const control of ['input','select','textarea','button','a[href]','summary',
 }
 assert.equal(run({}, {isContentEditable:true}).calls.length, 0);
 assert.equal(run({}, {closest:()=>null}).calls[0][0], 'transport.toggle');
+router.isShowControl=()=>false;
+assert.equal(run().calls.length,0);assert.equal(run({code:'Digit1',key:'1'}).calls.length,0);
 console.log('launcher keyboard behavior passed');
 '''], cwd=ROOT, text=True, capture_output=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
