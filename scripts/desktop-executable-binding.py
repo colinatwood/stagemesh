@@ -39,6 +39,14 @@ def _identity(info):
     return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
 
 
+def _open_identity(info):
+    # Windows stat(path) and fstat(fd) can expose different ctime meanings
+    # (observed on Python 3.14). Compare ctime within each API below; the
+    # cross-API check still binds volume, file ID, size and modification time.
+    identity = _identity(info)
+    return identity[:-1] if os.name == "nt" else identity
+
+
 def snapshot(path: Path, *, contents: bool = False):
     path = _plain_file(path)
     before = path.stat()
@@ -49,7 +57,8 @@ def snapshot(path: Path, *, contents: bool = False):
     digest = hashlib.sha256()
     chunks = []
     with path.open("rb") as source:
-        if _identity(before) != _identity(os.fstat(source.fileno())):
+        opened = os.fstat(source.fileno())
+        if _open_identity(before) != _open_identity(opened):
             raise ValueError("file identity changed before reading")
         remaining = before.st_size
         while remaining:
@@ -63,7 +72,7 @@ def snapshot(path: Path, *, contents: bool = False):
         if source.read(1):
             raise ValueError("file changed while being read")
         after = os.fstat(source.fileno())
-    if _identity(before) != _identity(after) or _identity(before) != _identity(path.stat()):
+    if _identity(opened) != _identity(after) or _identity(before) != _identity(path.stat()):
         raise ValueError("file changed while being read")
     _plain_file(path)
     return {"bytes": before.st_size, "sha256": digest.hexdigest()}, b"".join(chunks)
