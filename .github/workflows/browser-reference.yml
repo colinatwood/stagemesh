@@ -8,6 +8,7 @@ on:
       - "scripts/stagemesh-browser-qualification.py"
       - "requirements-browser.txt"
       - "tests/stage_placement_browser.py"
+      - "tests/setup_workspace_browser.py"
       - ".github/workflows/browser-reference.yml"
   push:
     branches: [main]
@@ -17,6 +18,7 @@ on:
       - "scripts/stagemesh-browser-qualification.py"
       - "requirements-browser.txt"
       - "tests/stage_placement_browser.py"
+      - "tests/setup_workspace_browser.py"
       - ".github/workflows/browser-reference.yml"
   workflow_dispatch:
 
@@ -48,6 +50,8 @@ jobs:
           python scripts/stagemesh-browser-qualification.py --chromium "$stagemesh_chromium" --screenshots browser-reference --output browser-reference/report.json
       - name: Exercise stage placement in Chromium
         run: python tests/stage_placement_browser.py
+      - name: Exercise guided setup and workspace menus in Chromium
+        run: python tests/setup_workspace_browser.py
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:

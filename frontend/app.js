@@ -107,7 +107,11 @@
     }
     return data;
   }
-  globalThis.StageMeshUI = Object.freeze({api});
+  globalThis.StageMeshUI = Object.freeze({api,
+    configureAudio: body => command("/api/v1/audio", "POST", body, "audio", {throwOnFailure:true}),
+    configureLighting: body => command("/api/v1/lighting/network", "POST", body, "lighting-network", {throwOnFailure:true}),
+    bindMidi: (deviceId, playerId) => command(`/api/v1/midi/devices/${encodeURIComponent(deviceId)}/attach`, "POST", {playerId}, "midi-bindings", {throwOnFailure:true})
+  });
 
   function playerById(id) {
     return snapshot?.players.find((p) => p.id === id) || null;
@@ -366,7 +370,7 @@
       const inButton = device.input ? `<button type="button" data-audio-input-select="${escapeHtml(device.id)}" ${inputSelected ? "disabled" : ""}>${inputSelected ? "Input selected" : "Use input"}</button>` : "";
       const rebindOut = device.output && desired && device.id !== desired && device.reconnectStatus === "explicit-recovery-required" ? `<button type="button" data-audio-rebind="output" data-audio-current="${escapeHtml(device.id)}" data-audio-desired="${escapeHtml(desired)}">Trust as output replacement</button>` : "";
       const rebindIn = device.input && desiredInput && device.id !== desiredInput && device.reconnectStatus === "explicit-recovery-required" ? `<button type="button" data-audio-rebind="input" data-audio-current="${escapeHtml(device.id)}" data-audio-desired="${escapeHtml(desiredInput)}">Trust as input replacement</button>` : "";
-      return `<div class="midiDevice ${(outputSelected || inputSelected) && !device.connected ? "midiPending" : ""}"><div class="midiDeviceHead"><div><strong>${escapeHtml(device.name || device.id)}</strong><div class="hint">${escapeHtml(device.backend || "unknown")} · ${escapeHtml(device.id)} · ${escapeHtml(device.identityStrength || "volatile")}</div></div><span>${labels.join(" · ")}</span></div><div class="pair">${outButton}${inButton}${rebindOut}${rebindIn}</div></div>`;
+      return `<div data-audio-directions="${device.input ? "input " : ""}${device.output ? "output" : ""}" class="midiDevice ${(outputSelected || inputSelected) && !device.connected ? "midiPending" : ""}"><div class="midiDeviceHead"><div><strong>${escapeHtml(device.name || device.id)}</strong><div class="hint">${escapeHtml(device.backend || "unknown")} · ${escapeHtml(device.id)} · ${escapeHtml(device.identityStrength || "volatile")}</div></div><span>${labels.join(" · ")}</span></div><div class="pair">${outButton}${inButton}${rebindOut}${rebindIn}</div></div>`;
     }).join("") : '<div class="hint">No native audio endpoints reported. Desired mappings remain in show state.</div>';
     qa("[data-audio-select]").forEach((button) => button.addEventListener("click", async () => {
       await command("/api/v1/audio", "POST", {deviceId: button.dataset.audioSelect}, "audio");
@@ -715,10 +719,11 @@
     }
   }
 
-  async function command(path, method, body, resourceKey) {
+  async function command(path, method, body, resourceKey, {throwOnFailure = false} = {}) {
     try {
+      if (throwOnFailure && (!Number.isInteger(snapshot?.revision) || snapshot.revision < 0)) throw new Error("Wait for the current show state before saving setup.");
       const headers = {"X-StageMesh-Command-Id": commandId()};
-      if (snapshot?.revision) headers["If-Match"] = `"rev-${snapshot.revision}"`;
+      if (snapshot?.revision || (throwOnFailure && Number.isInteger(snapshot?.revision))) headers["If-Match"] = `"rev-${snapshot.revision}"`;
       const resourceRevision = resourceKey && snapshot?.resourceRevisions?.[resourceKey];
       if (resourceRevision) headers["X-StageMesh-Resource-If-Match"] = `"${resourceKey}@${resourceRevision}"`;
       const state = await api(path, {method, headers, body: JSON.stringify(body)});
@@ -736,10 +741,12 @@
       if (error.status === 409 && error.data?.current) {
         render(error.data.current);
         q("#connection").textContent = "RESYNCED";
+        if (throwOnFailure) throw error;
         return error.data.current;
       }
       q("#connection").textContent = "ERROR";
       console.error(error);
+      if (throwOnFailure) throw error;
       return null;
     }
   }
@@ -769,7 +776,7 @@
   q("#launcherPlay").addEventListener("click",()=>launcherAction("transport.toggle").catch((error)=>q("#launcherStatus").textContent=error.message));
   q("#launcherStop").addEventListener("click",()=>launcherAction("transport.stop").catch((error)=>q("#launcherStatus").textContent=error.message));
   q("#launcherPads").addEventListener("click",(event)=>{const button=event.target.closest("[data-launcher-pad]");if(!button)return;launcherAction("sample.trigger","touch",{resourceId:button.dataset.resource}).then(()=>{button.classList.add("triggered");setTimeout(()=>button.classList.remove("triggered"),140);}).catch((error)=>q("#launcherStatus").textContent=error.message);});
-  document.addEventListener("keydown",(event)=>{if(event.defaultPrevented||event.repeat||event.isComposing||event.ctrlKey||event.altKey||event.metaKey||event.shiftKey)return;const focused=document.activeElement;if(focused?.isContentEditable||focused?.closest("input,select,textarea,button,a[href],summary,[role=button],[role=link],[role=textbox],[role=combobox],[role=slider]"))return;const report=(error)=>q("#launcherStatus").textContent=error.message||"Stage control failed.";if(event.code==="Space"){event.preventDefault();launcherAction("transport.toggle","keyboard").catch(report);return;}if(event.code==="Escape"){launcherAction("transport.stop","keyboard").catch(report);return;}const pad=launcherState?.pads?.find((item)=>item.shortcut===event.key);if(pad){event.preventDefault();launcherAction("sample.trigger","keyboard",{resourceId:pad.resourceId}).catch(report);}});
+  document.addEventListener("keydown",(event)=>{if(globalThis.StageMeshWorkspace?.isShowControl?.()===false)return;if(event.defaultPrevented||event.repeat||event.isComposing||event.ctrlKey||event.altKey||event.metaKey||event.shiftKey)return;const focused=document.activeElement;if(focused?.isContentEditable||focused?.closest("input,select,textarea,button,a[href],summary,[role=button],[role=link],[role=textbox],[role=combobox],[role=slider]"))return;const report=(error)=>q("#launcherStatus").textContent=error.message||"Stage control failed.";if(event.code==="Space"){event.preventDefault();launcherAction("transport.toggle","keyboard").catch(report);return;}if(event.code==="Escape"){launcherAction("transport.stop","keyboard").catch(report);return;}const pad=launcherState?.pads?.find((item)=>item.shortcut===event.key);if(pad){event.preventDefault();launcherAction("sample.trigger","keyboard",{resourceId:pad.resourceId}).catch(report);}});
   q("#bpm").addEventListener("change", (e) => command("/api/v1/show", "PATCH", {bpm: Number(e.target.value)}, "show"));
   q("#key").addEventListener("change", (e) => command("/api/v1/show", "PATCH", {key: e.target.value}, "show"));
   q("#capacity").addEventListener("input", (e) => { q("#capacityValue").textContent = e.target.value + "%"; });

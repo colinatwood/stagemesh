@@ -123,7 +123,9 @@ def analyze_accessibility_tree(nodes: list[dict[str, Any]]) -> dict[str, Any]:
         "bpmControl":bool(bpm and prop(bpm[0],"focusable") is True and prop(bpm[0],"valuemin")==30 and prop(bpm[0],"valuemax")==300),
         "keyControl":any(role(node)=="combobox" and name(node).startswith("Key") and prop(node,"focusable") is True for node in exposed),
         "playerButtons":sum(1 for node in exposed if role(node)=="button" and any(player in name(node) for player in ("Alex","Sam","Maya","Jordan")))>=4,
-        "liveRegions":sum(1 for node in exposed if role(node)=="status" and prop(node,"live")=="polite")>=3,
+        # A selected workspace exposes connection status plus its own feedback;
+        # statuses in hidden workspaces are intentionally absent from the tree.
+        "liveRegions":sum(1 for node in exposed if role(node)=="status" and prop(node,"live")=="polite")>=2,
         "namedInteractiveControls":not unnamed,
         "noIgnoredFocusableNodes":not ignored_focusable,
     }
@@ -203,6 +205,9 @@ def qualify(chromium: str, screenshot_dir: Path | None = None) -> dict[str, Any]
                         for _, source in scripts:
                             page.add_script_tag(content=source)
                         page.wait_for_timeout(1800)
+                        # Workspaces now show one area at a time; exercise the
+                        # actual menu router before checking show controls.
+                        page.evaluate("globalThis.StageMeshWorkspace.navigate('show-control', {focus:false})")
                         page.locator("#audioRecoveryMetrics").evaluate("element => { element.parentElement.open = true; }")
 
                         title = page.title()

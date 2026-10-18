@@ -9,6 +9,13 @@
 - Current milestone: **Attested desktop release candidates and external qualification execution**
 - Current source baseline: `392ac5d0baa2d40fdf2c9d61af0cb283c0a30e06` (PR #176 merged).
 
+## Guided setup and workspace consolidation — 2026-10-18
+
+- PR #178 merged as `8b9d2073a222c02e2f7ebdd30eb6b595c1513f50` after all 17 checks passed at `f3c813920ddd48cd7e2c91359276244c7d376fac`, including all four packages, release index and the mandatory browser placement exercise. There were no reviews or unresolved threads.
+- The owner paused physical testing because the long all-in-one interface was unusable and requested initial input/output setup plus top-level menus. Branch `feature/guided-setup-menu` adds the first-use Setup wizard and isolated Stage Editor, Show Control, Studio, Devices and Reports workspaces. Studio and Devices also show one selected tool category at a time. Existing control nodes are moved intact; IDs and handlers remain unique. See [the flow, authority boundaries and verification](docs/guided-setup.md).
+- Configuration saves reuse the existing authenticated/revision-checked commands and surface conflicts. Navigation, Next/Skip and Finish never start streams or arm outputs. Review checks current engine, device and stopped/muted output state, then rechecks before saving a UI-only preference. Stage edits fence workspace navigation; hidden Show Control cannot dispatch transport shortcuts.
+- Validation: 901 general Python tests completed with 24 environment skips. The real Chromium setup/menu exercises and the four-viewport rendered/accessibility reference pass with zero horizontal overflow; the initial setup action fits each viewport. Windows/package CI is required on the final PR commit. No physical/accessibility acceptance row closes; inventory remains 24 Done / 25 open. Next: finish candidate CI, provide the usable setup candidate, then resume participant-assisted installed-app BOOM cycles. MSI payload-reference defect #179 remains a separate concrete release blocker.
+
 ## Stage Editor placement follow-up — 2026-10-18
 
 - Branch `feature/stage-editor-placement` starts at `94749cf07bc8f3d70060e9889db33e52ff4754f2` (PR #177 merged). The owner requested object/layout context options, placement, movement and orientation, a final left click to save, and left-click reopening of an existing object. See [the interaction and evidence](docs/stage-editor-placement.md).

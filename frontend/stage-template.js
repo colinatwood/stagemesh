@@ -433,6 +433,12 @@
   canvas.addEventListener("dragover", (event) => { if (event.dataTransfer.types.includes("application/x-stagemesh-template")) { event.preventDefault(); canvas.classList.add("dropTarget"); } });
   canvas.addEventListener("dragleave", () => canvas.classList.remove("dropTarget"));
   canvas.addEventListener("drop", (event) => { const key = event.dataTransfer.getData("application/x-stagemesh-template"); if (!key) return; event.preventDefault(); canvas.classList.remove("dropTarget"); applyPreset(key); });
+  document.addEventListener("stagemesh:before-workspace-change", event => {
+    if (placement?.isEditing() || drag || pendingAction) {
+      event.preventDefault();
+      q("#templateHint").textContent = "Save or cancel the current edit before changing workspaces.";
+    }
+  });
   load(); render();
   renderPresets();
   refreshSaved("").catch((error) => {
