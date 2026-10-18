@@ -45,6 +45,8 @@ vm.runInNewContext(source.slice(start,end)+'\nthis.command=command;',context);
  }
  failure=Object.assign(Error('conflict'),{status:409,data:{current}});
  assert.equal(await context.command('/api/v1/audio','POST',{},'audio'),current);
+ context.snapshot=null;failure=null;
+ await assert.rejects(context.command('/api/v1/audio','POST',{},'audio',{throwOnFailure:true}),/current show state/);
 })().catch(error=>{console.error(error);process.exitCode=1;});
 '''], cwd=ROOT, text=True, capture_output=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

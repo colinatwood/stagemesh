@@ -72,7 +72,7 @@
   const selectDevices = key => {
     const value = groups.has(key) ? key : "input"; menu.value = value; devices.dataset.audioDirection = value;
     for (const [name, node] of groups) node.hidden = name !== value;
-    if (value === "input" || value === "output") groups.get(value).insertBefore(inventory, groups.get(value).children[1] || null);
+    if (value === "input" || value === "output") { groups.get(value).insertBefore(inventory, groups.get(value).children[1] || null); q("#audioDevices").scrollTop = 0; }
   };
   selectDevices("input"); menu.addEventListener("change", () => selectDevices(menu.value));
   const show = (key, {focus = true, device = null} = {}) => {

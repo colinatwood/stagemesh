@@ -721,8 +721,9 @@
 
   async function command(path, method, body, resourceKey, {throwOnFailure = false} = {}) {
     try {
+      if (throwOnFailure && (!Number.isInteger(snapshot?.revision) || snapshot.revision < 0)) throw new Error("Wait for the current show state before saving setup.");
       const headers = {"X-StageMesh-Command-Id": commandId()};
-      if (snapshot?.revision) headers["If-Match"] = `"rev-${snapshot.revision}"`;
+      if (snapshot?.revision || (throwOnFailure && Number.isInteger(snapshot?.revision))) headers["If-Match"] = `"rev-${snapshot.revision}"`;
       const resourceRevision = resourceKey && snapshot?.resourceRevisions?.[resourceKey];
       if (resourceRevision) headers["X-StageMesh-Resource-If-Match"] = `"${resourceKey}@${resourceRevision}"`;
       const state = await api(path, {method, headers, body: JSON.stringify(body)});
