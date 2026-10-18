@@ -82,7 +82,7 @@
             <div class="stageArchitecture" aria-hidden="true"><span class="truss"></span><span class="deck"></span><span class="audience"></span></div>
             <span class="templateEmpty">Choose an object or apply a layout to begin.</span>
           </div>
-          <p id="templateHint" class="canvasHint" role="status">Select an object to edit it. Drag to position; arrow keys move by one percent.</p>
+          <p id="templateHint" class="canvasHint" role="status">Right-click an object type or layout for options. Click a placed object to edit; click the stage to save. Escape cancels.</p>
         </div>
 
         <aside class="templateInspector" aria-labelledby="inspectorTitle">
@@ -93,7 +93,7 @@
           <section><h3>Draft actions</h3><button id="templateDelete" type="button" disabled>Delete selected</button><button id="templateReset" type="button">Reset draft</button></section>
           <section><h3>Saved templates</h3><label>Library<select id="templateSaved"><option value="">Select a saved template</option></select></label><div class="inspectorCoordinates"><button id="templateLoadSaved" type="button" disabled>Load</button><button id="templateDeleteServer" type="button" disabled>Delete saved</button></div></section>
           <section><h3>Exchange</h3><div class="inspectorCoordinates"><button id="templateImportButton" type="button">Import</button><button id="templateExport" type="button">Export</button></div><input id="templateImport" type="file" accept="application/json" hidden></section>
-          <p class="guard">Design changes autosave locally and never arm physical output.</p>
+          <p class="guard">Finish placements with a click on the stage or Save placement. Design changes never arm physical output.</p>
         </aside>
       </div>
 
@@ -282,6 +282,7 @@
   <script src="/automation.js"></script>
   <script src="/production.js"></script>
   <script src="/recovery.js"></script>
+  <script src="/stage-placement.js"></script>
   <script src="/stage-template.js"></script>
 </body>
 </html>

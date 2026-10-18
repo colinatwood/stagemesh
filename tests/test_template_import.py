@@ -25,7 +25,7 @@ const original = [{id:'old',type:'marker',label:'Existing',x:10,y:20}];
 const name = {value:'Existing draft'};
 const hint = {};
 let handler, disk, failWrite=false, renders=0;
-const context = {objects:original, selectedId:'old', drag:null, serverTemplateId:'server-old', serverDirty:false, storageKey:'draft',
+const context = {objects:original, selectedId:'old', drag:null,placement:null, serverTemplateId:'server-old', serverDirty:false, storageKey:'draft',
   q: selector => selector === '#templateName' ? name : selector === '#templateHint' ? hint : {addEventListener:(type,callback)=>{assert.equal(type,'change');handler=callback;}},
   localStorage: {setItem:(key,value)=>{if(failWrite)throw Error('disk full');disk=value;}}, render:()=>renders++};
 vm.runInNewContext(code, context);
@@ -33,13 +33,14 @@ async function importValue(value) {
   const target={files:[{text:async()=>typeof value==='string'?value:JSON.stringify(value)}],value:'selected.json'};
   await handler({target}); assert.equal(target.value,'');
 }
-const valid={version:1,name:'Imported tour',objects:[{id:'lead',type:'performer',label:'L'.repeat(80),x:0,y:100,metadata:{instrument:'bass'}},{id:'light',type:'light',label:'Wash',x:75,y:12}]};
+const valid={version:1,name:'Imported tour',objects:[{id:'lead',type:'performer',label:'L'.repeat(80),x:0,y:100,rotation:90,metadata:{instrument:'bass'}},{id:'light',type:'light',label:'Wash',x:75,y:12}]};
 const invalid=[
   '{broken', {...valid,version:2}, {...valid,objects:[valid.objects[0],null]},
   {...valid,objects:[valid.objects[0],{...valid.objects[1],id:'lead'}]},
   {...valid,objects:[{...valid.objects[0],x:'0'}]}, {...valid,objects:[{...valid.objects[0],y:null}]},
   {...valid,objects:[{...valid.objects[0],x:101}]}, {...valid,objects:[{...valid.objects[0],label:'L'.repeat(129)}]},
-  {...valid,name:''}, {...valid,objects:Array(5001).fill(valid.objects[0])}
+  {...valid,name:''}, {...valid,objects:Array(5001).fill(valid.objects[0])},
+  ...[null,true,'90',-1,360].map(rotation=>({...valid,objects:[{...valid.objects[0],rotation}]}))
 ];
 (async()=>{
   for(const value of invalid) {
@@ -74,7 +75,7 @@ const code=source.slice(validatorStart,validatorEnd)+source.slice(importStart,im
 const original=[{id:'old',type:'marker',label:'Existing',x:10,y:20}];
 const incoming={version:1,name:'Imported',objects:[{id:'new',type:'performer',label:'Lead',x:50,y:40}]};
 const name={value:'Original'},hint={};let handler,release,writes=0,renders=0;
-const context={objects:original,selectedId:'old',drag:null,serverTemplateId:null,serverDirty:false,storageKey:'draft',
+const context={objects:original,selectedId:'old',drag:null,placement:null,serverTemplateId:null,serverDirty:false,storageKey:'draft',
   q:selector=>selector==='#templateName'?name:selector==='#templateHint'?hint:{addEventListener:(type,callback)=>handler=callback},
   localStorage:{setItem:()=>writes++},render:()=>renders++};
 vm.runInNewContext(code,context);
