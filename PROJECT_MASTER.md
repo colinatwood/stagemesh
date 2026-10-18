@@ -7,7 +7,13 @@
 - Repository: `colinatwood/stagemesh`
 - Canonical branch: `main`
 - Current milestone: **Attested desktop release candidates and external qualification execution**
-- Current source baseline: `b27dcafbe79f976852d2456f7f77037560784388` (PR #175 merged).
+- Current source baseline: `392ac5d0baa2d40fdf2c9d61af0cb283c0a30e06` (PR #176 merged).
+
+## Unattended Windows testing — 2026-10-18
+
+- PR #176 and private hardware-control PR #8 merged after their current-head checks passed. The actual private-PC comparison now completes using the Windows Python compatibility fix; its result is a verified candidate-integrity pass and an installed-executable **mismatch**, not a fresh installed match. See [the run identities, evidence and next steps](docs/windows-unattended-tests-2026-10-18.md).
+- Read-only comparison run `39135956305` compared the sole policy-allowlisted installed executable with the already-verified PR #175 online MSI candidate from public Desktop run `39044932951`, declared source `77e46d6ccf9314e653422e985b9e965e163568cf`. Artifact `12139384967` matches GitHub's ZIP digest `15b9b0152ed5a382777728002bd7a395e02432284e2558ca92e20d8cc1bca457`; its receipt reports `candidateIntegrityVerified:true` and `installedExecutableMatchesCandidateReference:false`. No app launch or installation change occurred.
+- A fresh output-disarmed `safe-suite` passed as private run `39138381430` against the exact current baseline above: 21/21 native CTests, 25 lifecycle cycles, capture and silent playback with 16 callbacks / 30,720 frames each, and four synthetic MIDI events with zero queue drops. Artifact `12140975995` matches ZIP digest `c63f360f281fae59419011c6a723545cb93cd532f10088de2c5193528d11adb7`; all 23 manifest entries and three helper source/transcript bindings verified. No qualification row closes: inventory remains 24 Done / 25 open. Installed-app qualification requires an identified matching installation before three participant-assisted BOOM recovery cycles; unattended native helpers remain separate evidence.
 
 ## Installed comparison execution follow-up — 2026-10-18
 
