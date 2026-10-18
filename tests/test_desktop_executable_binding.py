@@ -6,6 +6,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from types import SimpleNamespace
 from unittest import mock
 
 
@@ -18,6 +19,36 @@ SHA = "a" * 40
 
 
 class DesktopExecutableBindingTests(unittest.TestCase):
+    def test_windows_cross_api_ctime_difference_preserves_full_per_api_checks(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / 'stagemesh-desktop.exe'
+            path.write_bytes(b'unchanged file')
+            actual_fstat = binding.os.fstat
+
+            def adjusted(fd):
+                info = actual_fstat(fd)
+                return SimpleNamespace(**{
+                    field: getattr(info, field) + (1000 if field == 'st_ctime_ns' else 0)
+                    for field in ('st_dev', 'st_ino', 'st_size', 'st_mtime_ns', 'st_ctime_ns')
+                })
+
+            with mock.patch.object(binding.os, 'name', 'nt'), mock.patch.object(binding.os, 'fstat', side_effect=adjusted):
+                identity, _ = binding.snapshot(path)
+            self.assertEqual(identity['sha256'], hashlib.sha256(b'unchanged file').hexdigest())
+
+            calls = 0
+
+            def changed(fd):
+                nonlocal calls
+                info = adjusted(fd)
+                calls += 1
+                info.st_ctime_ns += calls
+                return info
+
+            with mock.patch.object(binding.os, 'name', 'nt'), mock.patch.object(binding.os, 'fstat', side_effect=changed):
+                with self.assertRaisesRegex(ValueError, 'file changed while being read'):
+                    binding.snapshot(path)
+
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)

@@ -7,7 +7,13 @@
 - Repository: `colinatwood/stagemesh`
 - Canonical branch: `main`
 - Current milestone: **Attested desktop release candidates and external qualification execution**
-- Current source baseline: `a3ba519f9de0d0d447705f0f48f98168e34e09b2` (PR #174 merged).
+- Current source baseline: `b27dcafbe79f976852d2456f7f77037560784388` (PR #175 merged).
+
+## Installed comparison execution follow-up — 2026-10-18
+
+- Private hardware-control PR #8 adds a manual read-only installed-candidate comparison using the existing verifier from separately pinned source. It selects only the sole policy-allowlisted executable, retains the byte-identity qualification boundary, and never launches or replaces the app. No live installed-PC comparison has run.
+- Its Windows integration test exposed a real Python 3.14 incompatibility: `stat(path)` and `fstat(fd)` returned matching volume/file ID, size and mtime but different ctime values for an unchanged temporary file. Fix the cross-API comparison while retaining complete before/after identity checks independently for the path and open handle. Symlink/reparse, changed-file and metadata guards remain active. Add Windows Python 3.12/3.14 regression coverage.
+- PR #175's candidate has passed extracted Debian/AppImage runtime smoke, restart persistence and corrupt-store recovery; those are not clean-host installs. The October 16 recorded installed Windows digest differs from both PR #175 online executable references. Current installed state remains unknown. Next: validate this compatibility fix, update the private workflow's verifier pin, and perform the actual comparison before the participant-assisted three-cycle BOOM exercise. Inventory remains 24 Done / 25 open.
 
 ## Download metadata validation checkpoint — 2026-10-17 UTC
 
