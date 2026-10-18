@@ -132,6 +132,92 @@ class DesktopDownloadVerifierTests(unittest.TestCase):
             self.assertFalse(report["passed"])
             self.assertIn("unsafe relative path", " ".join(report["blockers"]))
 
+    def assert_cli_failure(self, directory):
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), "--directory", str(directory)],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertEqual(result.stderr, "")
+        report = json.loads(result.stdout)
+        self.assertFalse(report["passed"])
+        self.assertFalse(report["readyForPublication"])
+        self.assertTrue(report["blockers"])
+        self.assertNotIn(str(directory), result.stdout)
+        return report
+
+    def test_malformed_channel_and_signing_status_return_failed_json(self):
+        for name, field in (("desktop-artifacts.json", "distributionChannel"),
+                            ("signing-verification.json", "status")):
+            for invalid in ([], {}, 0, None):
+                with self.subTest(name=name, invalid=invalid), tempfile.TemporaryDirectory() as temporary:
+                    directory = Path(temporary)
+                    self.make_bundle(directory)
+                    path = directory / name
+                    value = json.loads(path.read_text(encoding="utf-8"))
+                    value[field] = invalid
+                    path.write_text(json.dumps(value), encoding="utf-8")
+                    self.assert_cli_failure(directory)
+
+    def test_schema_version_requires_an_integer_in_both_sidecars(self):
+        for name in ("desktop-artifacts.json", "signing-verification.json"):
+            for invalid in (True, 1.0, "1"):
+                with self.subTest(name=name, invalid=invalid), tempfile.TemporaryDirectory() as temporary:
+                    directory = Path(temporary)
+                    self.make_bundle(directory)
+                    path = directory / name
+                    value = json.loads(path.read_text(encoding="utf-8"))
+                    value["schemaVersion"] = invalid
+                    path.write_text(json.dumps(value), encoding="utf-8")
+                    if name == "desktop-artifacts.json":
+                        signing_path = directory / "signing-verification.json"
+                        signing = json.loads(signing_path.read_text(encoding="utf-8"))
+                        signing["artifactManifest"]["sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+                        signing_path.write_text(json.dumps(signing), encoding="utf-8")
+                    self.assert_cli_failure(directory)
+
+    def test_duplicate_json_fields_are_rejected_at_every_depth(self):
+        for name in ("desktop-artifacts.json", "signing-verification.json"):
+            for addition in ('"schemaVersion":1,', '"extra":{"key":1,"key":2},'):
+                with self.subTest(name=name, addition=addition), tempfile.TemporaryDirectory() as temporary:
+                    directory = Path(temporary)
+                    self.make_bundle(directory)
+                    path = directory / name
+                    path.write_text("{" + addition + path.read_text(encoding="utf-8")[1:], encoding="utf-8")
+                    report = self.assert_cli_failure(directory)
+                    self.assertIn("duplicate", " ".join(report["blockers"]))
+
+    def test_nonfinite_json_values_fail_even_in_unused_fields(self):
+        for name in ("desktop-artifacts.json", "signing-verification.json"):
+            for value in ("NaN", "Infinity", "-Infinity", "1e10000", "-1e10000"):
+                with self.subTest(name=name, value=value), tempfile.TemporaryDirectory() as temporary:
+                    directory = Path(temporary)
+                    self.make_bundle(directory)
+                    path = directory / name
+                    path.write_text('{"extra":' + value + ',' + path.read_text(encoding="utf-8")[1:], encoding="utf-8")
+                    report = self.assert_cli_failure(directory)
+                    self.assertIn("non-finite", " ".join(report["blockers"]))
+
+    def test_invalid_encoding_and_excessive_nesting_return_failed_json(self):
+        for payload in (b"\xff", b'{"extra":' + b"[" * 2000 + b"0" + b"]" * 2000 + b"}"):
+            for name in ("desktop-artifacts.json", "signing-verification.json", "SHA256SUMS"):
+                with self.subTest(name=name, prefix=payload[:20]), tempfile.TemporaryDirectory() as temporary:
+                    directory = Path(temporary)
+                    self.make_bundle(directory)
+                    (directory / name).write_bytes(payload)
+                    self.assert_cli_failure(directory)
+
+    def test_metadata_size_limit_returns_failed_json(self):
+        module = load_script()
+        for name in ("desktop-artifacts.json", "signing-verification.json", "SHA256SUMS"):
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as temporary:
+                directory = Path(temporary)
+                self.make_bundle(directory)
+                (directory / name).write_bytes(b" " * (module.MAX_METADATA_BYTES + 1))
+                report = self.assert_cli_failure(directory)
+                self.assertIn("size limit", " ".join(report["blockers"]))
+
 
 if __name__ == "__main__":
     unittest.main()
+

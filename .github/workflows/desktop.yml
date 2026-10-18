@@ -159,9 +159,9 @@ jobs:
             python scripts/verify-desktop-version.py --tag "v$(python -c 'import json; print(json.load(open("desktop/package.json"))["version"])')"
           fi
 
-      - name: Test executable comparison on Windows filesystems
+      - name: Test download metadata and executable comparison on Windows
         if: runner.os == 'Windows'
-        run: python -m unittest tests.test_desktop_executable_binding -v
+        run: python -m unittest tests.test_desktop_download_verifier tests.test_desktop_executable_binding -v
 
       - name: Resolve Rust host target
         shell: bash
@@ -424,3 +424,4 @@ jobs:
           path: desktop-release-index.json
           if-no-files-found: error
           retention-days: 90
+
