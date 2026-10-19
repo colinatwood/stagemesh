@@ -46,6 +46,19 @@ editor until saved or cancelled.
 
 ## Verification
 
+The Stage Editor opens with a full-width canvas. **Stage tools** selects one
+panel: Add objects, Selection and saved templates, or Layout library. Choose
+Canvas only to give the design the whole workspace again. Changing tools keeps
+unfinished field values and placement previews intact. On smaller screens the
+selected tools appear above the canvas; on desktop they sit beside it.
+
+Devices keeps selection, connection/recovery and explicit activation/stop actions
+visible. **Input routing and diagnostics** and **Output settings and diagnostics**
+start collapsed. **Discovery details → Show device IDs** reveals technical audio
+identifiers when troubleshooting. Input connection callback metrics remain in
+**Connection details**. Opening these options changes only the presentation;
+route saves and physical activation retain their existing guards.
+
 - General Python suite: 901 tests completed, with 24 environment skips.
 - Four rendered reference viewports: 1440×900, 1024×768, 768×1024 and 390×844;
   no horizontal overflow, and the setup Start button fits the initial viewport.
@@ -53,6 +66,11 @@ editor until saved or cancelled.
   one-workspace visibility, unique control IDs, menu switching without writes,
   state changing before Finish, confirmed stop-only requests, and preservation
   of unfinished stage edits. Browser Reference CI requires these exercises.
+- The compact-tool exercise switches every stage panel and audio options at all
+  four viewports, checks retained field edits, visible stop controls, zero
+  configuration writes and zero horizontal overflow. The standalone placement
+  regression and production rendered reference also pass. Compact CSS is scoped
+  to the initialized workspace, preserving the uninitialized/isolated editor.
 - Existing stage placement and rendered accessibility reference checks remain
   required. The selected workspace exposes a connection-status live region and
   its own feedback; hidden workspaces do not remain in the accessibility tree.

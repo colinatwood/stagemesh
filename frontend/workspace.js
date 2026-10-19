@@ -11,6 +11,20 @@
     node.appendChild(heading); main.appendChild(node); return register(key, node);
   };
   register("setup", q("#setup")); register("stage-editor", q("#stage-editor")); register("show-control", q("#show-control"));
+  // A single selected tool shares the stage with the canvas; preserve each live
+  // node so changing tools never resets a draft or duplicates event handlers.
+  const editor = q("#stage-editor"), editorGrid = q(".editorGrid");
+  const editorLabel = document.createElement("label"); editorLabel.className = "deviceMenuLabel"; editorLabel.textContent = "Stage tools";
+  const editorMenu = document.createElement("select"); editorMenu.id = "stageToolsMenu"; editorMenu.setAttribute("aria-label", "Stage tools"); editorLabel.appendChild(editorMenu);
+  editorGrid.before(editorLabel);
+  const editorTools = new Map([["canvas", null], ["objects", q(".objectPalette")], ["selection", q(".templateInspector")], ["layouts", q(".templateDock")]]);
+  for (const [key, title] of [["canvas", "Canvas only"], ["objects", "Add objects"], ["selection", "Selection and saved templates"], ["layouts", "Layout library"]]) editorMenu.add(new Option(title, key));
+  editorGrid.appendChild(q(".templateDock"));
+  const selectEditorTool = () => {
+    for (const [key, node] of editorTools) if (node) node.hidden = key !== editorMenu.value;
+    editor.dataset.stageTool = editorMenu.value;
+  };
+  editorMenu.addEventListener("change", selectEditorTool); editorMenu.value = "canvas"; selectEditorTool();
   const studio = page("studio", "Studio");
   const studioLabel = document.createElement("label"); studioLabel.className = "deviceMenuLabel"; studioLabel.textContent = "Studio tools";
   const studioMenu = document.createElement("select"); studioMenu.setAttribute("aria-label", "Studio tools"); studioLabel.appendChild(studioMenu); studio.appendChild(studioLabel);
@@ -37,10 +51,21 @@
   const input = group("input", "Audio input"), output = group("output", "Audio output");
   const audio = q("#audioBackend").closest("details");
   const inventory = document.createElement("div"); inventory.className = "audioInventory";
-  inventory.append(q("#audioBackend").parentElement, q("#audioDevices"));
+  const discovery = q("#audioBackend").parentElement;
+  const discoveryDetails = document.createElement("details"), discoverySummary = document.createElement("summary");
+  discoveryDetails.className = "deviceOptions"; discoverySummary.textContent = "Discovery details";
+  const identityLabel = document.createElement("label"), identityToggle = document.createElement("input"); identityToggle.type = "checkbox";
+  identityLabel.append(identityToggle, " Show device IDs");
+  identityToggle.addEventListener("change", () => devices.toggleAttribute("data-show-device-ids", identityToggle.checked));
+  discoveryDetails.append(discoverySummary, q("#audioBackend"), identityLabel);
+  inventory.append(discovery, q("#audioDevices"), discoveryDetails);
   const recovery = q("#audioReconnectStatus").closest(".subPanel");
   input.append(inventory, recovery, q("#audioInputStatus").closest(".subPanel"));
+  q("#audioInputSlots").before(q("#audioInputStatus"));
   output.appendChild(audio); audio.open = true;
+  const outputStatus = document.createElement("p"); outputStatus.className = "hint"; outputStatus.id = "audioOutputConnection"; outputStatus.setAttribute("role", "status");
+  q("#audioStreamStatus").before(outputStatus);
+  q("#audioOutputSlots").before(q("#audioStreamStatus"));
   const moveDetails = (selector, key, title) => {
     const target = group(key, title), node = q(selector).closest("details");
     node.open = true; target.appendChild(node); return target;
@@ -115,6 +140,7 @@
     const engine = q("#nativeReadinessTitle").textContent;
     const inputText = q("#audioReconnectStatus").textContent;
     const outputText = q("#audioStreamStatus").textContent.split(" · ")[0];
+    if (outputStatus.textContent !== outputText) outputStatus.textContent = outputText;
     const lighting = q("#lightingNetworkStatus").textContent;
     const text = `${engine} · ${inputText} · ${outputText} · ${/armed/i.test(lighting) && !/disarmed/i.test(lighting) ? "Lighting: review active output" : "Lighting: see Devices"}`;
     if (q("#workspaceStatus").textContent !== text) q("#workspaceStatus").textContent = text;

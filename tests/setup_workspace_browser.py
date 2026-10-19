@@ -133,6 +133,7 @@ class SetupWorkspaceBrowserTests(unittest.TestCase):
         self.assertFalse(any("activate" in row["path"] and "deactivate" not in row["path"] for row in writes))
         self.assertTrue(page.evaluate("JSON.parse(localStorage.getItem('stagemesh.setup.review.v1')).reviewed"))
         page.get_by_role("navigation", name="Primary navigation").get_by_role("link", name="Stage Editor").click()
+        page.locator("#stageToolsMenu").select_option("objects")
         page.locator("#templateAdd").click()
         page.get_by_role("navigation", name="Primary navigation").get_by_role("link", name="Setup").click()
         self.assert_one_workspace(page, "stage-editor")
@@ -153,6 +154,41 @@ class SetupWorkspaceBrowserTests(unittest.TestCase):
         self.assertEqual(page.evaluate("setupWrites.length"), 0)
         self.assertIsNone(page.evaluate("localStorage.getItem('stagemesh.setup.review.v1')"))
         self.assertEqual(self.errors, [])
+
+    def test_compact_tools_preserve_controls_and_only_reveal_requested_options(self):
+        for width, height in ((1440, 900), (1024, 768), (768, 1024), (390, 844)):
+            with self.subTest(width=width):
+                page = self.fixture(width, height)
+                page.get_by_role("link", name="Stage Editor", exact=False).click()
+                self.assertTrue(page.locator("#templateCanvas").is_visible())
+                for selector in (".objectPalette", ".templateInspector", ".templateDock"):
+                    self.assertFalse(page.locator(selector).is_visible())
+                page.locator("#stageToolsMenu").select_option("objects")
+                page.locator("#templateObjectLabel").fill("Lead vocal")
+                page.locator("#stageToolsMenu").select_option("selection")
+                self.assertFalse(page.locator(".objectPalette").is_visible())
+                self.assertTrue(page.locator("#templateDelete").is_visible())
+                page.locator("#stageToolsMenu").select_option("layouts")
+                self.assertTrue(page.locator("#templatePresets").is_visible())
+                page.locator("#stageToolsMenu").select_option("objects")
+                self.assertEqual(page.locator("#templateObjectLabel").input_value(), "Lead vocal")
+                page.get_by_role("link", name="Devices", exact=False).click()
+                self.assertTrue(page.locator("#recoverAudioInput").is_visible())
+                self.assertTrue(page.locator("#deactivateAudioInput").is_visible())
+                self.assertFalse(page.locator("#audioInputRouteGain").is_visible())
+                page.get_by_text("Input routing and diagnostics", exact=True).click()
+                self.assertTrue(page.locator("#audioInputRouteGain").is_visible())
+                page.locator("#audioInputRouteGain").fill("0.25")
+                page.locator("#deviceMenu").select_option("output")
+                self.assertTrue(page.locator("#deactivateAudio").is_visible())
+                self.assertFalse(page.locator("#limiterCeiling").is_visible())
+                page.get_by_text("Output settings and diagnostics", exact=True).click()
+                self.assertTrue(page.locator("#limiterCeiling").is_visible())
+                page.locator("#deviceMenu").select_option("input")
+                self.assertEqual(page.locator("#audioInputRouteGain").input_value(), "0.25")
+                self.assertEqual(page.evaluate("setupWrites.length"), 0)
+                self.assertEqual(page.evaluate("document.documentElement.scrollWidth - innerWidth"), 0)
+                self.assertEqual(self.errors, [])
 
 
 if __name__ == "__main__":
