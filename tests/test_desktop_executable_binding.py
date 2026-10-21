@@ -108,6 +108,41 @@ class DesktopExecutableBindingTests(unittest.TestCase):
         self.assertFalse(self.check(channel="online")["passed"])
         self.assertFalse(self.check(commit="main")["passed"])
 
+    def test_extracted_msi_reference_compares_payload_without_claiming_local_extraction(self):
+        (self.bundle / "executable-bindings/msi.json").unlink()
+        self.build.write_bytes(b"unrelated post-bundle build output")
+        payload = {"bytes": len(b"msi executable"), "sha256": hashlib.sha256(b"msi executable").hexdigest()}
+        with mock.patch.object(binding, "msi_payload", return_value=payload) as extract:
+            binding.record(self.bundle, self.build, "msi", SHA, "offline", extract_msi=True)
+        extract.assert_called_once_with(self.bundle / "msi/StageMesh.msi")
+        self.seal()
+        report = self.check()
+        self.assertTrue(report["passed"], report)
+        self.assertTrue(report["candidateReferenceFromExtractedPayload"])
+        self.assertFalse(report["installerPayloadExtracted"])
+        self.assertFalse(report["sourceProvenanceVerified"])
+        self.selected.write_bytes(self.build.read_bytes())
+        self.assertFalse(self.check()["passed"])
+
+    def test_extracted_reference_requires_consistent_format_and_observation(self):
+        for changes in ({"observation": "extracted-msi-payload"},
+                        {"observation": "unknown", "installerPayloadExtracted": False}):
+            self.change_reference(**changes)
+            self.assertFalse(self.check()["passed"])
+        with self.assertRaisesRegex(ValueError, "only for MSI"):
+            binding.record(self.bundle, self.build, "nsis", SHA, "offline", extract_msi=True)
+
+    def test_installer_mutation_during_extraction_refuses_reference(self):
+        reference = self.bundle / "executable-bindings/msi.json"
+        reference.unlink()
+        def mutate(installer):
+            installer.write_bytes(b"changed MSI")
+            return {"bytes": 5, "sha256": "c" * 64}
+        with mock.patch.object(binding, "msi_payload", side_effect=mutate):
+            with self.assertRaisesRegex(ValueError, "installer changed"):
+                binding.record(self.bundle, self.build, "msi", SHA, "offline", extract_msi=True)
+        self.assertFalse(reference.exists())
+
     def test_installer_and_reference_tampering_fail_bundle_integrity(self):
         for path in (self.bundle / "msi/StageMesh.msi", self.bundle / "executable-bindings/msi.json"):
             original = path.read_bytes()

@@ -30,6 +30,7 @@ on:
       - "docs/desktop-release-readiness.md"
       - "tests/test_desktop_artifact_manifest.py"
       - "tests/test_desktop_executable_binding.py"
+      - "tests/windows_msi_payload.py"
       - "tests/test_desktop_dependency_inventory.py"
       - "tests/test_desktop_release_readiness.py"
       - "tests/test_desktop_windows_channel.py"
@@ -75,6 +76,7 @@ on:
       - "docs/desktop-release-readiness.md"
       - "tests/test_desktop_artifact_manifest.py"
       - "tests/test_desktop_executable_binding.py"
+      - "tests/windows_msi_payload.py"
       - "tests/test_desktop_dependency_inventory.py"
       - "tests/test_desktop_release_readiness.py"
       - "tests/test_desktop_windows_channel.py"
@@ -220,8 +222,8 @@ jobs:
         working-directory: desktop
         run: npm run tauri build -- --no-bundle
 
-      # Tauri patches the executable in place for each installer format. Record
-      # each post-bundle variant before the next format can change those bytes.
+      # The post-bundle executable can differ from the MSI payload (#179).
+      # Read the actual MSI cabinet as data; never execute an install action.
       - name: Bundle Windows MSI and record executable reference
         if: runner.os == 'Windows'
         working-directory: desktop
@@ -231,8 +233,11 @@ jobs:
           python ../scripts/desktop-executable-binding.py record \
             --directory src-tauri/target/release/bundle \
             --executable src-tauri/target/release/stagemesh-desktop.exe \
-            --format msi --commit "$GITHUB_SHA" \
+            --format msi --extract-msi-payload --commit "$GITHUB_SHA" \
             --distribution-channel "${{ matrix.distribution_channel }}"
+          python ../tests/windows_msi_payload.py \
+            --directory src-tauri/target/release/bundle \
+            --commit "$GITHUB_SHA" --channel "${{ matrix.distribution_channel }}"
 
       - name: Bundle Windows NSIS and record executable reference
         if: runner.os == 'Windows'

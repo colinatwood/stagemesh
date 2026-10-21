@@ -9,6 +9,13 @@
 - Current milestone: **Attested desktop release candidates and external qualification execution**
 - Current source baseline: `392ac5d0baa2d40fdf2c9d61af0cb283c0a30e06` (PR #176 merged).
 
+## MSI payload-reference repair — 2026-10-21
+
+- Current main is `90a308eef17839381afe2a7e9a0741f34e7c7198` (PR #181 merged); its Desktop, CI and Browser Reference workflows passed. There are no open backlog PRs at the start of this increment. The latest private safe-suite and mismatch receipts remain unchanged; do not rerun them without changed candidate/installation or a specific unresolved concern.
+- Issue #179 is the next concrete software release blocker. Branch `fix/msi-payload-reference` records future MSI executable references from the actual embedded cabinet, using Windows Installer's read-only database API and the system cabinet decompressor. It never invokes installation, executes extracted payloads, or changes the installed app. Missing/ambiguous files, external cabinets, unsupported members, size disagreement and installer mutation refuse recording.
+- Both online/offline packaging lanes require a regression against their real generated MSI. The regression substitutes unrelated post-bundle build-output bytes and requires the reference to remain bound to the actual payload. Unit coverage also preserves legacy-reference checks, installer/source/channel binding and comparison qualification boundaries. Local Windows extraction is unavailable on this Linux host; Windows CI is required before accepting that part of the fix. See [the scope and remaining gates](docs/msi-payload-reference.md).
+- NSIS references remain explicitly post-bundle observations pending separate payload inspection. Issue #179 stays open until real online/offline MSI evidence and the NSIS follow-up meet its acceptance. Existing candidates are not edited/resealed. Physical installed-app BOOM cycles, signing, clean-host lifecycle and assistive-technology acceptance remain open; inventory remains 24 Done / 25 open.
+
 ## Guided setup and workspace consolidation — 2026-10-18
 
 - PR #180 merged as `8d2d67acaacea455cac75af6e98856040701f9ce` after all 17 current-head checks passed at `1b71f533c4445ae4ce93a600720e5a9ad52fe1d2`, including all four packages and the release candidate index; review submissions/threads were empty. The owner requested continued simplification. Follow-up branch `feature/compact-device-controls` makes Stage tools a single selected panel with a full-width default canvas, and collapses audio routing, conversion, identifiers and diagnostics while keeping connection/stop controls visible. Existing nodes and unsaved field values survive menu switches; presentation changes issue no device commands.
