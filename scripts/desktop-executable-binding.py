@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Record per-installer Windows build references and compare a selected executable.
 
-A match is byte identity against metadata shipped in a verified download. It is
-not publisher authentication, extracted-installer proof or source attestation.
+A match is byte identity against metadata shipped in a verified download. New
+MSI references use producer-extracted payload bytes; comparison does not itself
+extract the installer, authenticate its publisher or attest source provenance.
 """
 from __future__ import annotations
 
@@ -14,7 +15,9 @@ import os
 from pathlib import Path, PurePosixPath
 import re
 import stat
+import subprocess
 import sys
+import tempfile
 
 
 DOCUMENT_TYPE = "org.stagemesh.desktop-executable-reference"
@@ -112,7 +115,125 @@ def _fingerprint(value):
             and isinstance(value.get("sha256"), str) and DIGEST.fullmatch(value["sha256"]))
 
 
-def record(directory: Path, executable: Path, kind: str, commit: str, channel: str):
+def msi_payload(installer: Path):
+    """Read an embedded MSI cabinet as data; never invoke an install action.
+
+    Windows Installer supplies the database/table decoding. expand.exe only
+    decompresses the selected cabinet member into a fresh temporary directory.
+    External cabinets, ambiguous files and unsupported layouts fail closed.
+    """
+    if sys.platform != "win32":
+        raise ValueError("MSI payload extraction requires Windows")
+    import ctypes
+    from ctypes import wintypes
+
+    system = ctypes.create_unicode_buffer(32768)
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel.GetSystemDirectoryW.argtypes = [wintypes.LPWSTR, wintypes.UINT]
+    kernel.GetSystemDirectoryW.restype = wintypes.UINT
+    length = kernel.GetSystemDirectoryW(system, len(system))
+    if not 0 < length < len(system):
+        raise ValueError("Windows system directory unavailable")
+    api = ctypes.WinDLL(str(Path(system.value) / "msi.dll"))
+    handle = wintypes.UINT
+    signatures = {
+        "MsiOpenDatabaseW": [wintypes.LPCWSTR, wintypes.LPCWSTR, ctypes.POINTER(handle)],
+        "MsiDatabaseOpenViewW": [handle, wintypes.LPCWSTR, ctypes.POINTER(handle)],
+        "MsiViewExecute": [handle, handle], "MsiViewFetch": [handle, ctypes.POINTER(handle)],
+        "MsiRecordGetStringW": [handle, wintypes.UINT, wintypes.LPWSTR, ctypes.POINTER(wintypes.DWORD)],
+        "MsiRecordGetInteger": [handle, wintypes.UINT],
+        "MsiRecordReadStream": [handle, wintypes.UINT, ctypes.c_void_p, ctypes.POINTER(wintypes.DWORD)],
+        "MsiCloseHandle": [handle],
+    }
+    for name, arguments in signatures.items():
+        function = getattr(api, name); function.argtypes = arguments; function.restype = wintypes.UINT
+    api.MsiRecordGetInteger.restype = ctypes.c_int
+    handles = []
+
+    def opened(function, *arguments):
+        result = handle()
+        if function(*arguments, ctypes.byref(result)) != 0:
+            raise ValueError("MSI database could not be read")
+        handles.append(result.value)
+        return result.value
+
+    def rows(query):
+        view = opened(api.MsiDatabaseOpenViewW, database, query)
+        if api.MsiViewExecute(view, 0) != 0:
+            raise ValueError("MSI query could not be executed")
+        while True:
+            row = handle()
+            result = api.MsiViewFetch(view, ctypes.byref(row))
+            if result == 259:  # ERROR_NO_MORE_ITEMS
+                return
+            if result != 0:
+                raise ValueError("MSI query could not be read")
+            try:
+                yield row.value
+            finally:
+                api.MsiCloseHandle(row.value)
+
+    def string(row, field):
+        buffer = ctypes.create_unicode_buffer(32768); size = wintypes.DWORD(len(buffer))
+        if api.MsiRecordGetStringW(row, field, buffer, ctypes.byref(size)) != 0:
+            raise ValueError("MSI string exceeds supported bounds")
+        return buffer.value
+
+    before, _ = snapshot(installer)
+    try:
+        database = opened(api.MsiOpenDatabaseW, str(_plain_file(installer)), None)  # MSIDBOPEN_READONLY
+        files = []
+        for row in rows("SELECT `File`, `FileName`, `FileSize`, `Sequence` FROM `File`"):
+            if string(row, 2).split("|")[-1].casefold() == EXECUTABLE:
+                files.append((string(row, 1), api.MsiRecordGetInteger(row, 3), api.MsiRecordGetInteger(row, 4)))
+        if len(files) != 1:
+            raise ValueError("MSI must contain exactly one desktop executable")
+        member, expected_size, sequence = files[0]
+        if not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_.]{0,71}", member) or not 0 < expected_size <= 512 * 1024 * 1024 or sequence <= 0:
+            raise ValueError("MSI executable member is unsupported")
+        media = sorted((api.MsiRecordGetInteger(row, 1), string(row, 2))
+                       for row in rows("SELECT `LastSequence`, `Cabinet` FROM `Media`"))
+        cabinets = [cabinet for last, cabinet in media if last >= sequence]
+        if not cabinets or not cabinets[0].startswith("#") or not cabinets[0][1:]:
+            raise ValueError("MSI executable must use an embedded cabinet")
+        cabinet = cabinets[0][1:]
+        with tempfile.TemporaryDirectory(prefix="stagemesh-msi-payload-") as temporary:
+            root = Path(temporary); archive = root / "payload.cab"; output = root / "expanded"; output.mkdir()
+            found = 0
+            # Cabinet identifiers originate in this database, quoted as SQL literals.
+            query = "SELECT `Data` FROM `_Streams` WHERE `Name` = '" + cabinet.replace("'", "''") + "'"
+            for row in rows(query):
+                found += 1
+                with archive.open("xb") as destination:
+                    total = 0
+                    while True:
+                        buffer = ctypes.create_string_buffer(1024 * 1024); size = wintypes.DWORD(len(buffer))
+                        if api.MsiRecordReadStream(row, 1, buffer, ctypes.byref(size)) != 0:
+                            raise ValueError("MSI cabinet could not be read")
+                        if size.value == 0:
+                            break
+                        total += size.value
+                        if total > 1024 * 1024 * 1024:
+                            raise ValueError("MSI cabinet exceeds supported bounds")
+                        destination.write(buffer.raw[:size.value])
+            if found != 1:
+                raise ValueError("MSI embedded cabinet is missing or ambiguous")
+            result = subprocess.run([str(Path(system.value) / "expand.exe"), "-F:" + member,
+                                     str(archive), str(output)], capture_output=True, timeout=120)
+            if result.returncode != 0 or sorted(p.name for p in output.iterdir()) != [member]:
+                raise ValueError("MSI desktop executable could not be decompressed")
+            identity, _ = snapshot(output / member)
+            if identity["bytes"] != expected_size:
+                raise ValueError("MSI executable size disagrees with File table")
+        if snapshot(installer)[0] != before:
+            raise ValueError("MSI changed during payload extraction")
+        return identity
+    finally:
+        for value in reversed(handles):
+            api.MsiCloseHandle(value)
+
+
+def record(directory: Path, executable: Path, kind: str, commit: str, channel: str, *, extract_msi: bool = False):
     if not COMMIT.fullmatch(commit) or channel not in {"online", "offline"} or kind not in {"msi", "nsis"}:
         raise ValueError("recording requires an exact source SHA, Windows channel and installer format")
     root = directory.resolve(strict=True)
@@ -126,14 +247,18 @@ def record(directory: Path, executable: Path, kind: str, commit: str, channel: s
     relative = installer.relative_to(root).as_posix()
     _installer_path(relative)
     installer_id, _ = snapshot(installer)
-    executable_id, _ = snapshot(executable)
+    if extract_msi and kind != "msi":
+        raise ValueError("payload extraction is supported only for MSI")
+    executable_id = msi_payload(installer) if extract_msi else snapshot(executable)[0]
+    if snapshot(installer)[0] != installer_id:
+        raise ValueError("installer changed during reference recording")
     report = {
         "documentType": DOCUMENT_TYPE, "schemaVersion": 1, "product": "StageMesh",
         "platform": "Windows", "sourceCommit": commit, "distributionChannel": channel,
         "installer": {"path": relative, **installer_id},
         "executable": {"name": EXECUTABLE, **executable_id},
-        "observation": "post-bundle-build-output",
-        "installerPayloadExtracted": False, "sourceProvenanceVerified": False,
+        "observation": "extracted-msi-payload" if extract_msi else "post-bundle-build-output",
+        "installerPayloadExtracted": extract_msi, "sourceProvenanceVerified": False,
     }
     destination = root / "executable-bindings" / (kind + ".json")
     destination.parent.mkdir(exist_ok=True)
@@ -197,11 +322,14 @@ def check(directory: Path, executable: Path, installer: str, commit: str, channe
         expected = {
             "documentType": DOCUMENT_TYPE, "product": "StageMesh", "platform": "Windows",
             "sourceCommit": commit, "distributionChannel": channel,
-            "observation": "post-bundle-build-output",
         }
         if type(reference.get("schemaVersion")) is not int or reference["schemaVersion"] != 1 or any(reference.get(k) != v for k, v in expected.items()):
             raise ValueError("executable reference identity does not match the selected candidate")
-        if reference.get("installerPayloadExtracted") is not False or reference.get("sourceProvenanceVerified") is not False:
+        extracted = reference.get("observation") == "extracted-msi-payload" and kind == "msi"
+        if (reference.get("observation") not in {"post-bundle-build-output", "extracted-msi-payload"}
+                or reference.get("observation") == "extracted-msi-payload" and kind != "msi"
+                or reference.get("installerPayloadExtracted") is not extracted
+                or reference.get("sourceProvenanceVerified") is not False):
             raise ValueError("executable reference qualification boundary is invalid")
         binary = reference.get("executable")
         selected = reference.get("installer")
@@ -214,7 +342,7 @@ def check(directory: Path, executable: Path, installer: str, commit: str, channe
             raise ValueError("reference belongs to a different installer")
         observed, _ = snapshot(executable)
         if any(binary[field] != observed[field] for field in ("bytes", "sha256")):
-            raise ValueError("selected executable differs from this installer's build reference")
+            raise ValueError("selected executable differs from this installer's executable reference")
         if snapshot(root / "desktop-artifacts.json")[0] != manifest_id or snapshot(root / reference_path)[0] != reference_id:
             raise ValueError("candidate metadata changed during comparison")
         report.update({
@@ -223,7 +351,11 @@ def check(directory: Path, executable: Path, installer: str, commit: str, channe
             "artifactManifest": manifest_id, "executableReference": reference_id,
             "installer": {"path": installer, **{k: selected[k] for k in ("bytes", "sha256")}},
             "selectedExecutable": {"name": EXECUTABLE, **observed},
+            "referenceObservation": reference["observation"],
+            "candidateReferenceFromExtractedPayload": extracted,
         })
+        if extracted:
+            report["verificationBoundary"][0] = "A match compares a selected file with the producer's extracted MSI executable reference for one installer."
     except (OSError, ValueError, RuntimeError, ImportError) as exc:
         # Do not print user paths or exception reprs into a potentially shared report.
         report["blockers"].append(str(exc) if isinstance(exc, ValueError) else "comparison input could not be read safely")
@@ -240,11 +372,14 @@ def main():
         sub.add_argument("--commit", required=True)
         sub.add_argument("--distribution-channel", choices=("online", "offline"), required=True)
         sub.add_argument("--format" if name == "record" else "--installer", required=True)
+        if name == "record":
+            sub.add_argument("--extract-msi-payload", action="store_true")
     args = parser.parse_args()
     if args.command == "record":
         try:
-            result = record(args.directory, args.executable, args.format, args.commit, args.distribution_channel)
-        except (OSError, ValueError) as exc:
+            result = record(args.directory, args.executable, args.format, args.commit, args.distribution_channel,
+                            extract_msi=args.extract_msi_payload)
+        except (OSError, ValueError, subprocess.SubprocessError) as exc:
             parser.error(str(exc))
     else:
         result = check(args.directory, args.executable, args.installer, args.commit, args.distribution_channel)
