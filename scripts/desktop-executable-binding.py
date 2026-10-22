@@ -2,7 +2,7 @@
 """Record per-installer Windows build references and compare a selected executable.
 
 A match is byte identity against metadata shipped in a verified download. New
-MSI references use producer-extracted payload bytes; comparison does not itself
+Windows installer references use producer-extracted payload bytes; comparison does not itself
 extract the installer, authenticate its publisher or attest source provenance.
 """
 from __future__ import annotations
@@ -233,7 +233,55 @@ def msi_payload(installer: Path):
             api.MsiCloseHandle(value)
 
 
-def record(directory: Path, executable: Path, kind: str, commit: str, channel: str, *, extract_msi: bool = False):
+def nsis_member(listing):
+    normalized = listing.replace("\r\n", "\n")
+    if "Type = Nsis" not in normalized.splitlines():
+        raise ValueError("expected an NSIS archive")
+    members = []
+    for block in normalized.split("\n\n"):
+        fields = {}
+        for line in block.splitlines():
+            if " = " not in line:
+                continue
+            key, value = line.split(" = ", 1)
+            if key in fields:
+                raise ValueError("ambiguous archive listing")
+            fields[key] = value
+        name = fields.get("Path", "").replace("\\", "/")
+        if PurePosixPath(name).name.casefold() != EXECUTABLE:
+            continue
+        if (not name or name.startswith("/") or ":" in name
+                or any(part in ("", ".", "..") for part in name.split("/"))
+                or any(ord(c) < 32 for c in name)):
+            raise ValueError("unsafe executable archive path")
+        size = fields.get("Size", "")
+        if not size.isascii() or not size.isdecimal() or not 0 < int(size) <= 512 * 1024 * 1024:
+            raise ValueError("unsupported executable archive size")
+        members.append((fields["Path"], int(size)))
+    if len(members) != 1:
+        raise ValueError("NSIS must contain exactly one desktop executable")
+    return members[0]
+
+
+def nsis_payload(installer: Path, tool: Path):
+    """Hash the unique NSIS executable using a trusted decompressor, as data."""
+    tool = _plain_file(tool)
+    installer = _plain_file(installer)
+    before, _ = snapshot(installer)
+    listing = subprocess.run([str(tool), "l", "-slt", "-sccUTF-8", "--", str(installer)],
+                             capture_output=True, check=True, timeout=180)
+    member, size = nsis_member(listing.stdout.decode("utf-8", errors="strict"))
+    payload = subprocess.run([str(tool), "x", "-so", "-spd", "--", str(installer), member],
+                             capture_output=True, check=True, timeout=180).stdout
+    if len(payload) != size or not payload.startswith(b"MZ"):
+        raise ValueError("NSIS executable payload is invalid or differs from its listed size")
+    if snapshot(installer)[0] != before:
+        raise ValueError("NSIS installer changed during extraction")
+    return {"bytes": size, "sha256": hashlib.sha256(payload).hexdigest()}
+
+
+def record(directory: Path, executable: Path, kind: str, commit: str, channel: str, *,
+           extract_msi: bool = False, extract_nsis: bool = False, seven_zip: Path | None = None):
     if not COMMIT.fullmatch(commit) or channel not in {"online", "offline"} or kind not in {"msi", "nsis"}:
         raise ValueError("recording requires an exact source SHA, Windows channel and installer format")
     root = directory.resolve(strict=True)
@@ -249,7 +297,11 @@ def record(directory: Path, executable: Path, kind: str, commit: str, channel: s
     installer_id, _ = snapshot(installer)
     if extract_msi and kind != "msi":
         raise ValueError("payload extraction is supported only for MSI")
-    executable_id = msi_payload(installer) if extract_msi else snapshot(executable)[0]
+    if extract_nsis and (kind != "nsis" or seven_zip is None):
+        raise ValueError("NSIS payload extraction requires NSIS format and a trusted 7-Zip path")
+    executable_id = (msi_payload(installer) if extract_msi else nsis_payload(installer, seven_zip)
+                     if extract_nsis else snapshot(executable)[0])
+    observation = "extracted-msi-payload" if extract_msi else "extracted-nsis-payload" if extract_nsis else "post-bundle-build-output"
     if snapshot(installer)[0] != installer_id:
         raise ValueError("installer changed during reference recording")
     report = {
@@ -257,8 +309,8 @@ def record(directory: Path, executable: Path, kind: str, commit: str, channel: s
         "platform": "Windows", "sourceCommit": commit, "distributionChannel": channel,
         "installer": {"path": relative, **installer_id},
         "executable": {"name": EXECUTABLE, **executable_id},
-        "observation": "extracted-msi-payload" if extract_msi else "post-bundle-build-output",
-        "installerPayloadExtracted": extract_msi, "sourceProvenanceVerified": False,
+        "observation": observation,
+        "installerPayloadExtracted": extract_msi or extract_nsis, "sourceProvenanceVerified": False,
     }
     destination = root / "executable-bindings" / (kind + ".json")
     destination.parent.mkdir(exist_ok=True)
@@ -325,9 +377,9 @@ def check(directory: Path, executable: Path, installer: str, commit: str, channe
         }
         if type(reference.get("schemaVersion")) is not int or reference["schemaVersion"] != 1 or any(reference.get(k) != v for k, v in expected.items()):
             raise ValueError("executable reference identity does not match the selected candidate")
-        extracted = reference.get("observation") == "extracted-msi-payload" and kind == "msi"
-        if (reference.get("observation") not in {"post-bundle-build-output", "extracted-msi-payload"}
-                or reference.get("observation") == "extracted-msi-payload" and kind != "msi"
+        observation = reference.get("observation")
+        extracted = observation == f"extracted-{kind}-payload"
+        if (observation not in {"post-bundle-build-output", f"extracted-{kind}-payload"}
                 or reference.get("installerPayloadExtracted") is not extracted
                 or reference.get("sourceProvenanceVerified") is not False):
             raise ValueError("executable reference qualification boundary is invalid")
@@ -355,7 +407,7 @@ def check(directory: Path, executable: Path, installer: str, commit: str, channe
             "candidateReferenceFromExtractedPayload": extracted,
         })
         if extracted:
-            report["verificationBoundary"][0] = "A match compares a selected file with the producer's extracted MSI executable reference for one installer."
+            report["verificationBoundary"][0] = "A match compares a selected file with the producer's extracted executable reference for one installer."
     except (OSError, ValueError, RuntimeError, ImportError) as exc:
         # Do not print user paths or exception reprs into a potentially shared report.
         report["blockers"].append(str(exc) if isinstance(exc, ValueError) else "comparison input could not be read safely")
@@ -373,12 +425,16 @@ def main():
         sub.add_argument("--distribution-channel", choices=("online", "offline"), required=True)
         sub.add_argument("--format" if name == "record" else "--installer", required=True)
         if name == "record":
-            sub.add_argument("--extract-msi-payload", action="store_true")
+            extraction = sub.add_mutually_exclusive_group()
+            extraction.add_argument("--extract-msi-payload", action="store_true")
+            extraction.add_argument("--extract-nsis-payload", action="store_true")
+            sub.add_argument("--seven-zip", type=Path)
     args = parser.parse_args()
     if args.command == "record":
         try:
             result = record(args.directory, args.executable, args.format, args.commit, args.distribution_channel,
-                            extract_msi=args.extract_msi_payload)
+                            extract_msi=args.extract_msi_payload, extract_nsis=args.extract_nsis_payload,
+                            seven_zip=args.seven_zip)
         except (OSError, ValueError, subprocess.SubprocessError) as exc:
             parser.error(str(exc))
     else:
