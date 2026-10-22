@@ -28,8 +28,17 @@ the MSI: its own `installerPayloadExtracted` remains false. Neither observation
 authenticates the metadata or publisher, attests source provenance, checks all
 installed resources, nor qualifies installation, audio or physical hardware.
 
-NSIS still records a post-bundle build-output observation; its payload needs
-separate inspection. Old archives and failed receipts are preserved. This change
+NSIS still records a post-bundle build-output observation. Both Windows lanes
+now require `tests/windows_nsis_payload.py` to inspect their actual generated
+NSIS archive with the runner's existing 7-Zip utility. It selects one executable,
+streams it without executing it, and requires its size/hash to match the reference
+bound to that exact installer, source and channel. Ambiguous/unsafe members,
+unexpected archive types, payload disagreement or installer mutation fail the
+job. A pass establishes byte identity for that candidate's producer input and
+payload; it does not change the observation into source or publisher attestation.
+The required online/offline CI results remain the acceptance evidence.
+
+Old archives and failed receipts are preserved. This change
 does not retroactively make an old comparison pass or authorize replacing the
 installed application. Issue #179 remains open until the real MSI lanes and
 NSIS follow-up have evidence meeting its acceptance criteria.
