@@ -1,5 +1,6 @@
 """Fail-closed unit fixtures; real NSIS acceptance runs separately in Windows CI."""
 import importlib.util
+import hashlib
 from pathlib import Path
 import subprocess
 import sys
@@ -24,13 +25,16 @@ class NsisPayloadTests(unittest.TestCase):
         self.payload = b"MZtemporary desktop fixture"
         binary = self.root / nsis.binding.EXECUTABLE
         binary.write_bytes(self.payload)
-        nsis.binding.record(self.root, binary, "nsis", "a" * 40, "online")
+        with mock.patch.object(nsis.binding, "nsis_payload", return_value={
+                "bytes": len(self.payload), "sha256": hashlib.sha256(self.payload).hexdigest()}):
+            nsis.binding.record(self.root, binary, "nsis", "a" * 40, "online", extract_nsis=True,
+                                seven_zip=Path(sys.executable).resolve())
         self.listing = f"Type = Nsis\n\nPath = $INSTDIR\\stagemesh-desktop.exe\nSize = {len(self.payload)}\n\n"
 
     def verify(self, listing=None, payload=None):
         responses = [subprocess.CompletedProcess([], 0, (listing or self.listing).encode()),
                      subprocess.CompletedProcess([], 0, self.payload if payload is None else payload)]
-        with mock.patch.object(nsis.subprocess, "run", side_effect=responses) as run:
+        with mock.patch.object(nsis.binding.subprocess, "run", side_effect=responses) as run:
             result = nsis.verify(self.root, Path(sys.executable).resolve(), "a" * 40, "online")
         return result, run
 
@@ -60,7 +64,7 @@ class NsisPayloadTests(unittest.TestCase):
                 self.verify(payload=payload)
 
     def test_wrong_candidate_or_installer_never_invokes_decompressor(self):
-        with mock.patch.object(nsis.subprocess, "run") as run:
+        with mock.patch.object(nsis.binding.subprocess, "run") as run:
             with self.assertRaises(ValueError):
                 nsis.verify(self.root, Path(sys.executable).resolve(), "b" * 40, "online")
             self.installer.write_bytes(b"changed installer")
@@ -74,7 +78,7 @@ class NsisPayloadTests(unittest.TestCase):
                 self.installer.write_bytes(b"changed during extraction")
                 return subprocess.CompletedProcess([], 0, self.payload)
             return subprocess.CompletedProcess([], 0, self.listing.encode())
-        with mock.patch.object(nsis.subprocess, "run", side_effect=response):
+        with mock.patch.object(nsis.binding.subprocess, "run", side_effect=response):
             with self.assertRaisesRegex(ValueError, "changed during"):
                 nsis.verify(self.root, Path(sys.executable).resolve(), "a" * 40, "online")
 

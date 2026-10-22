@@ -132,6 +132,30 @@ class DesktopExecutableBindingTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "only for MSI"):
             binding.record(self.bundle, self.build, "nsis", SHA, "offline", extract_msi=True)
 
+    def test_nsis_record_uses_payload_and_comparison_preserves_qualification_boundary(self):
+        payload = b"MZreal NSIS fixture payload"
+        identity = {"bytes": len(payload), "sha256": hashlib.sha256(payload).hexdigest()}
+        (self.bundle / "executable-bindings/nsis.json").unlink()
+        self.build.write_bytes(b"unrelated post-bundle bytes")
+        with mock.patch.object(binding, "nsis_payload", return_value=identity) as extract:
+            binding.record(self.bundle, self.build, "nsis", SHA, "offline", extract_nsis=True,
+                           seven_zip=Path(sys.executable))
+        extract.assert_called_once_with(self.bundle / "nsis/StageMesh-setup.exe", Path(sys.executable))
+        self.seal()
+        self.selected.write_bytes(payload)
+        report = self.check("nsis/StageMesh-setup.exe")
+        self.assertTrue(report["passed"], report)
+        self.assertEqual(report["referenceObservation"], "extracted-nsis-payload")
+        self.assertTrue(report["candidateReferenceFromExtractedPayload"])
+        self.assertFalse(report["installerPayloadExtracted"])
+        self.assertFalse(report["sourceProvenanceVerified"])
+        self.selected.write_bytes(self.build.read_bytes())
+        self.assertFalse(self.check("nsis/StageMesh-setup.exe")["passed"])
+        self.change_reference(observation="extracted-nsis-payload", installerPayloadExtracted=True)
+        self.assertFalse(self.check()["passed"])
+        with self.assertRaisesRegex(ValueError, "trusted 7-Zip"):
+            binding.record(self.bundle, self.build, "nsis", SHA, "offline", extract_nsis=True)
+
     def test_installer_mutation_during_extraction_refuses_reference(self):
         reference = self.bundle / "executable-bindings/msi.json"
         reference.unlink()

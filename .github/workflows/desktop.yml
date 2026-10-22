@@ -243,17 +243,24 @@ jobs:
             --directory src-tauri/target/release/bundle \
             --commit "$GITHUB_SHA" --channel "${{ matrix.distribution_channel }}"
 
-      - name: Bundle Windows NSIS and record executable reference
+      - name: Bundle Windows NSIS
         if: runner.os == 'Windows'
         working-directory: desktop
         shell: bash
         run: |
           npm run tauri bundle -- --bundles nsis
-          python ../scripts/desktop-executable-binding.py record \
-            --directory src-tauri/target/release/bundle \
-            --executable src-tauri/target/release/stagemesh-desktop.exe \
-            --format nsis --commit "$GITHUB_SHA" \
-            --distribution-channel "${{ matrix.distribution_channel }}"
+
+      - name: Record actual NSIS executable reference
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: >-
+          python scripts/desktop-executable-binding.py record
+          --directory desktop/src-tauri/target/release/bundle
+          --executable desktop/src-tauri/target/release/stagemesh-desktop.exe
+          --format nsis --extract-nsis-payload
+          --seven-zip "$env:ProgramFiles\7-Zip\7z.exe"
+          --commit "$env:GITHUB_SHA"
+          --distribution-channel "${{ matrix.distribution_channel }}"
 
       - name: Compare actual NSIS payload with executable reference
         if: runner.os == 'Windows'

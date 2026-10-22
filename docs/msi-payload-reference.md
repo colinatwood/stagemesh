@@ -28,15 +28,23 @@ the MSI: its own `installerPayloadExtracted` remains false. Neither observation
 authenticates the metadata or publisher, attests source provenance, checks all
 installed resources, nor qualifies installation, audio or physical hardware.
 
-NSIS still records a post-bundle build-output observation. Both Windows lanes
-now require `tests/windows_nsis_payload.py` to inspect their actual generated
-NSIS archive with the runner's existing 7-Zip utility. It selects one executable,
-streams it without executing it, and requires its size/hash to match the reference
-bound to that exact installer, source and channel. Ambiguous/unsafe members,
-unexpected archive types, payload disagreement or installer mutation fail the
-job. A pass establishes byte identity for that candidate's producer input and
-payload; it does not change the observation into source or publisher attestation.
-The required online/offline CI results remain the acceptance evidence.
+The first real NSIS check in PR #183 also found a mismatching post-bundle
+reference. NSIS recording now uses `--extract-nsis-payload --seven-zip PATH`
+with the runner's existing trusted 7-Zip utility. It selects one executable,
+streams its bytes without executing them, and records `extracted-nsis-payload`
+with `installerPayloadExtracted: true`, bound to the exact installer/source/channel.
+Ambiguous/unsafe members, unexpected archive types, payload disagreement or
+installer mutation fail the job.
+
+Both Windows lanes require `tests/windows_nsis_payload.py` to independently
+repeat extraction and compare the reference. It also records again with
+deliberately unrelated build-output bytes; the result must still match the real
+payload. New NSIS observations are accepted by the comparison helper with the
+same narrow boundary as MSI: the producer extracted the payload, while the
+comparison itself only reads bytes and does not establish provenance, signing,
+installed resources or clean-host qualification. The separately trusted private
+verifier pin must be updated before comparing these new candidates. Required
+online/offline CI results remain the acceptance evidence.
 
 Old archives and failed receipts are preserved. This change
 does not retroactively make an old comparison pass or authorize replacing the
