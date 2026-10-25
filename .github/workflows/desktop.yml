@@ -31,6 +31,8 @@ on:
       - "tests/test_desktop_artifact_manifest.py"
       - "tests/test_desktop_executable_binding.py"
       - "tests/windows_msi_payload.py"
+      - "tests/windows_nsis_payload.py"
+      - "tests/test_nsis_payload.py"
       - "tests/test_desktop_dependency_inventory.py"
       - "tests/test_desktop_release_readiness.py"
       - "tests/test_desktop_windows_channel.py"
@@ -77,6 +79,8 @@ on:
       - "tests/test_desktop_artifact_manifest.py"
       - "tests/test_desktop_executable_binding.py"
       - "tests/windows_msi_payload.py"
+      - "tests/windows_nsis_payload.py"
+      - "tests/test_nsis_payload.py"
       - "tests/test_desktop_dependency_inventory.py"
       - "tests/test_desktop_release_readiness.py"
       - "tests/test_desktop_windows_channel.py"
@@ -239,17 +243,34 @@ jobs:
             --directory src-tauri/target/release/bundle \
             --commit "$GITHUB_SHA" --channel "${{ matrix.distribution_channel }}"
 
-      - name: Bundle Windows NSIS and record executable reference
+      - name: Bundle Windows NSIS
         if: runner.os == 'Windows'
         working-directory: desktop
         shell: bash
         run: |
           npm run tauri bundle -- --bundles nsis
-          python ../scripts/desktop-executable-binding.py record \
-            --directory src-tauri/target/release/bundle \
-            --executable src-tauri/target/release/stagemesh-desktop.exe \
-            --format nsis --commit "$GITHUB_SHA" \
-            --distribution-channel "${{ matrix.distribution_channel }}"
+
+      - name: Record actual NSIS executable reference
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: >-
+          python scripts/desktop-executable-binding.py record
+          --directory desktop/src-tauri/target/release/bundle
+          --executable desktop/src-tauri/target/release/stagemesh-desktop.exe
+          --format nsis --extract-nsis-payload
+          --seven-zip "$env:ProgramFiles\7-Zip\7z.exe"
+          --commit "$env:GITHUB_SHA"
+          --distribution-channel "${{ matrix.distribution_channel }}"
+
+      - name: Compare actual NSIS payload with executable reference
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: >-
+          python tests/windows_nsis_payload.py
+          --directory desktop/src-tauri/target/release/bundle
+          --seven-zip "$env:ProgramFiles\7-Zip\7z.exe"
+          --commit "$env:GITHUB_SHA"
+          --channel "${{ matrix.distribution_channel }}"
 
       - name: Record platform signing readiness
         shell: bash

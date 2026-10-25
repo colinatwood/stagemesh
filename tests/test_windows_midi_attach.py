@@ -18,16 +18,18 @@ class WindowsMidiAttachTests(unittest.TestCase):
 
     def test_cm_notification_probe_links_cfgmgr32(self):
         source = (ROOT / "native" / "devices.cmake").read_text(encoding="utf-8")
-        probe = re.search(
-            r"cmake_push_check_state\(RESET\)(.*?)"
-            r"check_cxx_source_compiles\((.*?)STAGEMESH_HAS_CM_NOTIFY_API\)"
-            r"(.*?)cmake_pop_check_state\(\)",
+        probes = re.findall(
+            r"cmake_push_check_state\(RESET\)(.*?)cmake_pop_check_state\(\)",
             source,
             re.DOTALL,
         )
+        probe = next(
+            (candidate for candidate in probes if "STAGEMESH_HAS_CM_NOTIFY_API" in candidate),
+            None,
+        )
         self.assertIsNotNone(probe)
-        self.assertRegex(probe.group(1), r"set\(CMAKE_REQUIRED_LIBRARIES\s+cfgmgr32\)")
-        self.assertIn("CM_Register_Notification", probe.group(2))
+        self.assertRegex(probe, r"set\(CMAKE_REQUIRED_LIBRARIES\s+cfgmgr32\)")
+        self.assertIn("CM_Register_Notification", probe)
 
 
 if __name__ == "__main__":

@@ -21,9 +21,15 @@ target_include_directories(stagemesh_devices PUBLIC
 if(WIN32)
   include(CheckCXXSourceCompiles)
   include(CMakePushCheckState)
+  # A discarded expression can be optimized away even when the SDK declares a
+  # key that its UUID library cannot supply. Force a real symbol reference and
+  # link with the same libraries as the device target before enabling its use.
+  cmake_push_check_state(RESET)
+  set(CMAKE_REQUIRED_LIBRARIES ole32 uuid winmm cfgmgr32 ksuser)
   check_cxx_source_compiles(
-    "#include <windows.h>\n#include <mmdeviceapi.h>\nint main(){ (void)PKEY_AudioEndpoint_StableId; return 0; }"
+    "#include <windows.h>\n#include <mmdeviceapi.h>\nint main(){ const PROPERTYKEY* volatile key = &PKEY_AudioEndpoint_StableId; return key->pid == 0; }"
     STAGEMESH_HAS_AUDIOENDPOINT_STABLEID)
+  cmake_pop_check_state()
   if(STAGEMESH_HAS_AUDIOENDPOINT_STABLEID)
     target_compile_definitions(stagemesh_devices PRIVATE STAGEMESH_HAS_AUDIOENDPOINT_STABLEID=1)
   else()
