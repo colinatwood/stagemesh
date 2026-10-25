@@ -7,7 +7,15 @@
 - Repository: `colinatwood/stagemesh`
 - Canonical branch: `main`
 - Current milestone: **Attested desktop release candidates and external qualification execution**
-- Current source baseline: `392ac5d0baa2d40fdf2c9d61af0cb283c0a30e06` (PR #176 merged).
+- Current source baseline: `2b4a8b72f4dbb07f072c911672ca3e167735564b` (PR #183 merged).
+
+## Installer payload-reference acceptance — 2026-10-25
+
+- PR #183 merged as `2b4a8b72f4dbb07f072c911672ca3e167735564b` after all 14 required checks passed at exact head `d7bbc83aa6863be42dcd3fe57c1fe86350c01bbd`. CI run [40216474950](https://github.com/colinatwood/stagemesh/actions/runs/40216474950) passed the 910-test release suite, sanitizers, Windows/macOS builds and Python 3.12/3.14 executable-binding checks. Platform Modules [40216474978](https://github.com/colinatwood/stagemesh/actions/runs/40216474978) and Native Lifecycle [40216474953](https://github.com/colinatwood/stagemesh/actions/runs/40216474953) passed.
+- Desktop run [40216475037](https://github.com/colinatwood/stagemesh/actions/runs/40216475037) passed real generated online/offline Windows MSI and NSIS extraction/reference regressions, including deliberately unrelated post-bundle bytes, plus macOS/Linux packaging and final cross-platform candidate binding. The fix records the executable bytes from each actual installer payload and retains exact installer/source/channel binding and all mutation, ambiguity and unsafe-path refusals.
+- Private hardware-control PR #10 pins the installed-comparison verifier to that exact qualified public head. Its three fresh hosted checks passed in private run `40217903867`; it merged as `756757ed05d4b7fbf555a10c4d03f8dfb4be3283`. No physical workflow ran and no installation or device setting changed.
+- Issue #179 closed after its exact acceptance evidence was recorded. Old archives and failed receipts remain unchanged; they were not resealed. This closes the executable-reference producer defect only. It does not establish publisher signing, complete source provenance, clean-host installation, installed-resource identity, accessibility, audible quality or physical hardware qualification.
+- Inventory remains **24 Done / 25 open**. Next participant-assisted work remains an identified matching selected installation followed by three BOOM disconnect/reconnect cycles with outputs disarmed. A fresh Windows 11 clean host is still required for Windows lifecycle acceptance. Signing credentials, assistive-technology review, audio quality measurements and owner/legal decisions remain separate blockers.
 
 ## MSI payload-reference repair — 2026-10-21
 
