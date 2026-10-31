@@ -9,6 +9,10 @@
 - Current milestone: **Attested desktop release candidates and external qualification execution**
 - Current source baseline: `2b4a8b72f4dbb07f072c911672ca3e167735564b` (PR #183 merged).
 
+## Independent candidate verification — 2026-10-31
+
+- Independently verified the Windows online, Linux and macOS candidate downloads and ran extracted Debian and AppImage runtime smokes. The macOS bundle's manifest, checksums and signing report also match the downloaded candidate index. See [the exact observations and limits](docs/candidate-verification-2026-10-31.md). No installation, signing, clean-host, accessibility or physical hardware qualification is implied; inventory remains 24 Done / 25 open.
+
 ## Installer payload-reference acceptance — 2026-10-25
 
 - PR #183 merged as `2b4a8b72f4dbb07f072c911672ca3e167735564b` after all 14 required checks passed at exact head `d7bbc83aa6863be42dcd3fe57c1fe86350c01bbd`. CI run [40216474950](https://github.com/colinatwood/stagemesh/actions/runs/40216474950) passed the 910-test release suite, sanitizers, Windows/macOS builds and Python 3.12/3.14 executable-binding checks. Platform Modules [40216474978](https://github.com/colinatwood/stagemesh/actions/runs/40216474978) and Native Lifecycle [40216474953](https://github.com/colinatwood/stagemesh/actions/runs/40216474953) passed.
