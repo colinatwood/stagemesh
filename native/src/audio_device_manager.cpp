@@ -167,11 +167,16 @@ void AudioDeviceManager::scan_platform() noexcept {
 #else
             "coreaudio";
 #endif
-        for (const auto& record : snapshot.devices) {
+#if defined(_WIN32)
+        const auto display_labels =
+            device_display_labels(snapshot.devices, "Windows Audio Endpoint");
+#endif
+        for (std::size_t index = 0; index < snapshot.devices.size(); ++index) {
+            const auto& record = snapshot.devices[index];
             if (record.kind != DeviceKind::Audio || count_ >= devices_.size()) continue;
             add_endpoint(
 #if defined(_WIN32)
-                record.display_name.empty() ? "Windows Audio Endpoint" : clean_description(record.display_name),
+                display_labels[index],
 #else
                 "CoreAudio Endpoint",
 #endif
