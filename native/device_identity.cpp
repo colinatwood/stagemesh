@@ -138,19 +138,22 @@ std::vector<std::string> device_display_labels(
     const std::string normalized_fallback =
         normalize(std::string(fallback)).empty() ? "Audio Endpoint" : normalize(std::string(fallback));
     std::vector<std::string> bases;
+    std::vector<bool> missing;
     bases.reserve(devices.size());
+    missing.reserve(devices.size());
     std::unordered_map<std::string, std::size_t> counts;
     for (const auto& device : devices) {
         auto base = normalize(device.display_name);
-        if (base.empty()) base = normalized_fallback;
+        const bool name_missing = base.empty();
+        if (name_missing) base = normalized_fallback;
         ++counts[base];
         bases.push_back(std::move(base));
+        missing.push_back(name_missing);
     }
     std::vector<std::string> labels;
     labels.reserve(devices.size());
     for (std::size_t i = 0; i < devices.size(); ++i) {
-        const bool suffix_required =
-            devices[i].display_name.empty() || counts[bases[i]] > 1;
+        const bool suffix_required = missing[i] || counts[bases[i]] > 1;
         if (!suffix_required) {
             labels.push_back(truncate(std::move(bases[i]), max_label_bytes));
             continue;
