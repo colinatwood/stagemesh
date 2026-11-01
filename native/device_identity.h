@@ -20,6 +20,7 @@ struct DeviceRecord {
     bool input = false;
     bool output = false;
     std::uint32_t native_index = 0xffffffffu;
+    std::string display_name; // Presentation only; never used as an identity.
 };
 
 struct DeviceSelection {
