@@ -149,7 +149,23 @@ DeviceRecord windows_record(IMMDevice* device) {
 #endif
     if (persistent_material.empty()) persistent_material = native_material;
 
+    // PKEY_Device_FriendlyName, defined locally to avoid SDK UUID linkage dependencies.
+    static constexpr PROPERTYKEY friendly_name_key = {
+        {0xa45c254e, 0xdf1c, 0x4efd, {0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0}}, 14
+    };
+    std::string display_name;
+    Microsoft::WRL::ComPtr<IPropertyStore> name_store;
+    if (SUCCEEDED(device->OpenPropertyStore(STGM_READ, name_store.GetAddressOf()))) {
+        PROPVARIANT name_value;
+        PropVariantInit(&name_value);
+        if (SUCCEEDED(name_store->GetValue(friendly_name_key, &name_value)) &&
+            name_value.vt == VT_LPWSTR && name_value.pwszVal) {
+            try { display_name = utf8(name_value.pwszVal); } catch (...) {}
+        }
+        PropVariantClear(&name_value);
+    }
     DeviceRecord record;
+    record.display_name = std::move(display_name);
     record.kind = DeviceKind::Audio;
     record.native_hash = sha256_token("wasapi-native:" + native_material);
     record.persistent_hash = sha256_token(std::string(stable ? "wasapi-stable:" : "wasapi-installation:") + persistent_material);
