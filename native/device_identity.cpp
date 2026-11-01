@@ -1,6 +1,9 @@
 #include "device_identity.h"
 #include <array>
 #include <iomanip>
+#include <algorithm>
+#include <cctype>
+#include <unordered_map>
 #include <sstream>
 #include <stdexcept>
 
@@ -105,6 +108,62 @@ DeviceResolution resolve_device(const DeviceSelection& selection, const std::vec
         devices[index].native_hash.empty())
         return {ResolutionStatus::Detached, static_cast<std::size_t>(-1)};
     return {devices[index].native_hash == selection.native_hash ? ResolutionStatus::Attached : ResolutionStatus::Rebound, index};
+}
+
+std::vector<std::string> device_display_labels(
+    const std::vector<DeviceRecord>& devices,
+    std::string_view fallback) {
+    constexpr std::size_t max_label_bytes = 127;
+    constexpr std::size_t suffix_bytes = 11; // " (1234abcd)"
+    auto normalize = [](std::string value) {
+        for (auto& ch : value)
+            if (ch == '\r' || ch == '\n' || ch == '\t') ch = ' ';
+        value.erase(value.begin(), std::find_if(value.begin(), value.end(),
+            [](unsigned char ch) { return !std::isspace(ch); }));
+        value.erase(std::find_if(value.rbegin(), value.rend(),
+            [](unsigned char ch) { return !std::isspace(ch); }).base(), value.end());
+        for (std::size_t i = 1; i < value.size();)
+            if (value[i] == ' ' && value[i - 1] == ' ') value.erase(i, 1);
+            else ++i;
+        return value;
+    };
+    auto truncate = [](std::string value, std::size_t limit) {
+        if (value.size() <= limit) return value;
+        value.resize(limit);
+        while (!value.empty() &&
+               (static_cast<unsigned char>(value.back()) & 0xc0u) == 0x80u)
+            value.pop_back();
+        return value;
+    };
+    const std::string normalized_fallback =
+        normalize(std::string(fallback)).empty() ? "Audio Endpoint" : normalize(std::string(fallback));
+    std::vector<std::string> bases;
+    bases.reserve(devices.size());
+    std::unordered_map<std::string, std::size_t> counts;
+    for (const auto& device : devices) {
+        auto base = normalize(device.display_name);
+        if (base.empty()) base = normalized_fallback;
+        ++counts[base];
+        bases.push_back(std::move(base));
+    }
+    std::vector<std::string> labels;
+    labels.reserve(devices.size());
+    for (std::size_t i = 0; i < devices.size(); ++i) {
+        const bool suffix_required =
+            devices[i].display_name.empty() || counts[bases[i]] > 1;
+        if (!suffix_required) {
+            labels.push_back(truncate(std::move(bases[i]), max_label_bytes));
+            continue;
+        }
+        const auto& identity = devices[i].native_hash;
+        std::string token = identity.size() >= 8
+            ? identity.substr(identity.size() - 8)
+            : std::to_string(i + 1);
+        token = truncate(std::move(token), 8);
+        labels.push_back(truncate(std::move(bases[i]), max_label_bytes - suffix_bytes) +
+                         " (" + token + ")");
+    }
+    return labels;
 }
 
 const char* resolution_status_name(ResolutionStatus status) {
