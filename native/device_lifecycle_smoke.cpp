@@ -111,6 +111,19 @@ void exercise_display_labels() {
     labels = device_display_labels({long_name}, "Windows Audio Endpoint");
     require(labels.size() == 1 && labels[0].size() == 127,
             "long friendly name was not bounded for the engine protocol");
+
+    auto long_collision = duplicate;
+    long_collision.display_name = std::string(127, 'A') + "B";
+    labels = device_display_labels({long_name, long_collision}, "Windows Audio Endpoint");
+    require(labels[0] != labels[1] && labels[0].size() <= 127 &&
+            labels[1].size() <= 127, "bounded friendly-name collision is ambiguous");
+
+    auto unicode = boom;
+    unicode.display_name.clear();
+    for (int i = 0; i < 43; ++i) unicode.display_name += "\xe2\x98\x83";
+    labels = device_display_labels({unicode}, "Windows Audio Endpoint");
+    require(labels.size() == 1 && labels[0].size() == 126,
+            "UTF-8 friendly name was split during bounding");
 }
 
 std::pair<unsigned,unsigned> identity_counts(const DeviceSnapshot& snapshot) {
