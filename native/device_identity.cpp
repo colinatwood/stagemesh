@@ -129,31 +129,43 @@ std::vector<std::string> device_display_labels(
     };
     auto truncate = [](std::string value, std::size_t limit) {
         if (value.size() <= limit) return value;
-        value.resize(limit);
-        while (!value.empty() &&
-               (static_cast<unsigned char>(value.back()) & 0xc0u) == 0x80u)
-            value.pop_back();
+        std::size_t end = 0;
+        while (end < value.size() && end < limit) {
+            const auto lead = static_cast<unsigned char>(value[end]);
+            const std::size_t width =
+                lead < 0x80u ? 1u :
+                (lead & 0xe0u) == 0xc0u ? 2u :
+                (lead & 0xf0u) == 0xe0u ? 3u :
+                (lead & 0xf8u) == 0xf0u ? 4u : 1u;
+            if (end + width > limit) break;
+            end += width;
+        }
+        value.resize(end);
         return value;
     };
     const std::string normalized_fallback =
         normalize(std::string(fallback)).empty() ? "Audio Endpoint" : normalize(std::string(fallback));
     std::vector<std::string> bases;
+    std::vector<std::string> bounded_keys;
     std::vector<bool> missing;
     bases.reserve(devices.size());
+    bounded_keys.reserve(devices.size());
     missing.reserve(devices.size());
     std::unordered_map<std::string, std::size_t> counts;
     for (const auto& device : devices) {
         auto base = normalize(device.display_name);
         const bool name_missing = base.empty();
         if (name_missing) base = normalized_fallback;
-        ++counts[base];
+        const auto key = truncate(base, max_label_bytes);
+        ++counts[key];
         bases.push_back(std::move(base));
+        bounded_keys.push_back(key);
         missing.push_back(name_missing);
     }
     std::vector<std::string> labels;
     labels.reserve(devices.size());
     for (std::size_t i = 0; i < devices.size(); ++i) {
-        const bool suffix_required = missing[i] || counts[bases[i]] > 1;
+        const bool suffix_required = missing[i] || counts[bounded_keys[i]] > 1;
         if (!suffix_required) {
             labels.push_back(truncate(std::move(bases[i]), max_label_bytes));
             continue;
