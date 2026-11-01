@@ -44,6 +44,11 @@ DeviceSelection pin_device(const DeviceRecord& record, bool require_input = fals
 // even for an unchanged native hash. Downgrades resolve Detached; duplicate
 // identities remain Ambiguous rather than being filtered into a unique match.
 DeviceResolution resolve_device(const DeviceSelection& selection, const std::vector<DeviceRecord>& devices);
+// Returns bounded presentation labels. Friendly names remain separate from
+// identity; duplicate or missing names receive a short hashed identity suffix.
+std::vector<std::string> device_display_labels(
+    const std::vector<DeviceRecord>& devices,
+    std::string_view fallback);
 const char* resolution_status_name(ResolutionStatus status);
 const char* identity_strength_name(IdentityStrength strength);
 const char* device_kind_name(DeviceKind kind);
