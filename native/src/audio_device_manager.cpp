@@ -171,7 +171,7 @@ void AudioDeviceManager::scan_platform() noexcept {
             if (record.kind != DeviceKind::Audio || count_ >= devices_.size()) continue;
             add_endpoint(
 #if defined(_WIN32)
-                "Windows Audio Endpoint",
+                record.display_name.empty() ? "Windows Audio Endpoint" : clean_description(record.display_name),
 #else
                 "CoreAudio Endpoint",
 #endif
