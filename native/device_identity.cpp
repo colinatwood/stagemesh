@@ -1,6 +1,9 @@
 #include "device_identity.h"
 #include <array>
 #include <iomanip>
+#include <algorithm>
+#include <cctype>
+#include <unordered_map>
 #include <sstream>
 #include <stdexcept>
 
@@ -105,6 +108,77 @@ DeviceResolution resolve_device(const DeviceSelection& selection, const std::vec
         devices[index].native_hash.empty())
         return {ResolutionStatus::Detached, static_cast<std::size_t>(-1)};
     return {devices[index].native_hash == selection.native_hash ? ResolutionStatus::Attached : ResolutionStatus::Rebound, index};
+}
+
+std::vector<std::string> device_display_labels(
+    const std::vector<DeviceRecord>& devices,
+    std::string_view fallback) {
+    constexpr std::size_t max_label_bytes = 127;
+    constexpr std::size_t suffix_bytes = 11; // " (1234abcd)"
+    auto normalize = [](std::string value) {
+        for (auto& ch : value)
+            if (ch == '\r' || ch == '\n' || ch == '\t') ch = ' ';
+        value.erase(value.begin(), std::find_if(value.begin(), value.end(),
+            [](unsigned char ch) { return !std::isspace(ch); }));
+        value.erase(std::find_if(value.rbegin(), value.rend(),
+            [](unsigned char ch) { return !std::isspace(ch); }).base(), value.end());
+        for (std::size_t i = 1; i < value.size();)
+            if (value[i] == ' ' && value[i - 1] == ' ') value.erase(i, 1);
+            else ++i;
+        return value;
+    };
+    auto truncate = [](std::string value, std::size_t limit) {
+        if (value.size() <= limit) return value;
+        std::size_t end = 0;
+        while (end < value.size() && end < limit) {
+            const auto lead = static_cast<unsigned char>(value[end]);
+            const std::size_t width =
+                lead < 0x80u ? 1u :
+                (lead & 0xe0u) == 0xc0u ? 2u :
+                (lead & 0xf0u) == 0xe0u ? 3u :
+                (lead & 0xf8u) == 0xf0u ? 4u : 1u;
+            if (end + width > limit) break;
+            end += width;
+        }
+        value.resize(end);
+        return value;
+    };
+    const std::string normalized_fallback =
+        normalize(std::string(fallback)).empty() ? "Audio Endpoint" : normalize(std::string(fallback));
+    std::vector<std::string> bases;
+    std::vector<std::string> bounded_keys;
+    std::vector<bool> missing;
+    bases.reserve(devices.size());
+    bounded_keys.reserve(devices.size());
+    missing.reserve(devices.size());
+    std::unordered_map<std::string, std::size_t> counts;
+    for (const auto& device : devices) {
+        auto base = normalize(device.display_name);
+        const bool name_missing = base.empty();
+        if (name_missing) base = normalized_fallback;
+        const auto key = truncate(base, max_label_bytes);
+        ++counts[key];
+        bases.push_back(std::move(base));
+        bounded_keys.push_back(key);
+        missing.push_back(name_missing);
+    }
+    std::vector<std::string> labels;
+    labels.reserve(devices.size());
+    for (std::size_t i = 0; i < devices.size(); ++i) {
+        const bool suffix_required = missing[i] || counts[bounded_keys[i]] > 1;
+        if (!suffix_required) {
+            labels.push_back(truncate(std::move(bases[i]), max_label_bytes));
+            continue;
+        }
+        const auto& identity = devices[i].native_hash;
+        std::string token = identity.size() >= 8
+            ? identity.substr(identity.size() - 8)
+            : std::to_string(i + 1);
+        token = truncate(std::move(token), 8);
+        labels.push_back(truncate(std::move(bases[i]), max_label_bytes - suffix_bytes) +
+                         " (" + token + ")");
+    }
+    return labels;
 }
 
 const char* resolution_status_name(ResolutionStatus status) {

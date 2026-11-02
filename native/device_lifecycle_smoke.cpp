@@ -79,6 +79,53 @@ void exercise_resolution_contract() {
     }
 }
 
+void exercise_display_labels() {
+    DeviceRecord boom;
+    boom.native_hash = "sha256:00000000000000000000000000000000000000000000000000000000b00b0001";
+    boom.display_name = "2 - Apogee BOOM";
+    DeviceRecord speakers;
+    speakers.native_hash = "sha256:00000000000000000000000000000000000000000000000000000000a11d0002";
+    speakers.display_name = "Studio Speakers";
+    auto labels = device_display_labels({boom, speakers}, "Windows Audio Endpoint");
+    require(labels.size() == 2 && labels[0] == "2 - Apogee BOOM" &&
+            labels[1] == "Studio Speakers", "distinct friendly names changed");
+
+    auto duplicate = boom;
+    duplicate.native_hash = "sha256:00000000000000000000000000000000000000000000000000000000b00b0002";
+    labels = device_display_labels({boom, duplicate}, "Windows Audio Endpoint");
+    require(labels[0] == "2 - Apogee BOOM (b00b0001)" &&
+            labels[1] == "2 - Apogee BOOM (b00b0002)",
+            "duplicate friendly names are not distinct");
+
+    auto missing = boom;
+    missing.display_name.clear();
+    auto blank = duplicate;
+    blank.display_name = " \t\r\n ";
+    labels = device_display_labels({missing, blank}, "Windows Audio Endpoint");
+    require(labels[0] == "Windows Audio Endpoint (b00b0001)" &&
+            labels[1] == "Windows Audio Endpoint (b00b0002)",
+            "missing friendly names lack safe distinct fallbacks");
+
+    auto long_name = boom;
+    long_name.display_name = std::string(180, 'A');
+    labels = device_display_labels({long_name}, "Windows Audio Endpoint");
+    require(labels.size() == 1 && labels[0].size() == 127,
+            "long friendly name was not bounded for the engine protocol");
+
+    auto long_collision = duplicate;
+    long_collision.display_name = std::string(127, 'A') + "B";
+    labels = device_display_labels({long_name, long_collision}, "Windows Audio Endpoint");
+    require(labels[0] != labels[1] && labels[0].size() <= 127 &&
+            labels[1].size() <= 127, "bounded friendly-name collision is ambiguous");
+
+    auto unicode = boom;
+    unicode.display_name.clear();
+    for (int i = 0; i < 43; ++i) unicode.display_name += "\xe2\x98\x83";
+    labels = device_display_labels({unicode}, "Windows Audio Endpoint");
+    require(labels.size() == 1 && labels[0].size() == 126,
+            "UTF-8 friendly name was split during bounding");
+}
+
 std::pair<unsigned,unsigned> identity_counts(const DeviceSnapshot& snapshot) {
     unsigned stable=0, weak=0;
     for (const auto& record : snapshot.devices) {
@@ -194,6 +241,7 @@ int main() {
     try {
         using namespace stagemesh;
         exercise_resolution_contract();
+        exercise_display_labels();
         DeviceMonitor monitor;
         bool rejected = false;
         try { monitor.snapshot(); } catch (const std::logic_error&) { rejected = true; }
