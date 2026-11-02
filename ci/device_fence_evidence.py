@@ -9,7 +9,14 @@ import sys
 
 root = Path(__file__).resolve().parents[1]
 binary = Path(sys.argv[1]).resolve()
-run = subprocess.run([str(binary)], capture_output=True, text=True, timeout=30, check=True)
+run = subprocess.run([str(binary)], capture_output=True, text=True, timeout=30, check=False)
+if run.returncode:
+    # Preserve the native reason in CI without publishing a passing receipt.
+    if run.stdout:
+        print(run.stdout, file=sys.stderr, end="")
+    if run.stderr:
+        print(run.stderr, file=sys.stderr, end="")
+    raise SystemExit(run.returncode)
 checks = json.loads(run.stdout)
 required = ["syntheticFenceQualified", "silentRearmPrevented", "freshExplicitGeneration",
             "initialArmSingleUse", "authorityNoncopyable", "identityDowngradeFenced", "assuranceRecoveryRequiresRearm"]
