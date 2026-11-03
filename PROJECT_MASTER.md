@@ -7,7 +7,14 @@
 - Repository: `colinatwood/stagemesh`
 - Canonical branch: `main`
 - Current milestone: **Attested desktop release candidates and external qualification execution**
-- Current source baseline: `2b4a8b72f4dbb07f072c911672ca3e167735564b` (PR #183 merged).
+- Current source baseline: `9c68118a9bafb269438f4bf3706a4b5ac97ecd30` (PR #190 merged).
+
+## Windows BOOM candidate handoff — 2026-11-03
+
+- PR #188 merged as `93bb05b619621a1c1dc949a2de01caa7373045ae` after all 15 jobs passed at head `a1b4c2a299dc9a8e65700c003bb9cd0478c6c5e4`. Windows endpoint friendly names now reach Setup; native coverage includes distinct, duplicate, missing/blank, long, bounded-collision and UTF-8 labels.
+- PR #186 merged as `96ae4ade2606f7f9328afa9275d82be24ecd9894` after 15 jobs; #185 merged as `b2c4d34a6e808fd378ae63649adbe905ac43e086` after 16 jobs. #190 merged as the baseline above after ten jobs; it surfaces native fence diagnostics without publishing success on failure. Reviews and inline threads were empty. The earlier intermittent macOS fence failure's cause remains unproven despite a passing retry.
+- Independently verified merged-main Windows online artifact `13112880809` and index `13112901158` from Desktop run `41378220256`, source `b2c4d34a6e808fd378ae63649adbe905ac43e086`. All 11 Windows files passed; Windows manifest/checksum/signing-report bindings match the downloaded index. See [the exact hashes and operator steps](docs/windows-boom-candidate-handoff.md). This candidate predates diagnostic-only #190.
+- Next: explicitly authorized installation, exact MSI executable comparison, recognizable BOOM labels with capture stopped, then participant-assisted recovery. Installed state, physical recovery, audio quality, clean hosts, accessibility, signing and owner/legal gates remain open. Inventory stays 24 Done / 25 open. [Issue #189](https://github.com/colinatwood/stagemesh/issues/189) tracks completion.
 
 ## Independent candidate verification — 2026-10-31
 
